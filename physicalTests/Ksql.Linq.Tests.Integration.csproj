@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Ksql.Linq.Tests.Integration</AssemblyName>
+    <RootNamespace>Ksql.Linq.Tests.Integration</RootNamespace>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <NoWarn>$(NoWarn);CS8632</NoWarn>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+      <PackageReference Include="xunit" Version="2.6.6" />
+      <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../src/Ksql.Linq.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Exclude runner sources from test assembly; keep them in their own projects -->
+    <Compile Remove="Runners/**/*.cs" />
+    <!-- Exclude samples that rely on unavailable runtime stubs or bring in obj files via wildcard -->
+    <Compile Remove="Runners/**/obj/**/*.cs" />
+    <Compile Remove="Archive/**/*.cs" />
+    <!-- Temporarily exclude OssSamples due to corrupted source lines (\\r\\n artifacts) -->
+    <Compile Remove="OssSamples/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Re-include canonical Translations test explicitly -->
+    <Compile Include="OssSamples/TranslationsTimeBucketTests.cs" />
+    <Compile Include="OssSamples/BarTranslationsSmokeTests.cs" />
+    <Compile Include="OssSamples/BarTxYearTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../tests/Common/CategoryAttribute.cs" Link="CategoryAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="docker-compose.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
+
+

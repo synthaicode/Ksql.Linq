@@ -1,0 +1,65 @@
+// Public API baseline (shipped)
+// Minimal set aligned with wiki/examples usage. Members are intentionally
+// omitted at this stage; RS0016 is kept as warning during convergence.
+
+# Core context
+T:Ksql.Linq.KsqlContext
+T:Ksql.Linq.Core.Abstractions.IKsqlContext
+
+# Application entry
+T:Ksql.Linq.Application.KsqlContextBuilder
+T:Ksql.Linq.Application.KsqlContextOptions
+T:Ksql.Linq.Application.KsqlContextOptionsExtensions
+T:Ksql.Linq.KsqlDbResponse
+
+# DSL (queries)
+T:Ksql.Linq.Query.Dsl.IKsqlQueryable
+T:Ksql.Linq.Query.Dsl.KsqlQueryable`1
+T:Ksql.Linq.Query.Dsl.KsqlQueryable2`2
+T:Ksql.Linq.Query.Dsl.KsqlGroupedQueryable`2
+T:Ksql.Linq.Query.Dsl.Windows
+T:Ksql.Linq.QueryExtensions
+
+# EntitySets / helpers
+T:Ksql.Linq.EventSet`1
+T:Ksql.Linq.EventSetExtensions
+T:Ksql.Linq.EntitySetExtensions
+
+# Attributes (modeling)
+T:Ksql.Linq.Core.Attributes.KsqlTopicAttribute
+T:Ksql.Linq.Core.Attributes.KsqlTableAttribute
+T:Ksql.Linq.Core.Attributes.KsqlKeyAttribute
+T:Ksql.Linq.Core.Attributes.KsqlTimestampAttribute
+T:Ksql.Linq.Core.Attributes.KsqlDecimalAttribute
+
+# Configuration (appsettings)
+T:Ksql.Linq.Configuration.KsqlDslOptions
+T:Ksql.Linq.Configuration.KsqlServerOptions
+T:Ksql.Linq.Configuration.CommonSection
+T:Ksql.Linq.Core.Configuration.SchemaRegistrySection
+T:Ksql.Linq.Configuration.Messaging.TopicSection
+T:Ksql.Linq.Configuration.Messaging.TopicCreationSection
+T:Ksql.Linq.Configuration.Messaging.ProducerSection
+T:Ksql.Linq.Configuration.Messaging.ConsumerSection
+
+# Period/TimeBucket APIs (reads)
+T:Ksql.Linq.Runtime.Period
+T:Ksql.Linq.Runtime.Periods
+T:Ksql.Linq.Runtime.PeriodUnit
+T:Ksql.Linq.TimeBucket
+T:Ksql.Linq.Runtime.TimeBucket
+T:Ksql.Linq.Runtime.TimeBucket`1
+T:Ksql.Linq.Runtime.TimeBucketScope`1
+
+# Exceptions / events (minimal)
+T:Ksql.Linq.Window.WindowAggregationException
+T:Ksql.Linq.Events.RuntimeEvent
+T:Ksql.Linq.Events.RuntimeEventBus
+T:Ksql.Linq.Events.IRuntimeEventSink
+
+# DI interfaces (extensibility points)
+T:Ksql.Linq.Infrastructure.Kafka.ITopicAdmin
+T:Ksql.Linq.Infrastructure.Messaging.IProducerFactory
+T:Ksql.Linq.Infrastructure.Messaging.IConsumerFactory
+T:Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
+T:Ksql.Linq.Infrastructure.Ksql.IKsqlExecutor
