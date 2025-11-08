@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Infrastructure.Ksql;
+using Ksql.Linq.Infrastructure.Ksql;
 using Xunit;
 
 namespace Ksql.Linq.Tests.Infrastructure.Ksql;

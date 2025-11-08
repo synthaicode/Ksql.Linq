@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Configuration;
 using Ksql.Linq.Entities.Samples.Models;
@@ -35,7 +35,7 @@ public class CompositeKeyPocoTests
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Trace)  // 縺薙％縺ｧ譛菴弱Ο繧ｰ繝ｬ繝吶Ν謖・ｮ・
+                .SetMinimumLevel(LogLevel.Trace)  // ここで最低ログレベル指定
                 .AddFilter("Streamiz.Kafka.Net", LogLevel.Debug)
                 .AddConsole();
         });
@@ -166,4 +166,5 @@ public class EnvCompositeKeyPocoTests
         protected override void OnModelCreating(IModelBuilder modelBuilder) { }
     }
 }
+
 

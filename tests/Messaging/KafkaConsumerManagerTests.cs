@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Configuration.Abstractions;
 using Ksql.Linq.Configuration.Messaging;

@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Query.Pipeline;
+namespace Ksql.Linq.Query.Pipeline;
 /// <summary>
 /// Query execution mode
 /// Rationale: distinguish Pull queries (one-shot) from Push queries (streaming)

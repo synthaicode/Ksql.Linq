@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
@@ -85,7 +85,7 @@ public sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposable
     }
 
     // Stop sweep loop without flushing any pending windows, and clear internal state.
-    // Used during partition revocation to avoid驥崎､・∝・ while ensuring quick convergence.
+    // Used during partition revocation to avoid重複送出 while ensuring quick convergence.
     public void StopWithoutFlushAndClear()
     {
         try { _cts.Cancel(); } catch { }
@@ -310,6 +310,7 @@ public sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposable
         }
     }
 }
+
 
 
 

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq;
+using Ksql.Linq;
 using Ksql.Linq.Runtime;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
@@ -76,7 +76,7 @@ public class BarDslMultiTierTests
         public EventSet<Rate> Rates { get; set; } = null!;
         protected override void OnModelCreating(IModelBuilder modelBuilder)
         {
-            // 螟壽ｮｵ・・m, 5m, 15m, 60m(=60m)・・
+            // 多段（1m, 5m, 15m, 60m(=60m)）
             modelBuilder.Entity<Bar>()
                 .ToQuery(q => q.From<Rate>()
                     .Tumbling(r => r.Timestamp, new Ksql.Linq.Query.Dsl.Windows { Minutes = new[] { 1, 5, 15, 60 } })
@@ -219,7 +219,7 @@ public class BarDslMultiTierTests
         return last;
     }
 
-    // TimeBucket 繝吶・繧ｹ縺ｮ蠕・ｩ滂ｼ・ull query 髱樔ｾ晏ｭ假ｼ・
+    // TimeBucket ベースの待機（pull query 非依存）
     private static async Task<int> WaitBucketCountAsync(KsqlContext ctx, Period period, int min, TimeSpan timeout, string broker, string symbol)
     {
         var bucket = TimeBucket.Get<Bar>(ctx, period);
@@ -242,7 +242,7 @@ public class BarDslMultiTierTests
         return last;
     }
 
-    // 謖・ｮ壹＠縺・BucketStart(ﾂｱtolerance 遘・ 縺ｮ陦後′迴ｾ繧後ｋ縺ｾ縺ｧ蠕・ｩ・
+    // 指定した BucketStart(±tolerance 秒) の行が現れるまで待機
     private static async Task<bool> WaitBucketRowAsync(KsqlContext ctx, Period period, string broker, string symbol, DateTime bucketStartUtc, TimeSpan timeout, double toleranceSeconds = 0)
     {
         var bucket = TimeBucket.Get<Bar>(ctx, period);
@@ -266,7 +266,7 @@ public class BarDslMultiTierTests
             {
                 var list = await bucket.ToListAsync(new[] { broker, symbol }, CancellationToken.None);
                 last = list;
-                // 遽・峇繝吶・繧ｹ縺ｮ蠕・ｩ・ 雜ｳ縺ｮ螳夂ｾｩ縺ｯ譛滄俣縺ｫ蜷ｫ縺ｾ繧後ｋ蜃ｺ譚･莠九・髮・ｴ・↑縺ｮ縺ｧ [start, start+span) 縺ｫ蜈･縺｣縺ｦ縺・ｌ縺ｰOK
+                // 範囲ベースの待機: 足の定義は期間に含まれる出来事の集約なので [start, start+span) に入っていればOK
                 var span = period.Unit switch
                 {
                     PeriodUnit.Minutes => TimeSpan.FromMinutes(period.Value),
@@ -277,7 +277,7 @@ public class BarDslMultiTierTests
                 var start = NormalizeMsUtc(bucketStartUtc);
                 var end = start + span;
                 if (list.Any(b => NormalizeWithEpsilon(b.BucketStart) >= start && NormalizeWithEpsilon(b.BucketStart) < end)) return true;
-                // 霑ｽ蜉縺ｮ繧・ｉ縺手ｨｱ螳ｹ・・/- toleranceSeconds・・
+                // 追加のゆらぎ許容（+/- toleranceSeconds）
                 if (toleranceSeconds > 0)
                 {
                     if (list.Any(b => Math.Abs((NormalizeWithEpsilon(b.BucketStart) - start).TotalSeconds) <= toleranceSeconds)) return true;
@@ -359,7 +359,7 @@ public class BarDslMultiTierTests
         }
         await ctx.WaitForEntityReadyAsync<Rate>(TimeSpan.FromSeconds(60));
 
-        // Phase A: TimeBucket waits・育函謌仙ｾ後↓蠕・ｩ溘☆繧区婿驥昴↓螟画峩・・
+        // Phase A: TimeBucket waits（生成後に待機する方針に変更）
         var buckets = new[]
         {
             (Period.Minutes(1),  "bar_1m_live"),
@@ -367,13 +367,15 @@ public class BarDslMultiTierTests
             (Period.Minutes(15), "bar_15m_live"),
             (Period.Minutes(60), "bar_60m_live")
         };
-        // 蠕梧ｮｵ縺ｧ騾先ｬ｡蠕・ｩ溘☆繧九◆繧√√％縺ｮ谿ｵ髫弱〒縺ｯ襍ｷ蜍輔＠縺ｪ縺・
+        // 後段で逐次待機するため、この段階では起動しない
 
 
-        // 蝓ｺ貅匁凾蛻ｻ・域ｱｺ螳夊ｫ厄ｼ・ 迴ｾ蝨ｨ譎ょ綾繧・腸蠅・､画焚縺ｫ萓晏ｭ倥＠縺ｪ縺・崋螳啅TC縺ｮ縺ｿ繧堤畑縺・ｋ
-        // 蜀咲樟諤ｧ縺ｮ縺溘ａ PHYS_BASE_UTC 縺ｯ辟｡隕悶☆繧・        DateTime baseUtc = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        // 基準時刻（決定論）: 現在時刻や環境変数に依存しない固定UTCのみを用いる
+        // 再現性のため PHYS_BASE_UTC は無視する
+        DateTime baseUtc = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var T0 = baseUtc.AddSeconds(5);
-        // 繝舌こ繝・ヨ蠅・阜・亥ｸｸ縺ｫ驕主悉繝ｻ豎ｺ螳夊ｫ厄ｼ・        DateTime M1  = new DateTime((T0.Ticks / TimeSpan.TicksPerMinute) * TimeSpan.TicksPerMinute, DateTimeKind.Utc);
+        // バケット境界（常に過去・決定論）
+        DateTime M1  = new DateTime((T0.Ticks / TimeSpan.TicksPerMinute) * TimeSpan.TicksPerMinute, DateTimeKind.Utc);
         DateTime M5  = new DateTime((T0.Ticks / (TimeSpan.TicksPerMinute*5)) * (TimeSpan.TicksPerMinute*5), DateTimeKind.Utc);
         DateTime M15 = new DateTime((T0.Ticks / (TimeSpan.TicksPerMinute*15)) * (TimeSpan.TicksPerMinute*15), DateTimeKind.Utc);
         DateTime W0  = new DateTime((baseUtc.Ticks / TimeSpan.TicksPerHour) * TimeSpan.TicksPerHour, DateTimeKind.Utc);
@@ -394,12 +396,15 @@ public class BarDslMultiTierTests
             return 1;
         }
 
-        // 蜈･蜉帙う繝吶Φ繝磯寔蜷茨ｼ域､懆ｨｼ縺ｫ蜀榊茜逕ｨ縺吶ｋ・・        var inputEvents = new System.Collections.Generic.List<(DateTime ts, decimal bid)>();
+        // 入力イベント集合（検証に再利用する）
+        var inputEvents = new System.Collections.Generic.List<(DateTime ts, decimal bid)>();
 
         async Task ProduceAsync()
         {
-            // 螳夂ｾｩ縺励◆蜈･蜉帙ｒ荳蜈・喧縺励√う繝吶Φ繝域凾蛻ｻ譏・・〒謚募・・亥腰隱ｿ諤ｧ繧ｬ繝ｼ繝峨→CLOSE螳牙ｮ壹・荳｡遶具ｼ・            var events = new System.Collections.Generic.List<(DateTime ts, decimal bid)>();
-            // 莠句燕繧ｷ繝ｼ繝会ｼ・1繧医ｊ蜑阪・3蛻・ｼ峨ｂ譛ｬ謚募・縺ｨ蜷御ｸ繝ｫ繝ｼ繝医〒謇ｱ縺・ｼ亥庄隕門喧繝ｬ繝ｼ繧ｹ繧帝∩縺代ｋ・・            events.Add((M1.AddMinutes(-3).AddSeconds(10), 43m));
+            // 定義した入力を一元化し、イベント時刻昇順で投入（単調性ガードとCLOSE安定の両立）
+            var events = new System.Collections.Generic.List<(DateTime ts, decimal bid)>();
+            // 事前シード（M1より前の3分）も本投入と同一ルートで扱う（可視化レースを避ける）
+            events.Add((M1.AddMinutes(-3).AddSeconds(10), 43m));
             events.Add((M1.AddMinutes(-2).AddSeconds(10), 42m));
             events.Add((M1.AddMinutes(-1).AddSeconds(10), 41m));
             // 1m
@@ -407,7 +412,8 @@ public class BarDslMultiTierTests
             events.Add((M1.AddSeconds(15), 103m));
             events.Add((M1.AddSeconds(30), 99m));
             events.Add((M1.AddSeconds(55), 102m));
-            // 5m・・..4蛻・・10遘抵ｼ・            var vals5 = new[] { 101m, 120m, 95m, 104m, 103m };
+            // 5m（0..4分の10秒）
+            var vals5 = new[] { 101m, 120m, 95m, 104m, 103m };
             for (int i = 0; i < 5; i++) events.Add((M5.AddMinutes(i).AddSeconds(10), vals5[i]));
             // 15m
             events.Add((M15.AddSeconds(3), 200m));
@@ -442,24 +448,30 @@ public class BarDslMultiTierTests
 
         await ProduceAsync();
 
-        // 蛻･繧ｷ繝ｼ繝画兜蜈･縺ｯ蟒・ｭ｢・域悽謚募・繝ｫ繝ｼ繝医〒荳諡ｬ謚募・貂医∩・・
-        // 騾先ｬ｡縺ｮ蟄伜惠遒ｺ隱阪・OHLC讀懆ｨｼ繝悶Ο繝・け縺ｧ陦後≧縺溘ａ縲√％縺薙〒縺ｮ荳諡ｬ蠕・ｩ溘・逵∫払
+        // 別シード投入は廃止（本投入ルートで一括投入済み）
+
+        // 逐次の存在確認はOHLC検証ブロックで行うため、ここでの一括待機は省略
 
 
-        // Phase B 窶・蜴ｳ蟇・HLC: 1m/5m/15m 繧・TimeBucket 縺ｧ讀懆ｨｼ・・ull 繧剃ｽｿ逕ｨ縺励↑縺・ｼ・
+        // Phase B — 厳密OHLC: 1m/5m/15m を TimeBucket で検証（pull を使用しない）
         var bucket1m  = TimeBucket.Get<Bar>(ctx, Period.Minutes(1));
         var bucket5m  = TimeBucket.Get<Bar>(ctx, Period.Minutes(5));
         var bucket15m = TimeBucket.Get<Bar>(ctx, Period.Minutes(15));
 
-        // 隕ｳ貂ｬ邉ｻ・郁ｨｺ譁ｭ讖溯・・峨・蜑企勁・壹ユ繧ｹ繝医・蜈･蜉帚・譛溷ｾ・・蜉帙・縺ｿ縺ｧ隧穂ｾ｡縺吶ｋ
+        // 観測系（診断機能）は削除：テストは入力→期待出力のみで評価する
 
-        // 隕ｳ貂ｬ讖溯・・・oreach/query-stream・峨・繝・せ繝郁ｲｬ蜍吝､悶・縺溘ａ謦､蜴ｻ
+        // 観測機能（foreach/query-stream）はテスト責務外のため撤去
 
-        // DESCRIBE/BUCKETSTART 繧ｹ繝翫ャ繝励す繝ｧ繝・ヨ繧ょ炎髯､・郁ｨｺ譁ｭ縺ｯ蛻･邉ｻ邨ｱ縺ｧ螳滓命・・
-        // lag warm-up 繧ょ炎髯､・郁ｦｳ貂ｬ縺ｯ繝・せ繝亥､厄ｼ・
-        // 蛻晏屓Pull蠕・■繧ょ炎髯､・・imeBucket縺ｮ蠕・ｩ溘〒蜊∝・・・
-        // rows_last 逶｣隕悶・繝・せ繝郁ｲｬ蜍吝､悶・縺溘ａ謦､蜴ｻ・育ｵ先棡遒ｺ隱阪・ TimeBucket 縺ｮ縺ｿ縺ｧ陦後≧・・
-        // 隕ｳ貂ｬ邉ｻ繧・芦譚･蠕・■繧定｡後ｏ縺壹ゝimeBucket 縺ｮ邨先棡縺ｮ縺ｿ縺ｧ蛻､螳壹☆繧・
+        // DESCRIBE/BUCKETSTART スナップショットも削除（診断は別系統で実施）
+
+        // lag warm-up も削除（観測はテスト外）
+
+        // 初回Pull待ちも削除（TimeBucketの待機で十分）
+
+        // rows_last 監視はテスト責務外のため撤去（結果確認は TimeBucket のみで行う）
+
+        // 観測系や到来待ちを行わず、TimeBucket の結果のみで判定する
+
         static Bar? FindRowForStart(List<Bar> bars, Period period, DateTime startUtc)
         {
             DateTime Normalize(DateTime dt)
@@ -473,7 +485,8 @@ public class BarDslMultiTierTests
                 _ => TimeSpan.FromMinutes(1)
             };
             var end = start + span;
-            // 險ｱ螳ｹ: WindowStart 縺悟宍蟇・ｧ貞｢・阜縺ｨﾂｱ1遘剃ｻ･蜀・↓關ｽ縺｡繧句ｴ蜷医ｂ諡ｾ縺・            return bars
+            // 許容: WindowStart が厳密秒境界と±1秒以内に落ちる場合も拾う
+            return bars
                 .Where(b =>
                 {
                     var t = Normalize(b.BucketStart).AddMilliseconds(-10);
@@ -506,7 +519,7 @@ public class BarDslMultiTierTests
                 .ToList();
         }
 
-        // 陬懷勧: 繝舌こ繝・ヨ蠅・阜髢｢謨ｰ縺ｨ豁｣隕丞喧
+        // 補助: バケット境界関数と正規化
         static DateTime NormalizeUtcSec(DateTime dt)
         {
             var k = dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
@@ -536,36 +549,38 @@ public class BarDslMultiTierTests
             return new DateTime((ticks / dspan) * dspan, DateTimeKind.Utc);
         }
 
-        // 1m 遯捺焚・亥崋螳壼渕貅匁凾蛻ｻ荳九・諠ｳ螳・19莉ｶ縺ｧ蝗ｺ螳夲ｼ・
+        // 1m 窓数（固定基準時刻下の想定=19件で固定）
         Assert.Equal(19, expected1m.Count);
-        Assert.Equal(19, list1m.Count);\r\n        // 1m: 蜷・ｪ薙〒莉ｶ謨ｰ=1・磯℃荳崎ｶｳ縺ｪ縺暦ｼ噂r\n        foreach (var start in expected1m)\r\n        {\r\n            var rows = RowsInWindow(list1m, Period.Minutes(1), start);\r\n            Assert.Single(rows);\r\n        }
-        // 1m: 蜷・ｪ薙〒莉ｶ謨ｰ=1・磯℃荳崎ｶｳ縺ｪ縺暦ｼ・
+        Assert.Equal(19, list1m.Count);\r\n        // 1m: 各窓で件数=1（過不足なし）\r\n        foreach (var start in expected1m)\r\n        {\r\n            var rows = RowsInWindow(list1m, Period.Minutes(1), start);\r\n            Assert.Single(rows);\r\n        }
+        // 1m: 各窓で件数=1（過不足なし）
         foreach (var start in expected1m)
         {
             var rows = RowsInWindow(list1m, Period.Minutes(1), start);
             Assert.Single(rows);
         }
         AssertSetEqual(expected5m, actual5m, "5m");
-        // 5m 遯捺焚・亥崋螳壼渕貅匁凾蛻ｻ荳九・諠ｳ螳・10莉ｶ縺ｧ蝗ｺ螳夲ｼ・
+        // 5m 窓数（固定基準時刻下の想定=10件で固定）
         Assert.Equal(10, expected5m.Count);
         list5m = await bucket5m.ToListAsync(new[] { 'B1', 'S1' }, CancellationToken.None);
-        Assert.Equal(10, list5m.Count);\r\n        // 5m: 蜷・ｪ薙〒莉ｶ謨ｰ=1\r\n        foreach (var start in expected5m)\r\n        {\r\n            var rows = RowsInWindow(list5m, Period.Minutes(5), start);\r\n            Assert.Single(rows);\r\n        }
-        // 5m: 蜷・ｪ薙〒莉ｶ謨ｰ=1
+        Assert.Equal(10, list5m.Count);\r\n        // 5m: 各窓で件数=1\r\n        foreach (var start in expected5m)\r\n        {\r\n            var rows = RowsInWindow(list5m, Period.Minutes(5), start);\r\n            Assert.Single(rows);\r\n        }
+        // 5m: 各窓で件数=1
         foreach (var start in expected5m)
         {
             var rows = RowsInWindow(list5m, Period.Minutes(5), start);
             Assert.Single(rows);
         }
         AssertSetEqual(expected15m, actual15m, "15m");
-        // 15m 邱丈ｻｶ謨ｰ・亥崋螳壼渕貅匁凾蛻ｻ縺ｮ荳九〒6莉ｶ縺ｧ豎ｺ螳夲ｼ・        Assert.Equal(6, expected15m.Count);
+        // 15m 総件数（固定基準時刻の下で6件で決定）
+        Assert.Equal(6, expected15m.Count);
         list15m = await bucket15m.ToListAsync(new[] { "B1", "S1" }, CancellationToken.None);
         Assert.Equal(6, list15m.Count);
         AssertSetEqual(expected60m, actual60m, "60m");
-        // 60m 邱丈ｻｶ謨ｰ・亥崋螳壼渕貅匁凾蛻ｻ縺ｮ荳九〒3莉ｶ縺ｧ豎ｺ螳夲ｼ・        Assert.Equal(3, expected60m.Count);
+        // 60m 総件数（固定基準時刻の下で3件で決定）
+        Assert.Equal(3, expected60m.Count);
         list60m = await bucket60m.ToListAsync(new[] { "B1", "S1" }, CancellationToken.None);
         Assert.Equal(3, list60m.Count);
 
-        // 縺吶∋縺ｦ縺ｮ譛滄俣縺ｫ縺､縺・※縲∝推繝舌こ繝・ヨ縺ｮOHLC縺悟・蜉帙う繝吶Φ繝医°繧臥ｮ怜・縺励◆譛溷ｾ・→螳悟・荳閾ｴ・亥叉蛟､・峨☆繧九％縺ｨ繧呈､懆ｨｼ
+        // すべての期間について、各バケットのOHLCが入力イベントから算出した期待と完全一致（即値）することを検証
         static Dictionary<DateTime, (decimal open, decimal high, decimal low, decimal close)> BuildExpected(
             IEnumerable<(DateTime ts, decimal bid)> evs, Period p)
         {
@@ -611,9 +626,11 @@ public class BarDslMultiTierTests
         AssertAllBars(list15m, Period.Minutes(15), "15m", exp15m);
         AssertAllBars(list60m, Period.Minutes(60), "60m", exp60m);
 
-        // 譛邨・ 縺吶∋縺ｦ縺ｮ讀懆ｨｼ繧帝夐℃
-        // 譏守､ｺ逧・↑繧ｯ繝ｪ繝ｼ繝ｳ繧｢繝・・荳崎ｦ・ｼ・AsyncDisposable・・    }
+        // 最終: すべての検証を通過
+        // 明示的なクリーンアップ不要（IAsyncDisposable）
+    }
 }
+
 
 
 

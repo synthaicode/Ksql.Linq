@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -121,7 +121,8 @@ public class BarTxYearTests
 
         // Removed: derived query RUNNING wait (query.run)
 
-        // ForEachAsync 隕ｳ貂ｬ縺ｯ陦後ｏ縺ｪ縺・ｼ井ｻ墓ｧ倅ｸ翫・繧ｷ繝ｳ繝励ΝDDL縺ｯ謚第ｭ｢縺励↑縺・ｼ・
+        // ForEachAsync 観測は行わない（仕様上のシンプルDDLは抑止しない）
+
         // Produce ticks in the same minute (after starting observer to ensure we catch the changelog)
         await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(5),  Bid = 1.20 });
         await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(25), Bid = 1.28 });

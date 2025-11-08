@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Query.Metadata;
 using Ksql.Linq.Query.Pipelines.Unified;

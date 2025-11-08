@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Attributes;
+using Ksql.Linq.Core.Attributes;
 using System.Collections.Generic;
 
 namespace Ksql.Linq.Messaging;

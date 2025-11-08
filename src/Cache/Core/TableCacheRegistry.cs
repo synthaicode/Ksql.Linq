@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Abstractions;
 using System;
 using System.Collections.Generic;
 
@@ -27,7 +27,7 @@ internal class TableCacheRegistry : IDisposable
             _stateDirs.Add(path!);
     }
 
-    // 蜈・・邁｡譏灘ｮ溯｣・ｼ・o-op・峨↓謌ｻ縺・
+    // 元の簡易実装（no-op）に戻す
     public void RegisterEligibleTables(IEnumerable<EntityModel> models, HashSet<string> tableTopics)
     {
         // no-op for simplified registry

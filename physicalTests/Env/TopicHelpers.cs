@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -35,3 +35,4 @@ public static class TopicHelpers
         throw new TimeoutException($"Topic {topic} readiness timeout after {timeout}.");
     }
 }
+

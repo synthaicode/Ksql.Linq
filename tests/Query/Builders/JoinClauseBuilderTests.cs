@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
 using System;
 using System.Collections.Generic;
@@ -64,4 +64,5 @@ public class JoinClauseBuilderTests
         Assert.Throws<InvalidOperationException>(() => builder.Build(join.Expression));
     }
 }
+
 

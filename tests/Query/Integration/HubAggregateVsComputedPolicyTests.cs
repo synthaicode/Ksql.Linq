@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Builders;
@@ -64,8 +64,8 @@ public class HubAggregateVsComputedPolicyTests
                 AvgBid = g.Average(x => x.Bid),
                 SumLots = g.Sum(x => x.Lots),
                 Cnt = g.Count(),
-                Yr = Year(g.WindowStart()),            // computed (policy: C#蛛ｴ)
-                Label = g.Key.Broker + "-" + g.Key.Symbol // computed (policy: C#蛛ｴ)
+                Yr = Year(g.WindowStart()),            // computed (policy: C#側)
+                Label = g.Key.Broker + "-" + g.Key.Symbol // computed (policy: C#側)
             })
             .Build();
 
@@ -98,7 +98,7 @@ public class HubAggregateVsComputedPolicyTests
 
         var qs = QueryStructure.Parse(sql);
 
-        // Aggregates in SQL (KSQL蛛ｴ)
+        // Aggregates in SQL (KSQL側)
         Assert.True(qs.TryGetProjection("Open", out var openExpr) && openExpr.IndexOf("OPEN", StringComparison.OrdinalIgnoreCase) >= 0);
         Assert.True(qs.TryGetProjection("High", out var highExpr) && highExpr.IndexOf("HIGH", StringComparison.OrdinalIgnoreCase) >= 0);
         Assert.True(qs.TryGetProjection("Low", out var lowExpr) && lowExpr.IndexOf("LOW", StringComparison.OrdinalIgnoreCase) >= 0);
@@ -107,9 +107,9 @@ public class HubAggregateVsComputedPolicyTests
         Assert.True(qs.TryGetProjection("SumLots", out var sumExpr) && sumExpr.IndexOf("SUM(", StringComparison.OrdinalIgnoreCase) >= 0);
         Assert.True(qs.TryGetProjection("Cnt", out var cntExpr) && cntExpr.IndexOf("COUNT(", StringComparison.OrdinalIgnoreCase) >= 0);
 
-        // Non-aggregates must NOT be hub-override targets・・#蛛ｴ縺ｧ蜃ｦ逅・☆繧句･醍ｴ・ｼ峨・
-        // 蟆代↑縺上→繧・hub 蛻怜錐・・PEN/HIGH/LOW/CLOSE・峨ｒ蜷ｫ縺ｾ縺ｪ縺・％縺ｨ繧堤｢ｺ隱阪＠縲・
-        // 髮・ｨ亥ｼ墓焚荳頑嶌縺阪′隱､驕ｩ逕ｨ縺輔ｌ縺ｦ縺・↑縺・％縺ｨ繧呈球菫昴☆繧九・
+        // Non-aggregates must NOT be hub-override targets（C#側で処理する契約）。
+        // 少なくとも hub 列名（OPEN/HIGH/LOW/CLOSE）を含まないことを確認し、
+        // 集計引数上書きが誤適用されていないことを担保する。
         // Computed members are excluded from CTAS in hub flows
         Assert.False(qs.TryGetProjection("Yr", out _));
 
@@ -123,4 +123,5 @@ public class HubAggregateVsComputedPolicyTests
         Assert.Equal(resolved, m.ResolvedColumnName);
     }
 }
+
 

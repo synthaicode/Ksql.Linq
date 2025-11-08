@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Pipeline;
+using Ksql.Linq.Query.Pipeline;
 using Xunit;
 
 namespace Ksql.Linq.Tests.Query.Pipeline;

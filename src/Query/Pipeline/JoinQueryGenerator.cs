@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Abstractions;
+using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
 using Ksql.Linq.Query.Builders.Common;
@@ -358,3 +358,4 @@ internal class JoinQueryGenerator : GeneratorBase
         return optimizedQuery;
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Analysis;
+using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Dsl;
@@ -173,6 +173,7 @@ public class KsqlCreateWindowedStatementBuilderTests
         Assert.Equal(StreamTableType.Stream, model.DetermineType());
     }
 }
+
 
 
 

@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +10,7 @@ using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Runtime;
 
 // Continuation schedule sample (DSL-first, aligned with physical tests)
-// Steps: From 竊・TimeFrame 竊・Tumbling(continuation: true) 竊・GroupBy/Select 竊・Rollup
+// Steps: From → TimeFrame → Tumbling(continuation: true) → GroupBy/Select → Rollup
 // Note: Select must include exactly one WindowStart() (bucket column)
 
 public class Tick
@@ -67,7 +67,8 @@ public sealed class SampleContext : KsqlContext
                     Low = g.Min(x => x.Bid),
                     Close = g.LatestByOffset(x => x.Bid)
                 })
-                // Continuation=true: session蜀・・繧ｮ繝｣繝・・縺ｯ蜑垢lose縺ｧ1陦後ｒ邯咏ｶ夂函謌・            );
+                // Continuation=true: session内のギャップは前Closeで1行を継続生成
+            );
     }
 }
 

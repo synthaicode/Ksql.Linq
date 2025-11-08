@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Messaging.Producers;
+namespace Ksql.Linq.Messaging.Producers;
 
 using System.Threading;
 using System.Threading.Tasks;

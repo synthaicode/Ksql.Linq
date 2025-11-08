@@ -1,4 +1,4 @@
-﻿using Confluent.SchemaRegistry;
+using Confluent.SchemaRegistry;
 using Microsoft.Extensions.Logging;
 using System;
 namespace Ksql.Linq.Application;

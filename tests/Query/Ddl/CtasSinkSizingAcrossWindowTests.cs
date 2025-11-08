@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Analysis;
+using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Planning;
 using Ksql.Linq.Query.Hub.Analysis;

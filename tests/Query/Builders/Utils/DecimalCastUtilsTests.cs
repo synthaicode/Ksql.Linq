@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Builders.Utilities;
 using Xunit;
@@ -28,3 +28,4 @@ public class DecimalCastUtilsTests
         Assert.Equal(injected, second);
     }
 }
+

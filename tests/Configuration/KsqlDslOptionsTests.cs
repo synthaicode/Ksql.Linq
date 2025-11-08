@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Xunit;
 
 namespace Ksql.Linq.Tests.Configuration;

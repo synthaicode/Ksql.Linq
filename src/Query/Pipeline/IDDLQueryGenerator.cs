@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Ddl;
+using Ksql.Linq.Query.Ddl;
 using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Pipeline;

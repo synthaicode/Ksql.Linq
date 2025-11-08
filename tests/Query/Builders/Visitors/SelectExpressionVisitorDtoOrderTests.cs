@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using Ksql.Linq.Query.Builders.Clauses;
 using System;
@@ -67,6 +67,7 @@ public class SelectExpressionVisitorDtoOrderTests
         Assert.NotNull(result);
     }
 }
+
 
 
 

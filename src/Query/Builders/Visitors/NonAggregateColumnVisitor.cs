@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders.Functions;
+using Ksql.Linq.Query.Builders.Functions;
 using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Builders.Visitors;

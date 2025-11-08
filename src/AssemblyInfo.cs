@@ -1,4 +1,4 @@
-﻿
+
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Ksql.Linq.Tests")]

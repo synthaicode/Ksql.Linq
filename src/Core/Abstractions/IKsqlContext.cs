@@ -1,4 +1,4 @@
-﻿//using Ksql.Linq.Core.Modeling;
+//using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Core.Dlq;
 using System;
 using System.Collections.Generic;

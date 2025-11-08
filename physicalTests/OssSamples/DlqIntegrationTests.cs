@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using PhysicalTestEnv;
@@ -94,15 +94,15 @@ public class DlqIntegrationTests
             await PhysicalTestEnv.TopicHelpers.WaitForTopicReady(admin, "dead_letter_queue", 1, 1, TimeSpan.FromSeconds(10));
         }
 
-        // 繧ｹ繧ｭ繝ｼ繝樒｢ｺ螳夂畑繝繝溘・繝・・繧ｿ騾∽ｿ｡
+        // スキーマ確定用ダミーデータ送信
         await ctx.Orders.AddAsync(new Order { Id = 1, Amount = 0.01m });
         await Task.Delay(5000);
-        // DLQ騾∽ｿ｡繝・せ繝域悽菴・
+        // DLQ送信テスト本体
         await ctx.Orders
             .OnError(ErrorAction.DLQ)
             .ForEachAsync(_ => throw new Exception("Simulated failure"), TimeSpan.FromSeconds(5));
         await Task.Delay(3000);
-        // DLQ讀懆ｨｼ: 譁ｰAPI縺ｧ隱ｭ縺ｿ蜿悶ｊ
+        // DLQ検証: 新APIで読み取り
         DlqRecord? found = null;
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         await foreach (var record in ctx.Dlq.ReadAsync(new DlqReadOptions { FromBeginning = true }, cts.Token))
@@ -194,4 +194,5 @@ public class EnvDlqIntegrationTests
         protected override void OnModelCreating(IModelBuilder modelBuilder) { }
     }
 }
+
 

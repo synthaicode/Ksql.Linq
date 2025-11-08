@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using Ksql.Linq.Query.Builders;
@@ -76,4 +76,5 @@ public class MoreValidationErrorTests
         Assert.Equal("Aggregate functions are not allowed in WHERE clause. Use HAVING clause instead.", ex.Message);
     }
 }
+
 

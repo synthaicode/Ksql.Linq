@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Ksql.Linq.Tests.Utils;

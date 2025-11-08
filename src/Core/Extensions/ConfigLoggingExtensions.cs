@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,3 +57,4 @@ internal static class ConfigLoggingExtensions
         logger.LogInformation("{Label} config: {Settings}", label, flat);
     }
 }
+

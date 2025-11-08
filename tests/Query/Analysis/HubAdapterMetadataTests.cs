@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Hub.Adapters;
@@ -49,7 +49,7 @@ public class HubAdapterMetadataTests
             })
             .Build();
 
-        // Adapt the projection for hub inputs via C#蛛ｴ繧｢繝繝励ち
+        // Adapt the projection for hub inputs via C#側アダプタ
         var adapted = model.Clone();
         if (adapted.SelectProjection != null)
         {
@@ -75,4 +75,5 @@ public class HubAdapterMetadataTests
         Assert.Equal(expectedColumn, m.ResolvedColumnName);
     }
 }
+
 

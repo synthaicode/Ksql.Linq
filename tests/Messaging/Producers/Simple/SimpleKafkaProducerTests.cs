@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Ksql.Linq.Messaging.Producers;
 
 using System;

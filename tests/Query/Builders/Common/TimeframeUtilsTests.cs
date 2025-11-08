@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ksql.Linq.Query.Builders.Common;
 using Xunit;
 

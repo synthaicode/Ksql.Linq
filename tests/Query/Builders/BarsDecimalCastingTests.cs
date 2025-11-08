@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
@@ -188,4 +188,5 @@ public class BarsDecimalCastingTests
         return sql;
     }
 }
+
 

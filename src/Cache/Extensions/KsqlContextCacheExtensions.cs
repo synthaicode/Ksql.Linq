@@ -1,4 +1,4 @@
-﻿using Avro;
+using Avro;
 using Confluent.Kafka;
 using Ksql.Linq.Cache.Core;
 using Ksql.Linq.Configuration;
@@ -570,7 +570,7 @@ internal static class KsqlContextCacheExtensions
         // racing ksqlDB subject/DDL readiness that can push KafkaStreams into ERROR.
     }
 
-    // 繝ｬ繧ｸ繧ｹ繝医Λ逕滓・繝倥Ν繝代・縺ｯ荳崎ｦ・ｼ亥・縺ｮ繧ｷ繝ｳ繝励Ν螳溯｣・↓謌ｻ縺吶◆繧∝炎髯､・・
+    // レジストラ生成ヘルパーは不要（元のシンプル実装に戻すため削除）
     private sealed class SafeKafkaStreamResource : IDisposable
     {
         private readonly KafkaStream _stream;
@@ -1429,4 +1429,5 @@ internal static class KsqlContextCacheExtensions
         property.SetValue(target, value);
     }
 }
+
 

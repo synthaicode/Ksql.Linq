@@ -1,4 +1,4 @@
-﻿using Ksql.Linq;
+using Ksql.Linq;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Query.Builders;
@@ -539,6 +539,7 @@ public class ToQueryDslTests
     }
 
 }
+
 
 
 

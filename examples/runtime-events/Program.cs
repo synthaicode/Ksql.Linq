@@ -1,4 +1,4 @@
-﻿using Ksql.Linq;
+using Ksql.Linq;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Events;
 using Microsoft.Extensions.Configuration;
@@ -18,7 +18,8 @@ public sealed class RuntimeEventsContext : KsqlContext
 {
     protected override void OnModelCreating(IModelBuilder modelBuilder)
     {
-        // 譛蟆・ 繧ｽ繝ｼ繧ｹ螳夂ｾｩ・・ows/hub繧・ｸ贋ｽ崎ｶｳ縺ｯ險ｭ險医↓萓晏ｭ假ｼ・        modelBuilder.Entity<Rate>();
+        // 最小: ソース定義（rows/hubや上位足は設計に依存）
+        modelBuilder.Entity<Rate>();
     }
 }
 
@@ -35,9 +36,11 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        // 1) 繧､繝吶Φ繝医す繝ｳ繧ｯ繧堤匳骭ｲ・域悴險ｭ螳壹↑繧臥匱轣ｫ縺励↑縺・ｼ・        RuntimeEventBus.SetSink(new ConsoleSink());
+        // 1) イベントシンクを登録（未設定なら発火しない）
+        RuntimeEventBus.SetSink(new ConsoleSink());
 
-        // 2) 繧ｳ繝ｳ繝・く繧ｹ繝医ｒ讒狗ｯ・        var configuration = new ConfigurationBuilder()
+        // 2) コンテキストを構築
+        var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true)
             .AddEnvironmentVariables(prefix: "KsqlDsl_")
             .Build();
@@ -48,7 +51,8 @@ public static class Program
             .EnableLogging(loggerFactory)
             .BuildContext<RuntimeEventsContext>();
 
-        // 3) rows_last 縺ｮ ready 繧貞ｾ・▽・井ｾ・ bar_1s_rows_last・・        var rowsLastTopic = configuration["RowsLastTopic"] ?? "bar_1s_rows_last";
+        // 3) rows_last の ready を待つ（例: bar_1s_rows_last）
+        var rowsLastTopic = configuration["RowsLastTopic"] ?? "bar_1s_rows_last";
         var rowsReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var _ = SubscribeOnce(e =>
         {
@@ -56,7 +60,8 @@ public static class Program
                 rowsReady.TrySetResult();
         });
 
-        // 4) Streamiz RUNNING 繧貞ｾ・▽・井ｾ・ bar_1m_live・・        var liveTopic = configuration["LiveTopic"] ?? "bar_1m_live";
+        // 4) Streamiz RUNNING を待つ（例: bar_1m_live）
+        var liveTopic = configuration["LiveTopic"] ?? "bar_1m_live";
         var running = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var _s = SubscribeOnce(e =>
         {
@@ -64,7 +69,8 @@ public static class Program
                 running.TrySetResult();
         });
 
-        // 莉ｻ諢・ 荳ｦ蛻励↓蠕・▽・・0s 莉･蜀・ｼ・        await Task.WhenAll(rowsReady.Task.WaitAsync(TimeSpan.FromSeconds(60)),
+        // 任意: 並列に待つ（60s 以内）
+        await Task.WhenAll(rowsReady.Task.WaitAsync(TimeSpan.FromSeconds(60)),
                            running.Task.WaitAsync(TimeSpan.FromSeconds(60)));
 
         Console.WriteLine("[sample] rows_last.ready + streamiz.running observed.");
@@ -73,7 +79,7 @@ public static class Program
     private static IDisposable SubscribeOnce(Action<RuntimeEvent> onEvent)
     {
         var sink = new LambdaSink(e => { onEvent(e); return Task.CompletedTask; });
-        // 譌｢蟄倥す繝ｳ繧ｯ縺ｯ菫晄戟縺励◆縺ｾ縺ｾ縲∝句挨縺ｮ荳譎ゅし繝悶せ繧ｯ縺ｨ縺励※遨阪・
+        // 既存シンクは保持したまま、個別の一時サブスクとして積む
         var current = RuntimeEventBus.Sink;
         RuntimeEventBus.SetSink(new TeeSink(current, sink));
         return new ActionDisposable(() =>
@@ -107,3 +113,4 @@ public static class Program
         private readonly Action _dispose; public ActionDisposable(Action d) => _dispose = d; public void Dispose() => _dispose();
     }
 }
+

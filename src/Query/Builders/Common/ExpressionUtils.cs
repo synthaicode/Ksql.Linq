@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Builders.Common;
@@ -25,3 +25,4 @@ internal static class ExpressionUtils
         };
     }
 }
+

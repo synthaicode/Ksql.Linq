@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Configuration;
 using System;
@@ -31,7 +31,7 @@ public class KsqlSyntaxTests
         }
     }
 
-    // 逕滓・縺輔ｌ縺溘け繧ｨ繝ｪ縺渓sqlDB縺ｧ隗｣驥亥庄閭ｽ縺狗｢ｺ隱・
+    // 生成されたクエリがksqlDBで解釈可能か確認
     [Theory]
     [Trait("Category", "Integration")]
     [InlineData("CREATE STREAM test_stream AS SELECT * FROM source EMIT CHANGES;")]

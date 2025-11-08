@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -20,7 +20,11 @@ using Xunit;
 namespace Ksql.Linq.Tests.Integration;
 
 /// <summary>
-/// POC: Tumbling+CTAS 縺ｧ菴懈・縺輔ｌ縺・1m 繝ｩ繧､繝傍ABLE縺後〔sql縺ｮPull縺ｧ縺ｯ隕九∴繧九・縺ｫ縲ヾtreamiz繧ｭ繝｣繝・す繝･縺九ｉ縺ｯ遨ｺ縺九←縺・°繧呈､懆ｨｼ縲・/// - 譌｢蟄倥・Bar DSL縺ｮ繝代う繝励Λ繧､繝ｳ繧偵◎縺ｮ縺ｾ縺ｾ蛻ｩ逕ｨ・・ar_1s_rows竊鍛ar_1m_live・峨・/// - ksql Pull縺ｧ bar_1m_live 縺ｫ陦後′蜃ｺ繧九％縺ｨ繧堤｢ｺ隱阪・/// - 縺昴・蠕後ヾtreamiz縺ｮTableCache縺ｫ逶ｴ謗･繝ｪ繝輔Ξ繧ｯ繧ｷ繝ｧ繝ｳ縺ｧ繧｢繧ｯ繧ｻ繧ｹ縺励∝酔荳縺ｮ陦後′蜿門ｾ励〒縺阪ｋ縺九ｒ豈碑ｼ・・/// </summary>
+/// POC: Tumbling+CTAS で作成された 1m ライブTABLEが、ksqlのPullでは見えるのに、Streamizキャッシュからは空かどうかを検証。
+/// - 既存のBar DSLのパイプラインをそのまま利用（bar_1s_rows→bar_1m_live）。
+/// - ksql Pullで bar_1m_live に行が出ることを確認。
+/// - その後、StreamizのTableCacheに直接リフレクションでアクセスし、同一の行が取得できるかを比較。
+/// </summary>
 public class TumblingCtasCachePocTests
 {
     [KsqlTopic("deduprates")]
@@ -131,7 +135,7 @@ public class TumblingCtasCachePocTests
         List<object> cacheRows = new();
         try
         {
-            // Pass null timeout to use TableCache default (RUNNING蠕・■繧丹SS蛛ｴ縺ｫ蟋斐・繧・ 譌｢螳・0s)
+            // Pass null timeout to use TableCache default (RUNNING待ちをOSS側に委ねる: 既定90s)
             var taskObj = (Task)toList!.Invoke(cacheObj, new object?[] { null!, (TimeSpan?)null })!;
             await taskObj; // xUnit: avoid ConfigureAwait(false) in tests
             var resultProp = taskObj.GetType().GetProperty("Result")!;
@@ -144,7 +148,7 @@ public class TumblingCtasCachePocTests
             throw new TimeoutException("KafkaStreams did not reach RUNNING state within default wait (TableCache).", ex.InnerException);
         }
 
-        // 2) POC: changelog縺ｫ繝・・繧ｿ縺悟・縺ｦ縺・ｋ縺ｮ縺ｫ cacheRows=0 縺ｮ縺ｾ縺ｾ縺ｪ繧峨ゝumbling+CTAS竊担treamiz 騾｣謳ｺ縺ｫ繧ｮ繝｣繝・・縺ｮ逍代＞
+        // 2) POC: changelogにデータが出ているのに cacheRows=0 のままなら、Tumbling+CTAS→Streamiz 連携にギャップの疑い
         Assert.True(cacheRows.Count > 0, "Streamiz TableCache returned no rows for 1m live (POC)");
     }
 
@@ -250,3 +254,4 @@ public class TumblingCtasCachePocTests
         return false;
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ksql.Linq.Query.Analysis;
@@ -9,4 +9,5 @@ using Ksql.Linq.Query.Hub.Analysis;
 using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Tests.Utils;
 using Xunit;
+
 

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq;
+using Ksql.Linq;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Modeling;
@@ -161,4 +161,5 @@ public class ForEachAsyncStreamingTests
         Assert.True(cts.IsCancellationRequested);
     }
 }
+
 

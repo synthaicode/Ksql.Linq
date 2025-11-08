@@ -1,4 +1,4 @@
-﻿namespace DailyComparisonLib.Models;
+namespace DailyComparisonLib.Models;
 
 public class MarketSchedule
 {

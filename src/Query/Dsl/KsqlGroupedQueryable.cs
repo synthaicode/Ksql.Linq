@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using Ksql.Linq.Query.Builders.Visitors;
@@ -56,3 +56,4 @@ public class KsqlGroupedQueryable<T, TKey> : IKsqlQueryable
 
     public KsqlQueryModel Build() => _model;
 }
+

@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ksql.Linq.Runtime.Fill;
@@ -11,3 +11,4 @@ public interface IStartupFillService
 {
     Task RunAsync(KsqlContext context, CancellationToken ct);
 }
+

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;

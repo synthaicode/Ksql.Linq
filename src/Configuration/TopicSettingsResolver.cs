@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Configuration.Messaging;
 
@@ -6,7 +6,7 @@ namespace Ksql.Linq.Configuration;
 
 /// <summary>
 /// Resolves per-topic settings (partitions, replicas, retention) from KsqlDslOptions.Topics
-/// and applies cascade rules (e.g., &lt;base&gt;_&lt;tf&gt; 竊・&lt;base&gt;_&lt;tf&gt;_live).
+/// and applies cascade rules (e.g., &lt;base&gt;_&lt;tf&gt; → &lt;base&gt;_&lt;tf&gt;_live).
 /// </summary>
 internal static class TopicSettingsResolver
 {
@@ -51,3 +51,4 @@ internal static class TopicSettingsResolver
         if (model.ReplicationFactor <= 0) model.ReplicationFactor = 1;
     }
 }
+

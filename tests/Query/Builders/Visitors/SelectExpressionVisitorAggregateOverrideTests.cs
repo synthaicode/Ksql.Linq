@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using Ksql.Linq.Query.Analysis;
@@ -68,4 +68,5 @@ public class SelectExpressionVisitorAggregateOverrideTests
         Assert.DoesNotContain("LATEST_BY_OFFSET", sql, StringComparison.OrdinalIgnoreCase);
     }
 }
+
 

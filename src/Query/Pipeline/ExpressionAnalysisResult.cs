@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -70,3 +70,4 @@ internal class ExpressionAnalysisResult
         return md;
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Ksql.Linq.Incidents;
@@ -14,3 +14,4 @@ public sealed class Incident
     public int? ObservedCount { get; init; }
     public string? Notes { get; init; }
 }
+

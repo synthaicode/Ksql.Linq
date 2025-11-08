@@ -1,4 +1,4 @@
-﻿using Confluent.SchemaRegistry;
+using Confluent.SchemaRegistry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;

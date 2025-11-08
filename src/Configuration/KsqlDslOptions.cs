@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration.Messaging;
+using Ksql.Linq.Configuration.Messaging;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Configuration;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Collections.Generic;
@@ -49,3 +49,4 @@ public class OrderByExpressionVisitorTests
         Assert.Throws<InvalidOperationException>(() => visitor.Visit(query.Expression));
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using Ksql.Linq.Query.Builders.Clauses;
 using System;
@@ -23,5 +23,6 @@ public class SelectExpressionVisitorKeyDuplicateTests
         Assert.Equal("ID AS ID", result);
     }
 }
+
 
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Builders;
@@ -74,5 +74,6 @@ public class HubComputedDateExclusionTests
         Assert.False(qs.TryGetProjection("Dow", out _));
     }
 }
+
 
 

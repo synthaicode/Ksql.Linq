@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ksql.Linq.Runtime;
 
@@ -35,3 +35,4 @@ public static class Periods
         };
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Configuration.Messaging;
 using Ksql.Linq.Core.Abstractions;
 using Xunit;
@@ -108,3 +108,4 @@ public class TopicSettingsResolverTests
         Assert.True(model.AdditionalSettings.TryGetValue("retentionMs", out var v) && (v as string) == "120000");
     }
 }
+

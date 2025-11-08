@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Attributes;
+using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
@@ -20,7 +20,7 @@ public class CtasSinkPartitionsReplicasTests
 
     private static KsqlQueryModel BuildModel()
     {
-        // Minimal model: FROM + WINDOW only・・ELECT *・峨〒WITH蜿･縺ｮ讒区・繧呈､懆ｨｼ縺吶ｋ
+        // Minimal model: FROM + WINDOW only（SELECT *）でWITH句の構成を検証する
         var m = new KsqlQueryModel { SourceTypes = new[] { typeof(Rate) } };
         m.Windows.Add("1m");
         return m;
@@ -46,4 +46,5 @@ public class CtasSinkPartitionsReplicasTests
         Assert.Contains("REPLICAS=1", upper);
     }
 }
+
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -31,3 +31,4 @@ internal static class HubInputIntrospector
         return _columnsByTopic.TryGetValue(topic, out var set) ? set : null;
     }
 }
+

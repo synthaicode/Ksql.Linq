@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Cache.Extensions;
+using Ksql.Linq.Cache.Extensions;
 using Ksql.Linq.Core.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -44,3 +44,4 @@ internal class ReadCachedEntitySet<T> : EventSet<T> where T : class
         return _baseSet.AddAsync(entity, headers, cancellationToken);
     }
 }
+

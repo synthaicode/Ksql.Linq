@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using Ksql.Linq.Query.Analysis;
@@ -19,7 +19,7 @@ namespace Ksql.Linq.Tests.Query.Integration;
 /// - Assertions use structural parsing and alias-based lookups (QueryStructure) to resist
 ///   harmless refactors (spacing, minor reordering).
 /// - If you change builder conventions (aliases, aggregate rewrite policy), update this
-///   test alongside the adapter/analyzer to keep the metadata竊粘QL contract aligned.
+///   test alongside the adapter/analyzer to keep the metadata↔SQL contract aligned.
 public class HubEndToEndTests
 {
     private class Rate
@@ -103,7 +103,7 @@ public class HubEndToEndTests
             timeframe: "1m",
             inputOverride: "bar_1s_rows");
 
-        // 5) Metadata assertions (C# side) 窶・Resolved columns and aggregate kind
+        // 5) Metadata assertions (C# side) — Resolved columns and aggregate kind
         Assert.True(meta.IsHubInput);
         AssertAggregateResolved(meta, "Open", "OPEN");
         AssertAggregateResolved(meta, "High", "HIGH");
@@ -171,5 +171,6 @@ public class HubEndToEndTests
         Assert.Equal(expectedMethod, name);
     }
 }
+
 
 

@@ -1,4 +1,4 @@
-﻿using Avro;
+using Avro;
 using Confluent.SchemaRegistry;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;

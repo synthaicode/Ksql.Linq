@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ksql.Linq.Infrastructure.Kafka;
@@ -12,4 +12,5 @@ public interface ITopicAdmin
     Task EnsureCompactedTopicAsync(string topicName, CancellationToken ct = default);
     void ValidateKafkaConnectivity();
 }
+
 

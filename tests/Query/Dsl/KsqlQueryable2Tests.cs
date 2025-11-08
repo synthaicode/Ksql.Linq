@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
 using System;
@@ -92,6 +92,7 @@ public class KsqlQueryable2Tests
         Assert.Throws<InvalidOperationException>(() => KsqlCreateStatementBuilder.Build("JoinTest", model));
     }
 }
+
 
 
 

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Models;
 using System;
@@ -61,3 +61,4 @@ public class DecimalAttributeMappingTests
         Assert.Equal(4, meta.Scale);
     }
 }
+

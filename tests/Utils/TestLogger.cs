@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -49,3 +49,4 @@ file sealed class NullScope : IDisposable
     public static readonly NullScope Instance = new();
     public void Dispose() { }
 }
+

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using PhysicalTestEnv;
 using Ksql.Linq.Core.Attributes;
@@ -44,7 +44,7 @@ public class JoinIntegrationTests
 
     public class JoinContext : KsqlContext
     {
-        // EventSet 繝励Ο繝代ユ繧｣縺ｧ閾ｪ蜍慕匳骭ｲ縺輔○繧・
+        // EventSet プロパティで自動登録させる
         public EventSet<Customer> Customers { get; set; }
         public EventSet<OrderValue> OrderValues { get; set; }
 
@@ -53,11 +53,11 @@ public class JoinIntegrationTests
         public JoinContext(KsqlDslOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory) { }
         protected override void OnModelCreating(IModelBuilder modelBuilder)
         {
-            // 繧ｽ繝ｼ繧ｹ
+            // ソース
             modelBuilder.Entity<OrderValue>();
             modelBuilder.Entity<Customer>();
 
-            // JOIN螳夂ｾｩ繧・QueryModel 縺ｨ縺励※逋ｻ骭ｲ
+            // JOIN定義を QueryModel として登録
             var qm = new KsqlQueryRoot()
                 .From<OrderValue>()
                 .Join<Customer>((o, c) => o.CustomerId == c.Id)
@@ -94,7 +94,7 @@ public class JoinIntegrationTests
         {
         }
 
-        // ksqlDB 縺悟・襍ｷ蜍慕峩蠕後〒繧ょｮ牙ｮ壹☆繧九∪縺ｧ蠕・ｩ滂ｼ・info逶ｸ蠖・+ 迪ｶ莠茨ｼ・
+        // ksqlDB が再起動直後でも安定するまで待機（/info相当 + 猶予）
         await PhysicalTestEnv.KsqlHelpers.WaitForKsqlReadyAsync(EnvJoinIntegrationTests.KsqlDbUrl, TimeSpan.FromSeconds(180), graceMs: 2000);
 
         var options = new KsqlDslOptions
@@ -120,7 +120,7 @@ public class JoinIntegrationTests
             "ORDERS_CUSTOMERS_JOIN",
             diagLogger);
 
-        // JOIN 縺ｮ險育判縺檎函謌舌〒縺阪ｋ縺薙→繧堤｢ｺ隱搾ｼ医た繝ｼ繧ｹ縺ｨJOIN縺ｯ OnModelCreating 縺ｧ險ｭ螳壽ｸ医∩・・
+        // JOIN の計画が生成できることを確認（ソースとJOINは OnModelCreating で設定済み）
         var ksql = "SELECT CustomerId, Name, Amount FROM ORDERS_JOIN JOIN CUSTOMERS_JOIN ON (CustomerId = Id);";
         var response = await ctx.ExecuteExplainAsync(ksql);
         Assert.True(response.IsSuccess, $"{ksql} failed: {response.Message}");
@@ -172,6 +172,7 @@ public class EnvJoinIntegrationTests
         protected override void OnModelCreating(IModelBuilder modelBuilder) { }
     }
 }
+
 
 
 

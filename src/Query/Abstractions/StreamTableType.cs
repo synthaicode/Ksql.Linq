@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Query.Abstractions;
+namespace Ksql.Linq.Query.Abstractions;
 
 public enum StreamTableType
 {

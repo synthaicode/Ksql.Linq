@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Ksql.Linq.Query.Builders.Common;
 
@@ -28,7 +28,7 @@ internal static class WindowValidator
                 throw new InvalidOperationException($"Window {w} must be a multiple of base {baseUnit}s.");
 
             if (seconds >= 60 && seconds % 60 != 0)
-                throw new InvalidOperationException("Windows 竕･ 1 minute must be whole-minute multiples.");
+                throw new InvalidOperationException("Windows ≥ 1 minute must be whole-minute multiples.");
         }
 
         var grace = result.GraceSeconds ?? 0;

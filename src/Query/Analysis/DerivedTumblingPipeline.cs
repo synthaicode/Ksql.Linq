@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Adapters;
 using Ksql.Linq.Query.Builders;
@@ -192,7 +192,7 @@ internal static class DerivedTumblingPipeline
                             });
                     }
                     var valMeta = vals3.ToArray();
-                    // CTAS繧呈ｧ区・縺吶ｋ繝上ヶ(rows)縺ｯSR譌｢蟄倥せ繧ｭ繝ｼ繝槭↓蜷医ｏ縺帙ｄ縺吶＞GenericRecord繧堤畑縺・ｋ
+                    // CTASを構成するハブ(rows)はSR既存スキーマに合わせやすいGenericRecordを用いる
                     bool isRows = role == Role.Final1sStream;
                     bool isTimeframeTableValueGeneric = role == Role.Live;
                     // Use GenericRecord for keys across timeframe entities.
@@ -334,5 +334,6 @@ internal static class DerivedTumblingPipeline
     
 
 }
+
 
 

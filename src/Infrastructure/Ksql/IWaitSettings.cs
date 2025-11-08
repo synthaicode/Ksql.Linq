@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 
@@ -34,3 +34,4 @@ internal sealed class EnvWaitSettings : IWaitSettings
         }
     }
 }
+

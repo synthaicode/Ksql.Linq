@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Linq.Expressions;
@@ -34,3 +34,4 @@ public class OrderByComplexityVisitorTests
         Assert.False(visitor.HasComplexExpressions);
     }
 }
+

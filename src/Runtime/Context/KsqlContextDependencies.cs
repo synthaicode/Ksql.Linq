@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Infrastructure.Kafka;
+using Ksql.Linq.Infrastructure.Kafka;
 using Ksql.Linq.Infrastructure.Ksql;
 using Ksql.Linq.Infrastructure.Messaging;
 using Ksql.Linq.Runtime.Cache;

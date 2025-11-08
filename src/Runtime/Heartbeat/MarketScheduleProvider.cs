@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Models;
+using Ksql.Linq.Core.Models;
 using Ksql.Linq.Mapping;
 using System;
 using System.Collections;
@@ -126,3 +126,4 @@ internal sealed class MarketScheduleProvider : IMarketScheduleProvider
             list.Sort((a, b) => a.OpenUtc.CompareTo(b.OpenUtc));
     }
 }
+

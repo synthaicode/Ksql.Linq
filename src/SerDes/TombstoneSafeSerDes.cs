@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using Confluent.Kafka;
 using Ksql.Linq.SerDes;

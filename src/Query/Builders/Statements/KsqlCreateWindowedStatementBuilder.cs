@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Dsl;
+using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Hub.Adapters;
 using Ksql.Linq.Query.Hub.Analysis;
 using System;
@@ -47,7 +47,8 @@ internal static class KsqlCreateWindowedStatementBuilder
         var window = FormatWindow(timeframe);
         // Optional GRACE insertion using simple heuristic: if model has AdditionalSettings[graceSeconds] on adapted entity, caller should pre-embed.
         var sql = InjectWindowAfterFrom(baseSql, window);
-        // 豕ｨ蜈･繧ｪ繝・ WINDOWSTART 蛻励・蛟､蛛ｴ縺ｫ霑ｽ蜉縺励↑縺・ｼ・indow髢句ｧ区凾蛻ｻ縺ｯ windowed key 縺九ｉ蠕ｩ蜈・☆繧具ｼ・        return sql;
+        // 注入オフ: WINDOWSTART 列は値側に追加しない（Window開始時刻は windowed key から復元する）
+        return sql;
     }
 
     public static Dictionary<string, string> BuildAll(string namePrefix, KsqlQueryModel model, Func<string, string> nameFormatter)

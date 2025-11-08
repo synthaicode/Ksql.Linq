@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -24,3 +24,4 @@ internal class TestKafkaStreams
     public Task WaitUntilRunningAsync(string storeName, TimeSpan? timeout = null) => Task.CompletedTask;
     public TStore Store<TStore>(string storeName) => (TStore)_store;
 }
+

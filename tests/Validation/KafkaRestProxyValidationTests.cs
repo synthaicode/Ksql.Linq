@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Microsoft.Extensions.Configuration;

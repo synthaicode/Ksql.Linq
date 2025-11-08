@@ -1,4 +1,4 @@
-﻿using Avro;
+using Avro;
 using Avro.Generic;
 using Confluent.Kafka;
 using Confluent.Kafka.SyncOverAsync;
@@ -263,9 +263,9 @@ internal class KafkaProducerManager : IDisposable
         }
         catch { }
 
-        // 縺吶∋縺ｦ縺ｮProduce縺ｧ縲ヾR譛譁ｰ縺ｮ繧ｹ繧ｭ繝ｼ繝槭↓霑ｽ髫擾ｼ・achedSchemaRegistryClient縺後・繝ｭ繧ｻ繧ｹ蜀・く繝｣繝・す繝･・・
-        // GenericRecord 縺ｮ蝣ｴ蜷医・縺ｿ蜿肴丐縲４pecificRecord 縺ｯ蝙句崋螳壹・縺溘ａ蜿ら・縺ｮ縺ｿ縲・
-        // SR URL 譛ｪ險ｭ螳壽凾縺ｯ繝阪ャ繝医Ρ繝ｼ繧ｯ繧｢繧ｯ繧ｻ繧ｹ繧定｡後ｏ縺ｪ縺・
+        // すべてのProduceで、SR最新のスキーマに追随（CachedSchemaRegistryClientがプロセス内キャッシュ）
+        // GenericRecord の場合のみ反映。SpecificRecord は型固定のため参照のみ。
+        // SR URL 未設定時はネットワークアクセスを行わない
         var aligned = false;
         if (!_schemaRegistryDisabled)
         {
@@ -286,7 +286,7 @@ internal class KafkaProducerManager : IDisposable
         }
         catch { }
 
-        // Safety: mapping縺ｫ繧ｭ繝ｼ縺後≠繧九・縺ｫ蛟､蟆ら畑Producer縺ｪ繧峨∝叉譎ゅ↓繧ｭ繝ｼ縺ゅｊProducer縺ｸ蛻・崛
+        // Safety: mappingにキーがあるのに値専用Producerなら、即時にキーありProducerへ切替
         if (producer.IsValueOnly && (mapping.KeyProperties?.Length ?? 0) > 0 && mapping.AvroKeyType != null)
         {
             try { producer.Dispose(); } catch { }
@@ -476,7 +476,7 @@ internal class KafkaProducerManager : IDisposable
 
     private bool IsSchemaMismatch(Exception ex)
     {
-        // 蛻､螳・ SchemaRegistryException 繧貞・蛹・＠縲∝錐蜑堺ｸ堺ｸ閾ｴ/髱樔ｺ呈鋤/譛ｪ遏･繧ｹ繧ｭ繝ｼ繝槭ｒ遉ｺ蜚・☆繧九Γ繝・そ繝ｼ繧ｸ
+        // 判定: SchemaRegistryException を内包し、名前不一致/非互換/未知スキーマを示唆するメッセージ
         var msg = ex.ToString();
         return msg.IndexOf("NAME_MISMATCH", StringComparison.OrdinalIgnoreCase) >= 0
             || msg.IndexOf("incompatible", StringComparison.OrdinalIgnoreCase) >= 0
@@ -490,7 +490,7 @@ internal class KafkaProducerManager : IDisposable
     {
         bool aligned = false;
 
-        // Key subject: 蟶ｸ縺ｫ SR 繧貞盾辣ｧ・・enericRecord 縺ｪ繧・mapping 縺ｫ蜿肴丐縲ヾpecific 縺ｯ繧ｦ繧ｩ繝ｼ繝繧｢繝・・縺ｮ縺ｿ・・
+        // Key subject: 常に SR を参照（GenericRecord なら mapping に反映、Specific はウォームアップのみ）
         try
         {
             var latestKey = _schemaRegistryClient.GetLatestSchemaAsync($"{topic}-key").GetAwaiter().GetResult();
@@ -508,16 +508,16 @@ internal class KafkaProducerManager : IDisposable
                 }
                 else
                 {
-                    // SpecificRecord: 蜿肴丐荳崎ｦ・ｼ亥梛縺ｫ蜀・桁・峨４R 繧ｭ繝｣繝・す繝･縺ｮ縺ｿ繧ｦ繧ｩ繝ｼ繝繧｢繝・・縲・
+                    // SpecificRecord: 反映不要（型に内包）。SR キャッシュのみウォームアップ。
                 }
             }
         }
         catch (ConfluentSchemaRegistry.SchemaRegistryException)
         {
-            // key subject 荳榊惠縺ｧ繧ょ・逅・ｶ咏ｶ夲ｼ亥､蛛ｴ縺縺大ｭ伜惠縺吶ｋ蝣ｴ蜷医↓蛯吶∴繧具ｼ・
+            // key subject 不在でも処理継続（値側だけ存在する場合に備える）
         }
 
-        // Value subject: 蟶ｸ縺ｫ SR 繧貞盾辣ｧ・・enericRecord 縺ｪ繧・mapping 縺ｫ蜿肴丐縲ヾpecific 縺ｯ繧ｦ繧ｩ繝ｼ繝繧｢繝・・縺ｮ縺ｿ・・
+        // Value subject: 常に SR を参照（GenericRecord なら mapping に反映、Specific はウォームアップのみ）
         try
         {
             var latestVal = _schemaRegistryClient.GetLatestSchemaAsync($"{topic}-value").GetAwaiter().GetResult();
@@ -535,13 +535,13 @@ internal class KafkaProducerManager : IDisposable
                 }
                 else
                 {
-                    // SpecificRecord: 蜿肴丐荳崎ｦ√４R 繧ｭ繝｣繝・す繝･縺ｮ縺ｿ繧ｦ繧ｩ繝ｼ繝繧｢繝・・縲・
+                    // SpecificRecord: 反映不要。SR キャッシュのみウォームアップ。
                 }
             }
         }
         catch (ConfluentSchemaRegistry.SchemaRegistryException)
         {
-            // value subject 荳榊惠: 縺昴・縺ｾ縺ｾ霑斐☆
+            // value subject 不在: そのまま返す
         }
 
         return aligned;
@@ -553,7 +553,7 @@ internal class KafkaProducerManager : IDisposable
         var producer = await GetProducerAsync<TPOCO>();
         var mapping = _mappingRegistry.GetMapping(typeof(TPOCO));
 
-        // 蜑企勁繝｡繝・そ繝ｼ繧ｸ縺ｧ繧４R譛譁ｰ縺ｫ霑ｽ髫擾ｼ・enericRecord繧ｭ繝ｼ蜷代￠・峨４R URL 譛ｪ險ｭ螳壽凾縺ｯ繧ｹ繧ｭ繝・・
+        // 削除メッセージでもSR最新に追随（GenericRecordキー向け）。SR URL 未設定時はスキップ
         if (!_schemaRegistryDisabled)
         {
             TryAlignSchemasWithSchemaRegistry(producer.TopicName, mapping);
@@ -612,3 +612,4 @@ internal class KafkaProducerManager : IDisposable
         return headers;
     }
 }
+

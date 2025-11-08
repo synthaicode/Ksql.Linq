@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Attributes;
+using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Pipeline;
 using System;
 using Xunit;
@@ -27,3 +27,4 @@ public class ExpressionAnalysisResultMonthTests
         Assert.Equal("bar_1s_rows", md.GetProperty<string>("input/1moLive"));
     }
 }
+

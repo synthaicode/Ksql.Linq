@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -109,7 +109,8 @@ public class BarTranslationsSmokeTests
         var liveName = $"{baseUpper}_1M_LIVE";
         await WaitForLiveObjectsAsync("http://127.0.0.1:18088", new[] { liveName }, TimeSpan.FromSeconds(180));
         await WaitForQueriesRunningAsync("http://127.0.0.1:18088", liveName, TimeSpan.FromSeconds(180));
-        // Note: 1s_rows 縺ｮ蛻晏屓陦後・蜈･蜉帙′螻翫＞縺ｦ縺九ｉ逕滓・縺輔ｌ繧九◆繧√∝・縺ｫ謚募・縺励※縺九ｉ蛻ｰ驕皮｢ｺ隱阪ｒ陦後≧縲・
+        // Note: 1s_rows の初回行は入力が届いてから生成されるため、先に投入してから到達確認を行う。
+
         var t0 = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var broker = "brk"; var symbol = "sym";
 
@@ -117,10 +118,12 @@ public class BarTranslationsSmokeTests
         await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(5),  Bid = 1.20 });
         await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(25), Bid = 1.28 });
 
-        // 1) 1s_rows 縺ｮ蟇ｾ雎｡繧ｭ繝ｼ蛻ｰ驕斐ｒ遒ｺ隱搾ｼ育匱陦檎ｵ瑚ｷｯ縺ｮ蛛･蜈ｨ諤ｧ繧貞・縺ｫ諡・ｿ晢ｼ・        await WaitForOneSecondRowsKeyAsync(ctx, baseUpper, broker, symbol, TimeSpan.FromSeconds(60));
+        // 1) 1s_rows の対象キー到達を確認（発行経路の健全性を先に担保）
+        await WaitForOneSecondRowsKeyAsync(ctx, baseUpper, broker, symbol, TimeSpan.FromSeconds(60));
 
-        // 2) 繧ｦ繧｣繝ｳ繝峨え遒ｺ螳壹ｒ菫・☆縺溘ａ縲∝酔荳繧ｭ繝ｼ縺ｧ繧ｦ繧｣繝ｳ繝峨え邨ゆｺ・GRACE雜・℃縺ｮ繝繝溘・繧・莉ｶ霑ｽ蜉
-        //    GRACE(1s) 縺ｮ縺溘ａ縲》0+65s 縺ｫ1莉ｶ蜈･繧後ｋ縺ｨ繝・・繝悶Ν蜿ｯ隕門喧縺御ｿ・ｲ縺輔ｌ繧句ｮ溯｣・迺ｰ蠅・′縺ゅｊ縺ｾ縺吶・        await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(65), Bid = 1.22 });
+        // 2) ウィンドウ確定を促すため、同一キーでウィンドウ終了+GRACE超過のダミーを1件追加
+        //    GRACE(1s) のため、t0+65s に1件入れるとテーブル可視化が促進される実装/環境があります。
+        await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(65), Bid = 1.22 });
 
         // Wait before pull-reading: even after queries are RUNNING and rows are being produced,
         // ksqlDB persistent CTAS (BAR_1M_LIVE) can take a brief moment to materialize the first row
@@ -160,7 +163,8 @@ public class BarTranslationsSmokeTests
         Assert.Equal(1.20, row.Low);
         Assert.Equal(1.28, row.Close);
 
-        // Live 縺ｯ險育ｮ怜・繧貞性繧√↑縺・婿驥昴・縺溘ａ縲∬ｨ育ｮ怜・縺ｮ讀懆ｨｼ縺ｯ逵∫払・・ows 蛛ｴ縺ｧ讀懆ｨｼ・・
+        // Live は計算列を含めない方針のため、計算列の検証は省略（Rows 側で検証）
+
         await KsqlHelpers.TerminateAndDropBarArtifactsAsync("http://127.0.0.1:18088");
     }
 
@@ -253,7 +257,8 @@ public class BarTranslationsSmokeTests
         }
     }
 
-    // 謖・ｮ壹く繝ｼ(Broker,Symbol)縺ｮ1s_rows蛻ｰ驕斐ｒ遒ｺ隱阪☆繧具ｼ域怙螟ｧtimeout・・    private static async Task WaitForOneSecondRowsKeyAsync(TestContext ctx, string baseTopicUpper, string broker, string symbol, TimeSpan timeout)
+    // 指定キー(Broker,Symbol)の1s_rows到達を確認する（最大timeout）
+    private static async Task WaitForOneSecondRowsKeyAsync(TestContext ctx, string baseTopicUpper, string broker, string symbol, TimeSpan timeout)
     {
         var until = DateTime.UtcNow + timeout;
         var table = $"{baseTopicUpper}_1S_ROWS";
@@ -295,3 +300,4 @@ public class BarTranslationsSmokeTests
         }
     }
 }
+

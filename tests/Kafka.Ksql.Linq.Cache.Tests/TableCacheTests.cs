@@ -1,4 +1,4 @@
-﻿using Avro;
+using Avro;
 using Avro.Generic;
 using Ksql.Linq.Cache.Core;
 using System;
@@ -14,14 +14,14 @@ public class TableCacheTests
 
     private static TableCache<Dummy> MakeCache(IEnumerable<(string key, int val)> items)
     {
-        // wait: 逶ｴ縺｡縺ｫRUNNING謇ｱ縺・
+        // wait: 直ちにRUNNING扱い
         Task Wait(TimeSpan? _) => Task.CompletedTask;
 
-        // 蛻玲嫌: object繝壹い縺ｫ螟画鋤
+        // 列挙: objectペアに変換
         var lazy = new Lazy<Func<IEnumerable<KeyValuePair<object, object>>>>(() =>
             () => items.Select(x => new KeyValuePair<object, object>(x.key, x.val)));
 
-        // keyStringify: 譁・ｭ怜・繧ｭ繝ｼ蜑肴署
+        // keyStringify: 文字列キー前提
         string KeyFmt(object k) => (string)k;
 
         // combiner: string key + int value -> Dummy

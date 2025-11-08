@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Query.Dsl;
+namespace Ksql.Linq.Query.Dsl;
 
 public interface IKsqlQueryable
 {

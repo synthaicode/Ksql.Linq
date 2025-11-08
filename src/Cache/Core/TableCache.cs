@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Mapping;
+using Ksql.Linq.Mapping;
 using Ksql.Linq.Events;
 using System;
 using System.Collections.Generic;
@@ -78,7 +78,8 @@ internal class TableCache<T> : ITableCache<T> where T : class
                     else
                         item = (T)mapping!.CombineFromStringKeyAndAvroValue(keyStr, val, typeof(T));
 
-                    // 霑ｽ蜉: 譁・ｭ怜・繧ｭ繝ｼ譛ｫ蟆ｾ縺ｮ window start(ms) 縺九ｉ DTO 繧貞━蜈郁｣懷ｮ・                    try
+                    // 追加: 文字列キー末尾の window start(ms) から DTO を優先補完
+                    try
                     {
                         var kpLen = mapping?.KeyProperties?.Length ?? 0;
                         if (!string.IsNullOrEmpty(keyStr))
@@ -124,7 +125,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
 
                     try
                     {
-                        // 陬懈ｭ｣1: WINDOWED TABLE縺ｧ繧ｭ繝ｼ縺ｫBucketStart縺悟性縺ｾ繧後★縲∝､蛛ｴ縺ｫBUCKETSTART縺後≠繧句ｴ蜷医↓蜿肴丐
+                        // 補正1: WINDOWED TABLEでキーにBucketStartが含まれず、値側にBUCKETSTARTがある場合に反映
                         var pBucket = typeof(T).GetProperty("BucketStart");
                         DateTime? bucketStartUtc = null;
                         if (pBucket != null && pBucket.PropertyType == typeof(DateTime))
@@ -158,7 +159,8 @@ internal class TableCache<T> : ITableCache<T> where T : class
                             }
                         }
 
-                        // 陬懈ｭ｣2: WindowStartRaw 縺梧悴險ｭ螳壹↑繧・GenericRecord 縺ｾ縺溘・ BucketStart 縺九ｉ陬懷ｮ・                        try
+                        // 補正2: WindowStartRaw が未設定なら GenericRecord または BucketStart から補完
+                        try
                         {
                             var pWindowRaw = typeof(T).GetProperty(
                                 "WindowStartRaw",
@@ -190,7 +192,8 @@ internal class TableCache<T> : ITableCache<T> where T : class
                         }
                         catch { }
 
-                        // 陬懈ｭ｣3: Year 縺ｯ ksql 縺ｧ繧ｵ繝昴・繝医＆繧後↑縺・こ繝ｼ繧ｹ繧呈Φ螳壹＠ C# 蛛ｴ縺ｧ險ｭ螳・                        // 譚｡莉ｶ: POCO 縺ｫ Year(int) 縺悟ｭ伜惠縺励・ 縺ｾ縺溘・譛ｪ險ｭ螳壹√°縺､ BucketStart 縺悟愛譏弱＠縺ｦ縺・ｋ
+                        // 補正3: Year は ksql でサポートされないケースを想定し C# 側で設定
+                        // 条件: POCO に Year(int) が存在し、0 または未設定、かつ BucketStart が判明している
                         var pYear = typeof(T).GetProperty("Year");
                         if (pYear != null && (pYear.PropertyType == typeof(int) || pYear.PropertyType == typeof(int?)))
                         {
@@ -208,7 +211,8 @@ internal class TableCache<T> : ITableCache<T> where T : class
                     }
                     catch { }
 
-                    // 陬・: Live髮・ｨ亥・・・UMBID/MAXBID/MINBID/CNT/FIRSTBID/LASTBID 遲会ｼ峨′譛ｪ險ｭ螳壹・蝣ｴ蜷医；enericRecord縺九ｉ陬懷ｮ・                    try
+                    // 補4: Live集計列（SUMBID/MAXBID/MINBID/CNT/FIRSTBID/LASTBID 等）が未設定の場合、GenericRecordから補完
+                    try
                     {
                         if (val is Avro.Generic.GenericRecord grec)
                         {

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Core.Models;
@@ -200,4 +200,5 @@ internal sealed class KsqlQueryDdlMonitor
     }
 
 }
+
 

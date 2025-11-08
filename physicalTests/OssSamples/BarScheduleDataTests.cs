@@ -1,4 +1,4 @@
-﻿using Ksql.Linq;
+using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
@@ -11,7 +11,7 @@ using Xunit;
 namespace Ksql.Linq.Tests.Integration;
 
 /// <summary>
-/// OnModelCreating 繝吶・繧ｹ縺ｧ縲∵律谺｡繝ｩ繧､繝悶→騾ｱ谺｡繝輔ぃ繧､繝翫Ν縺ｮ繝｢繝・Ν竊偵け繧ｨ繝ｪ竊偵・繝・Μ繧｢繝ｩ繧､繧ｺ竊呈､懆ｨｼ縲・
+/// OnModelCreating ベースで、日次ライブと週次ファイナルのモデル→クエリ→マテリアライズ→検証。
 /// </summary>
 public class BarScheduleDataTests
 {
@@ -106,7 +106,7 @@ public class BarScheduleDataTests
                         High = g.Max(x => x.Bid),
                         Low = g.Min(x => x.Bid),
                         KsqlTimeFrameClose = g.LatestByOffset(x => x.Bid)
-                    })); // Final邉ｻ縺ｮ蜈ｷ菴鍋噪繝｢繝ｼ繝峨・繝薙Ν繝繝ｼ蛛ｴ縺ｧ謇ｱ縺・
+                    })); // Final系の具体的モードはビルダー側で扱う
         }
     }
 
@@ -136,5 +136,6 @@ public class BarScheduleDataTests
         Assert.Contains("MIN(Bid) AS Low", weeklySql);
     }
 }
+
 
 

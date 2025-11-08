@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -59,13 +59,13 @@ namespace Ksql.Linq.Runtime.Schema;
                 await _context.AlignDerivedMappingWithSchemaAdapterAsync(model).ConfigureAwait(false);
             }
 
-            // Phase 3: DDL for query-defined entities・・egistrar 譛ｬ菴薙↓髮・ｴ・ｼ・
+            // Phase 3: DDL for query-defined entities（Registrar 本体に集約）
             await WarmupKsqlWithTopicsOrFail(TimeSpan.FromSeconds(10), ct).ConfigureAwait(false);
             var allQ = _context.GetEntityModels().ToArray();
             foreach (var (type, model) in allQ.Where(e => e.Value.QueryModel != null))
             {
                 ct.ThrowIfCancellationRequested();
-                // Derived (tumbling) 縺ｯ繧｢繝繝励ち縺ｧ荳逋ｺ螳牙ｮ壼喧縺ｾ縺ｧ螳溯｡鯉ｼ・譯茨ｼ・
+                // Derived (tumbling) はアダプタで一発安定化まで実行（A案）
                 if (model.QueryModel!.HasTumbling())
                 {
                     await _context.EnsureDerivedQueryEntityDdlAdapterAsync(type, model).ConfigureAwait(false);
@@ -75,7 +75,7 @@ namespace Ksql.Linq.Runtime.Schema;
                 var isTable = model.QueryModel.DetermineType() == StreamTableType.Table;
                 if (isTable)
                 {
-                    // TABLE邉ｻ: CTAS 繧堤函謌舌・螳溯｡後＠縲∝ｮ溯｡檎｢ｺ隱阪∪縺ｧ・域怙蟆丞ｮ牙ｮ壼喧・・
+                    // TABLE系: CTAS を生成・実行し、実行確認まで（最小安定化）
                     Func<Type, string> resolver = t =>
                     {
                         var key = t?.Name ?? string.Empty;
@@ -146,7 +146,7 @@ namespace Ksql.Linq.Runtime.Schema;
                 }
                 else
                 {
-                    // STREAM邉ｻ: DDL逕滓・竊貞ｮ溯｡鯉ｼ域諺蜈･縺ｯ KsqlInsertStatementBuilder 縺ｫ蟋碑ｭｲ・・
+                    // STREAM系: DDL生成→実行（挿入は KsqlInsertStatementBuilder に委譲）
                     var generator = new Ksql.Linq.Query.Pipeline.DDLQueryGenerator();
                     var ddl = generator.GenerateCreateStream(new EntityModelDdlAdapter(model));
                     _context.Logger?.LogInformation("KSQL DDL (query {Entity}): {Sql}", type.Name, ddl);
@@ -167,7 +167,7 @@ namespace Ksql.Linq.Runtime.Schema;
                     await ExecuteWithRetryAsync(insert, ct).ConfigureAwait(false);
                 }
             }
-            // tumbling 縺ｯ荳願ｨ倥Ν繝ｼ繝怜・縺ｧ A譯医・繧｢繝繝励ち邨檎罰縺ｧ螳御ｺ・ｸ医∩・亥､門・縺ｧ縺ｮ霑ｽ蜉蠕・ｩ溘・荳崎ｦ・ｼ・
+            // tumbling は上記ループ内で A案のアダプタ経由で完了済み（外側での追加待機は不要）
         }
         // Cache eligibility registration
         var tableTopics = await _context.GetTableTopicsAsyncAdapter().ConfigureAwait(false);
@@ -246,4 +246,5 @@ namespace Ksql.Linq.Runtime.Schema;
         throw new TimeoutException("ksqlDB warmup timed out (SHOW TOPICS did not succeed).");
     }
 }
+
 

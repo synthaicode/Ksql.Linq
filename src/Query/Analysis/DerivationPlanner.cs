@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -54,7 +54,7 @@ internal static class DerivationPlanner
         qao.GracePerTimeframe.Clear();
         foreach (var kv in graceMap)
             qao.GracePerTimeframe[kv.Key] = kv.Value;
-        // 1s hub 縺ｯ蟶ｸ縺ｫ菴懈・縺吶ｋ縲・B/Final/Fill/Prev 縺ｯ逕滓・縺励↑縺・ｰ｡邏譁ｹ驥昴・
+        // 1s hub は常に作成する。HB/Final/Fill/Prev は生成しない簡素方針。
         var hub = $"{baseId}_1s_rows";
         foreach (var tf in windows)
         {
@@ -62,7 +62,7 @@ internal static class DerivationPlanner
             var liveId = $"{baseId}_{tfStr}_live";
             if (tf.Unit == "s" && tf.Value == 1)
             {
-                // 1s hub 縺ｯ蟶ｸ縺ｫ菴懈・縺吶ｋ・・henEmpty 縺ｧ繧ゑｼ・
+                // 1s hub は常に作成する（WhenEmpty でも）
                 var final1sStream = new DerivedEntity
                 {
                     Id = hub,
@@ -87,7 +87,7 @@ internal static class DerivationPlanner
                 Timeframe = tf,
                 KeyShape = keyShapes,
                 ValueShape = valueShapes,
-                // Live 縺ｯ蟶ｸ縺ｫ hub(_1s_rows) 繧貞盾辣ｧ縺吶ｋ
+                // Live は常に hub(_1s_rows) を参照する
                 InputHint = hub,
                 TimeKey = qao.TimeKey,
                 BasedOnSpec = basedOn,
@@ -99,3 +99,4 @@ internal static class DerivationPlanner
         return entities;
     }
 }
+

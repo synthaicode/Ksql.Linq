@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ksql.Linq.Runtime.Dlq;
@@ -10,3 +10,4 @@ public interface IDlqService
 {
     Task InitializeAsync(CancellationToken ct = default);
 }
+

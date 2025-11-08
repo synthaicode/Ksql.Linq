@@ -1,4 +1,4 @@
-﻿using Avro;
+using Avro;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Microsoft.Extensions.Logging;
@@ -95,8 +95,8 @@ public static class Diagnostics
             if (string.IsNullOrWhiteSpace(objectName)) throw new ArgumentException("Object name required", nameof(objectName));
             using var http = new HttpClient { BaseAddress = new Uri(baseUrl.TrimEnd('/')) };
 
-            // ksqlDB 6.x 莉･髯阪・ DESCRIBE 縺ｮ逶ｴ蠕後↓ STREAM/TABLE 繧ｭ繝ｼ繝ｯ繝ｼ繝峨′蠢・医↓縺ｪ縺｣縺溘◆繧√・
-            // 縺薙％縺ｧ縺ｯ STREAM/TABLE 縺ｮ譛臥┌繧・立讒区枚繧帝・↓隧ｦ縺励※莠呈鋤諤ｧ繧呈球菫昴☆繧九・
+            // ksqlDB 6.x 以降は DESCRIBE の直後に STREAM/TABLE キーワードが必須になったため、
+            // ここでは STREAM/TABLE の有無や旧構文を順に試して互換性を担保する。
             var statements = new[]
             {
                 $"DESCRIBE {QuoteIdentifier(objectName)} EXTENDED;",

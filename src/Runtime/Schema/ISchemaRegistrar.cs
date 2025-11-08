@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 using Ksql.Linq.Core.Abstractions;
 
@@ -14,3 +14,4 @@ public interface ISchemaRegistrar
     /// </summary>
     Task RegisterAndMaterializeAsync(CancellationToken ct = default);
 }
+

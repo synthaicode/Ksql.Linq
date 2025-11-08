@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ksql.Linq.Runtime;
 
 namespace Ksql.Linq;

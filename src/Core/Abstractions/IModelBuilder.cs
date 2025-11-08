@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Modeling;
+using Ksql.Linq.Core.Modeling;
 
 namespace Ksql.Linq.Core.Abstractions;
 

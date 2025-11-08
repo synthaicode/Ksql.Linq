@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders.Functions;
+using Ksql.Linq.Query.Builders.Functions;
 using System;
 using System.Linq.Expressions;
 using Xunit;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Extensions.Configuration;
 
 namespace Ksql.Linq.Configuration;
@@ -82,4 +82,5 @@ public sealed class WindowConfiguration
         }
     }
 }
+
 

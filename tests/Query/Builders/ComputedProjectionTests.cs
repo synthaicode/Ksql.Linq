@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
@@ -62,4 +62,5 @@ public class ComputedProjectionTests
         Assert.Contains("MIN(", rangeExpr, StringComparison.OrdinalIgnoreCase);
     }
 }
+
 

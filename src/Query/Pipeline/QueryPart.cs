@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Query.Pipeline;
+namespace Ksql.Linq.Query.Pipeline;
 /// <summary>
 /// Query part information.
 /// Rationale: manage KSQL statement building blocks in the generator layer.

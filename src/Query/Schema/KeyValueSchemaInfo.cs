@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Models;
+using Ksql.Linq.Core.Models;
 using System;
 
 namespace Ksql.Linq.Query.Schema;

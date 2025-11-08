@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Ksql.Linq;
 using Ksql.Linq.Query.Dsl;
@@ -43,3 +43,4 @@ public class WindowStartDetectionGroupedTests
         Assert.Equal("BucketStart", model.BucketColumnName);
     }
 }
+

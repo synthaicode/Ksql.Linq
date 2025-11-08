@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Extensions;
@@ -468,7 +468,7 @@ public abstract partial class KsqlContext
                     }
                     var valMeta = vals.ToArray();
 
-                    // rows縺ｯGenericRecord縺ｧSR縺ｫ蜷医ｏ縺帙ｋ縲５ABLE繧・enericRecord縺ｧSR縺ｮ繧ｹ繧ｭ繝ｼ繝槭↓蜴ｳ蟇・ｿｽ蠕薙＆縺帙ｋ縲・
+                    // rowsはGenericRecordでSRに合わせる。TABLEもGenericRecordでSRのスキーマに厳密追従させる。
                     var isTable = model.StreamTableType == StreamTableType.Table;
                     _mappingRegistry.RegisterMeta(
                         model.EntityType,

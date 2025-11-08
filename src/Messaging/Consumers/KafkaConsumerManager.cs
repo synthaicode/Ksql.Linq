@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Confluent.Kafka.SyncOverAsync;
 using Confluent.SchemaRegistry.Serdes;
 using Avro.Generic;
@@ -451,6 +451,7 @@ internal class KafkaConsumerManager : IDisposable
         return dict;
     }
 }
+
 
 
 

@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Query.Dsl;
+namespace Ksql.Linq.Query.Dsl;
 
 /// <summary>
 /// Represents the order of DSL method calls for building a KSQL query.

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -20,7 +20,7 @@ internal class ModelValidationResult
 
         if (HasErrors)
         {
-            summary.Add($"笶・Model validation failed with {EntityErrors.Sum(x => x.Value.Count)} errors:");
+            summary.Add($"❌ Model validation failed with {EntityErrors.Sum(x => x.Value.Count)} errors:");
             foreach (var (entityType, errors) in EntityErrors)
             {
                 summary.Add($"  {entityType.Name}:");
@@ -33,7 +33,7 @@ internal class ModelValidationResult
 
         if (EntityWarnings.Any())
         {
-            summary.Add($"笞・・Model validation completed with {EntityWarnings.Sum(x => x.Value.Count)} warnings:");
+            summary.Add($"⚠️ Model validation completed with {EntityWarnings.Sum(x => x.Value.Count)} warnings:");
             foreach (var (entityType, warnings) in EntityWarnings)
             {
                 summary.Add($"  {entityType.Name}:");

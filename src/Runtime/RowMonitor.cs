@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Models;
 using Ksql.Linq.Mapping;
@@ -190,7 +190,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
         catch { _continuationEnabled = false; }
     }
 
-    // 繝・せ繝育畑: 譎ょ綾萓帷ｵｦ髢｢謨ｰ繧呈ｳｨ蜈･蜿ｯ閭ｽ縺ｪ繧ｪ繝ｼ繝舌・繝ｭ繝ｼ繝・
+    // テスト用: 時刻供給関数を注入可能なオーバーロード
     public RowMonitor(
         KsqlContext context,
         EntityModel sourceModel,
@@ -346,14 +346,14 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
                 manager.PartitionsRevoked -= OnRevoked;
             }
 
-            // Loop back to wait for next assignment (standby->active 縺ｪ縺ｩ)
+            // Loop back to wait for next assignment (standby->active など)
         }
     }
 
     private async Task WaitForTopicAssignmentAsync(string topic, CancellationToken token)
     {
         // Gate start until this instance gets an active assignment for the source topic.
-        // This uses KafkaConsumerManager's partition assignment events (HB縺ｪ縺玲ｧ区・蟇ｾ蠢・縲・
+        // This uses KafkaConsumerManager's partition assignment events (HBなし構成対応)。
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnAssigned(System.Collections.Generic.IReadOnlyList<Confluent.Kafka.TopicPartition> parts)
         {
@@ -1496,4 +1496,5 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
         }
     }
 }
+
 

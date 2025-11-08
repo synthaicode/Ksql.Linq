@@ -1,4 +1,4 @@
-﻿namespace DailyComparisonLib;
+namespace DailyComparisonLib;
 
 using DailyComparisonLib.Models;
 using System;

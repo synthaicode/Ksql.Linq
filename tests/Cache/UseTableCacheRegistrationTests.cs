@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using Ksql.Linq.Cache.Extensions;
 using Ksql.Linq.Core.Abstractions;

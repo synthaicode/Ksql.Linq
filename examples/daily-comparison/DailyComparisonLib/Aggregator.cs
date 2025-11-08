@@ -1,4 +1,4 @@
-﻿using DailyComparisonLib.Models;
+using DailyComparisonLib.Models;
 using Ksql.Linq;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Configuration;

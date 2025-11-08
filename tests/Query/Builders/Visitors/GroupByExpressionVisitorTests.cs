@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Collections.Generic;
@@ -227,3 +227,4 @@ public class GroupByExpressionVisitorTests
         Assert.Equal("Value + 1", result);
     }
 }
+

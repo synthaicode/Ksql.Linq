@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Messaging.Producers;
 using System.Runtime.CompilerServices;

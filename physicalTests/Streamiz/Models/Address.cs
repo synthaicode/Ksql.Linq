@@ -1,4 +1,4 @@
-﻿using Avro;
+using Avro;
 using Avro.Specific;
 
 namespace Ksql.Linq.Tests.Integration.Streamiz.Models;

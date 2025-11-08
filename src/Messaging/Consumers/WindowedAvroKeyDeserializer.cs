@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers.Binary;
 using System.Text;
 using Avro.Generic;
@@ -11,8 +11,8 @@ namespace Ksql.Linq.Messaging.Consumers;
 
 /// <summary>
 /// Deserializes ksqlDB windowed table keys by stripping trailing window bytes before
-/// delegating to the standard Avro deserializer. When迺ｰ蠅・､画焚 KSQL_DEBUG_WINDOW_KEYS=1縲・
-/// raw bytes/蠅・阜繧偵Ο繧ｰ蜃ｺ蜉帙☆繧九・
+/// delegating to the standard Avro deserializer. When環境変数 KSQL_DEBUG_WINDOW_KEYS=1、
+/// raw bytes/境界をログ出力する。
 /// </summary>
 internal sealed class WindowedAvroKeyDeserializer : IDeserializer<GenericRecord>
 {

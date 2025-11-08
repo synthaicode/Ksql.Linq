@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Application;
+using Ksql.Linq.Application;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 

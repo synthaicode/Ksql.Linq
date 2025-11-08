@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Models;
+using Ksql.Linq.Core.Models;
 using Ksql.Linq.Query.Schema;
 using System;
 using System.Collections.Generic;

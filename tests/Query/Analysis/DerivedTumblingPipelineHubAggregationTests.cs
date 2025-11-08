@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq;
 using Ksql.Linq.Mapping;
@@ -61,8 +61,8 @@ public class DerivedTumblingPipelineHubAggregationTests
         var ddl1m = ddls.First(s => s.Contains("bar_1m_live"));
         Assert.Contains("FROM bar_1s_rows", ddl1m, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("EMIT CHANGES", ddl1m, StringComparison.OrdinalIgnoreCase);
-        // 繝ｦ繝ｼ繧ｶ繝ｼ謚募ｽｱ萓晏ｭ倥・縺溘ａ縲∝・菴鍋噪縺ｪ蛻・髮・ｴ・↓縺ｯ萓晏ｭ倥＠縺ｪ縺・・
-        // 繝上ヶSTREAM繧貞・蜉帙→縺励※縺・ｋ縺薙→縺ｮ縺ｿ繧呈､懆ｨｼ縺吶ｋ縲・
+        // ユーザー投影依存のため、具体的な列/集約には依存しない。
+        // ハブSTREAMを入力としていることのみを検証する。
     }
 
     [Fact]
@@ -85,9 +85,10 @@ public class DerivedTumblingPipelineHubAggregationTests
         };
         var (ddls, _) = await RunAsync(qao);
         var ddl1m = ddls.First(s => s.Contains("bar_1m_live"));
-        // Grace 縺ｯ 1s 繝上ヶ蜑肴署縺ｧ蛟､繧偵◎縺ｮ縺ｾ縺ｾ謗｡逕ｨ縺吶ｋ・郁・蜍募刈邂励＠縺ｪ縺・ｼ峨・
-        // 譌｢螳壹・ 1 遘偵→縺吶ｋ縲・
+        // Grace は 1s ハブ前提で値をそのまま採用する（自動加算しない）。
+        // 既定は 1 秒とする。
         Assert.Contains("GRACE PERIOD 1 SECONDS", ddl1m, StringComparison.OrdinalIgnoreCase);
     }
 }
+
 

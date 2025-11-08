@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Schema;
+using Ksql.Linq.Query.Schema;
 using System;
 using System.Collections.Generic;
 using Xunit;

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
 using Xunit;
@@ -37,5 +37,6 @@ public class GoldenJoinWithinSqlTests
         GoldenSqlHelpers.AssertEqualsOrUpdate("tests/Query/Golden/join_within_explicit_300s.sql", sql);
     }
 }
+
 
 

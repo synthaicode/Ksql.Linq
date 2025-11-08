@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Extensions;
@@ -89,8 +89,8 @@ internal class ModelBuilder : IModelBuilder
 
         foreach (var (entityType, model) in _entityModels.OrderBy(x => x.Key.Name))
         {
-            var status = model.IsValid ? "笨・ : "笶・;
-            summary.Add($"{status} {entityType.Name} 竊・{model.GetTopicName()} ({model.StreamTableType}, Keys: {model.KeyProperties.Length})");
+            var status = model.IsValid ? "✅" : "❌";
+            summary.Add($"{status} {entityType.Name} → {model.GetTopicName()} ({model.StreamTableType}, Keys: {model.KeyProperties.Length})");
 
             if (model.ValidationResult != null && !model.ValidationResult.IsValid)
             {

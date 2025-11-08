@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ksql.Linq.Runtime;
 
@@ -54,3 +54,4 @@ public readonly struct Period : IEquatable<Period>
     public override bool Equals(object? obj) => obj is Period p && Equals(p);
     public override int GetHashCode() => HashCode.Combine(Value, (int)Unit, (int)Anchor);
 }
+

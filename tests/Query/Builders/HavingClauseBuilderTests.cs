@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
 using System;
 using System.Linq;
@@ -83,4 +83,5 @@ public class HavingClauseBuilderTests
         Assert.Equal("NOT (((COUNT(*) < 3) OR (SUM(Amount) > 10000)))", sql);
     }
 }
+
 

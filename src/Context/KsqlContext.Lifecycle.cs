@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Ksql.Linq.Cache.Core;
 using Ksql.Linq.Cache.Extensions;
 using Ksql.Linq.Configuration;
@@ -330,7 +330,7 @@ public abstract partial class KsqlContext : IKsqlContext
     protected virtual void OnModelCreating(IModelBuilder modelBuilder) { }
 
     /// <summary>
-    /// OnModelCreating 竊・execute automatic schema registration flow
+    /// OnModelCreating → execute automatic schema registration flow
     /// </summary>
     private ConfluentSchemaRegistry.ISchemaRegistryClient CreateSchemaRegistryClient()
     {
@@ -942,5 +942,6 @@ public abstract partial class KsqlContext : IKsqlContext
 
     
 }
+
 
 

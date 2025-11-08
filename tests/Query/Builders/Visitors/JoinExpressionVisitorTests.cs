@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Linq.Expressions;
@@ -30,3 +30,4 @@ public class JoinExpressionVisitorTests
         Assert.Throws<NotSupportedException>(() => InvokePrivate<string>(typeof(JoinExpressionVisitor), "GetOperator", new[] { typeof(ExpressionType) }, null, type));
     }
 }
+

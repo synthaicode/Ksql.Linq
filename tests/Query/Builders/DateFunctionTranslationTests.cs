@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
@@ -107,5 +107,6 @@ public class DateFunctionTranslationTests
         Assert.Contains("'yyyy-MM-dd''T''HH:mm:ssXXX'", tsStr, StringComparison.OrdinalIgnoreCase);
     }
 }
+
 
 

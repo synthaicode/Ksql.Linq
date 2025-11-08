@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Query.Abstractions;
+namespace Ksql.Linq.Query.Abstractions;
 /// <summary>
 /// Enumeration of builder kinds.
 /// </summary>

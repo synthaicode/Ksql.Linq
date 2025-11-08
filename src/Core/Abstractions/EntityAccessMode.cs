@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Core.Abstractions;
+namespace Ksql.Linq.Core.Abstractions;
 
 /// <summary>
 /// Specifies whether an entity is used for reads, writes, or both.
@@ -20,3 +20,4 @@ public enum EntityAccessMode
     /// </summary>
     WriteOnly
 }
+

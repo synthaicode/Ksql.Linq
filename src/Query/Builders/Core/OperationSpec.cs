@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Query.Builders.Core;
+namespace Ksql.Linq.Query.Builders.Core;
 
 internal readonly record struct OperationSpec(
     bool Window,

@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Configuration;
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Configuration;
 using System;
@@ -60,7 +60,7 @@ public class SchemaRegistryResetTests
     private static DateTime? _lastFailure;
     private static readonly object _sync = new();
 
-    // Reset 蠕後↓蜈ｨ繝・・繝悶Ν縺ｮ繧ｹ繧ｭ繝ｼ繝槭′逋ｻ骭ｲ縺輔ｌ縺ｦ縺・ｋ縺狗｢ｺ隱・
+    // Reset 後に全テーブルのスキーマが登録されているか確認
     [Fact]
     [Trait("Category", "Integration")]
     public async Task Setup_ShouldRegisterAllSchemas()
@@ -82,7 +82,7 @@ public class SchemaRegistryResetTests
         Assert.Contains("source-value", subjects);
     }
 
-    // 譌｢蟄倥せ繧ｭ繝ｼ繝槭ｒ蜀咲匳骭ｲ縺励※繧よ・蜉溘☆繧九°遒ｺ隱・
+    // 既存スキーマを再登録しても成功するか確認
     [Fact]
     [Trait("Category", "Integration")]
     public async Task DuplicateSchemaRegistration_ShouldSucceed()
@@ -124,7 +124,7 @@ public class SchemaRegistryResetTests
         }
     }
 
-    // 螟ｧ譁・ｭ励・繧ｵ繝悶ず繧ｧ繧ｯ繝亥錐縺悟ｭ伜惠縺励↑縺・％縺ｨ繧堤｢ｺ隱・
+    // 大文字のサブジェクト名が存在しないことを確認
     [Fact]
     [Trait("Category", "Integration")]
     public async Task UpperCaseSubjects_ShouldNotExist()

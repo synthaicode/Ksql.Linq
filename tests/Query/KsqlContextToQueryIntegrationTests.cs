@@ -1,4 +1,4 @@
-﻿using Confluent.SchemaRegistry;
+using Confluent.SchemaRegistry;
 using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
@@ -226,4 +226,5 @@ public class KsqlContextToQueryIntegrationTests
         Assert.Throws<InvalidOperationException>(() => new InvalidOrderContext(client));
     }
 }
+
 

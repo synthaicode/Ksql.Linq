@@ -1,4 +1,4 @@
-﻿using Ksql.Linq;
+using Ksql.Linq;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Query.Dsl;
@@ -91,6 +91,7 @@ public class ForEachAsyncErrorHandlingTests
         Assert.Equal(new[] { 1, 3 }, results);
     }
 }
+
 
 
 

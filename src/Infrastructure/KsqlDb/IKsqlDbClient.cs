@@ -1,4 +1,4 @@
-﻿namespace Ksql.Linq.Infrastructure.KsqlDb;
+namespace Ksql.Linq.Infrastructure.KsqlDb;
 
 using System; // for TimeSpan
 using System.Collections.Generic;
@@ -32,3 +32,4 @@ public interface IKsqlDbClient
     /// </summary>
     Task<int> ExecutePullQueryCountAsync(string sql, TimeSpan? timeout = null);
 }
+

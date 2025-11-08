@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Hub.Adapters;
@@ -53,4 +53,5 @@ public class DateComputedMetadataTests
         Assert.Equal("MO", mo.ResolvedColumnName);
     }
 }
+
 

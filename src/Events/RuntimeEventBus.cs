@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ksql.Linq.Events;
@@ -17,3 +17,4 @@ public static class RuntimeEventBus
     public static Task PublishAsync(RuntimeEvent evt, CancellationToken ct = default)
         => Sink is null ? Task.CompletedTask : Sink.PublishAsync(evt, ct);
 }
+

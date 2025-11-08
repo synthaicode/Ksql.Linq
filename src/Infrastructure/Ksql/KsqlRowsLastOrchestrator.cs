@@ -1,4 +1,4 @@
-﻿using Ksql.Linq.Query.Metadata;
+using Ksql.Linq.Query.Metadata;
 using Ksql.Linq.Query.Builders.Utilities;
 using Ksql.Linq.Query.Planning;
 using Ksql.Linq;
@@ -242,3 +242,4 @@ internal static class KsqlRowsLastOrchestrator
         return 5;
     }
 }
+
