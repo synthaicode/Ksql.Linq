@@ -1,0 +1,71 @@
+name: Build examples from GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      packageVersion:
+        description: "Ksql.Linq package version to consume (e.g., 0.9.0-preview.1 or 0.9.0-preview.1-ci.42). If omitted, floating 0.9.0-preview.* will resolve to latest."
+        required: false
+  schedule:
+    - cron: '0 3 * * *'  # daily at 03:00 UTC
+
+concurrency:
+  group: examples-build
+  cancel-in-progress: true
+
+jobs:
+  build-examples:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Create NuGet.config for GitHub Packages
+        run: |
+          cat > NuGet.config <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+              <add key="github" value="https://nuget.pkg.github.com/synthaicode/index.json" />
+            </packageSources>
+            <packageSourceCredentials>
+              <github>
+                <add key="Username" value="${GITHUB_ACTOR}" />
+                <add key="ClearTextPassword" value="${GITHUB_TOKEN}" />
+              </github>
+            </packageSourceCredentials>
+          </configuration>
+          XML
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Override version (optional)
+        if: inputs.packageVersion != ''
+        shell: pwsh
+        run: |
+          $ver='${{ inputs.packageVersion }}'
+          # Update central reference in examples/Directory.Build.props if present
+          $p = 'examples/Directory.Build.props'
+          if (Test-Path $p) {
+            $xml = Get-Content $p -Raw
+            $xml = $xml -replace '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)',("`$1" + $ver + "`$3")
+            Set-Content -Path $p -Value $xml -Encoding UTF8
+          }
+
+      - name: Restore & build examples
+        run: |
+          for proj in $(find examples -name '*.csproj'); do
+            echo "::group::Building $proj"
+            dotnet restore "$proj"
+            dotnet build "$proj" -c Release --nologo
+            echo "::endgroup::"
+          done

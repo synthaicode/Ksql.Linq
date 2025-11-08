@@ -1,0 +1,74 @@
+name: Publish preview package to GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionSuffix:
+        description: "Pre-release suffix (e.g., preview.1-ci.<run>)"
+        required: false
+  push:
+    branches:
+      - release/**
+
+jobs:
+  pack-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore src/Ksql.Linq.csproj
+
+      - name: Compute package version
+        id: ver
+        shell: pwsh
+        run: |
+          $xml = Get-Content src/Ksql.Linq.csproj -Raw
+          $base = ([regex]::Match($xml, '<Version>([^<]+)</Version>')).Groups[1].Value
+          $suffix = '${{ inputs.versionSuffix }}'
+          if ([string]::IsNullOrWhiteSpace($suffix)) {
+            # default CI suffix
+            $suffix = "ci.${{ github.run_number }}"
+          }
+          if ($base -match '-') { $pkg = "$base.$suffix" } else { $pkg = "$base-$suffix" }
+          echo "base=$base" >> $env:GITHUB_OUTPUT
+          echo "pkg=$pkg"   >> $env:GITHUB_OUTPUT
+
+      - name: Pack (PackageVersion override)
+        run: |
+          dotnet pack src/Ksql.Linq.csproj -c Release -o ./.artifacts/nuget \
+            -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg \
+            -p:PackageVersion=${{ steps.ver.outputs.pkg }}
+
+      - name: Create NuGet.config for GitHub Packages
+        run: |
+          cat > NuGet.config <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <add key="github" value="https://nuget.pkg.github.com/synthaicode/index.json" />
+            </packageSources>
+            <packageSourceCredentials>
+              <github>
+                <add key="Username" value="${GITHUB_ACTOR}" />
+                <add key="ClearTextPassword" value="${GITHUB_TOKEN}" />
+              </github>
+            </packageSourceCredentials>
+          </configuration>
+          XML
+
+      - name: Push to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          dotnet nuget push ./.artifacts/nuget/*.nupkg --skip-duplicate --source github --api-key $GITHUB_TOKEN
+          dotnet nuget push ./.artifacts/nuget/*.snupkg --skip-duplicate --source github --api-key $GITHUB_TOKEN
