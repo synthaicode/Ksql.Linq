@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Ksql.Linq.Query.Analysis;
@@ -25,4 +25,3 @@ internal class DerivedEntity
     public DayOfWeek WeekAnchor { get; init; } = DayOfWeek.Monday;
     public int GraceSeconds { get; init; }
 }
-

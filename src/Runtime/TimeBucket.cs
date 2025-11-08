@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -133,7 +133,7 @@ public sealed class TimeBucket<T> where T : class
         var list = Snapshot();
         if (list.Count > 0)
         {
-            // 補正: BucketStartが未設定（MinValue）の行しか無い場合は、ksql Pullで補完
+            // 陬懈ｭ｣: BucketStart縺梧悴險ｭ螳夲ｼ・inValue・峨・陦後＠縺狗┌縺・ｴ蜷医・縲〔sql Pull縺ｧ陬懷ｮ・
             if (list.All(x => {
                 var p = typeof(T).GetProperty("BucketStart");
                 return p != null && ((DateTime)(p.GetValue(x) ?? DateTime.MinValue)) == DateTime.MinValue;
@@ -144,7 +144,7 @@ public sealed class TimeBucket<T> where T : class
             }
             return list;
         }
-        // Minimal retry (non-cancelable tokensでも1回だけリトライ): 空なら即再取得し、それでも空ならpullを1回
+        // Minimal retry (non-cancelable tokens縺ｧ繧・蝗槭□縺代Μ繝医Λ繧､): 遨ｺ縺ｪ繧牙叉蜀榊叙蠕励＠縲√◎繧後〒繧らｩｺ縺ｪ繧英ull繧・蝗・
         if (list.Count == 0)
         {
             try
@@ -207,7 +207,7 @@ public sealed class TimeBucket<T> where T : class
             var keyNames = (mapping.KeyProperties ?? Array.Empty<Ksql.Linq.Core.Models.PropertyMeta>()).Select(p => p.Name).ToList();
             var valNames = (mapping.ValueProperties ?? Array.Empty<Ksql.Linq.Core.Models.PropertyMeta>())
                 .Select(p => p.Name)
-                // WindowStart/Raw はCTASに含めない運用に合わせてSELECT対象から外す
+                // WindowStart/Raw 縺ｯCTAS縺ｫ蜷ｫ繧√↑縺・°逕ｨ縺ｫ蜷医ｏ縺帙※SELECT蟇ｾ雎｡縺九ｉ螟悶☆
                 .Where(n => !string.Equals(n, "WindowStart", StringComparison.OrdinalIgnoreCase)
                          && !string.Equals(n, "WindowStartRaw", StringComparison.OrdinalIgnoreCase))
                 .ToList();
@@ -217,8 +217,7 @@ public sealed class TimeBucket<T> where T : class
             selectNames.AddRange(valNames);
             static string FormatColumnName(string name)
             {
-                // WindowStart/Raw は明示列にしない（WHERE は WINDOWSTART を利用可能）
-                return name.ToUpperInvariant();
+                // WindowStart/Raw 縺ｯ譏守､ｺ蛻励↓縺励↑縺・ｼ・HERE 縺ｯ WINDOWSTART 繧貞茜逕ｨ蜿ｯ閭ｽ・・                return name.ToUpperInvariant();
             }
             var colsSql = string.Join(",", selectNames.Select(FormatColumnName));
             try
@@ -240,7 +239,7 @@ public sealed class TimeBucket<T> where T : class
                 if (windowStartUtc.HasValue)
                 {
                     var ms = new DateTimeOffset(DateTime.SpecifyKind(windowStartUtc.Value, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
-                    // 列としては出力しない方針だが WHERE では WINDOWSTART が使用可能
+                    // 蛻励→縺励※縺ｯ蜃ｺ蜉帙＠縺ｪ縺・婿驥昴□縺・WHERE 縺ｧ縺ｯ WINDOWSTART 縺御ｽｿ逕ｨ蜿ｯ閭ｽ
                     conditions.Add($"WINDOWSTART={ms}");
                 }
                 where = conditions.Count > 0 ? (" WHERE " + string.Join(" AND ", conditions)) : string.Empty;
@@ -268,8 +267,7 @@ public sealed class TimeBucket<T> where T : class
                     }
                     TrySet(t, name, raw);
                 }
-                // WindowStartRaw は選択しないため、BucketStart または引数の windowStartUtc から補完
-                try
+                // WindowStartRaw 縺ｯ驕ｸ謚槭＠縺ｪ縺・◆繧√。ucketStart 縺ｾ縺溘・蠑墓焚縺ｮ windowStartUtc 縺九ｉ陬懷ｮ・                try
                 {
                     var pRaw = typeof(T).GetProperty("WindowStartRaw", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.IgnoreCase);
                     if (pRaw != null && pRaw.CanWrite)
@@ -351,7 +349,7 @@ public sealed class TimeBucket<T> where T : class
         => ToListAsync(pkFilter, ct);
 
     /// <summary>
-    /// Wait until the specified bucketStart (± tolerance) appears, then return a fresh snapshot for the given key prefix.
+    /// Wait until the specified bucketStart (ﾂｱ tolerance) appears, then return a fresh snapshot for the given key prefix.
     /// Waiting is controlled by the provided CancellationToken (use CancelAfter to cap time).
     /// </summary>
     public async Task<List<T>> ReadAsync(
@@ -402,8 +400,7 @@ public sealed class TimeBucket<T> where T : class
                 try { firstBs = (DateTime?)list[0]?.GetType().GetProperty("BucketStart")?.GetValue(list[0]) ?? DateTime.MinValue; } catch { }
                 if (firstBs != DateTime.MinValue)
                 {
-                    // 補: 集計列がすべて既定値（0/Null）の場合は Pull で補完
-                    try
+                    // 陬・ 髮・ｨ亥・縺後☆縺ｹ縺ｦ譌｢螳壼､・・/Null・峨・蝣ｴ蜷医・ Pull 縺ｧ陬懷ｮ・                    try
                     {
                         bool IsDefault(object? v) => v == null || (v is int i && i == 0) || (v is long l && l == 0L) || (v is float f && Math.Abs(f) < 1e-12) || (v is double d && Math.Abs(d) < 1e-18) || (v is decimal m && m == 0m);
                         bool AggregatesDefault(T row)
@@ -464,7 +461,7 @@ public sealed class TimeBucket<T> where T : class
                 }
                 catch { }
             }
-            // Try ksql pull frequently to shortcut when the table is populated but cache isn’t yet
+            // Try ksql pull frequently to shortcut when the table is populated but cache isn窶冲 yet
             attempts++;
             if (pkFilter is { Count: >= 2 })
             {
@@ -617,7 +614,7 @@ public sealed class TimeBucket<T> where T : class
     }
 
     /// <summary>
-    /// Wait until a row for the specified bucketStart (± tolerance) appears in the table cache for the given key prefix.
+    /// Wait until a row for the specified bucketStart (ﾂｱ tolerance) appears in the table cache for the given key prefix.
     /// Returns true if observed within the timeout window; false if timed out. Respects the cancellation token.
     /// </summary>
     public async Task<bool> WaitForBucketAsync(
@@ -814,4 +811,3 @@ public sealed class TimeBucketScope<T> where T : class
         return _tb.WaitForBucketAsync(_keys, bucketStartUtc, tolerance, timeout, _ct);
     }
 }
-

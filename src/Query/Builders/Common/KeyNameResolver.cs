@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Extensions;
+﻿using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Core.Modeling;
 using System;
 using System.Collections.Concurrent;

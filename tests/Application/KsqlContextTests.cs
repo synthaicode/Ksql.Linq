@@ -1,4 +1,4 @@
-using Ksql.Linq.Cache.Core;
+﻿using Ksql.Linq.Cache.Core;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Configuration;

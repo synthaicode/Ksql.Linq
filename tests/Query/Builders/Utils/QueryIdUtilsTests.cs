@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Ksql.Linq.Query.Builders.Utilities;
 using Xunit;
 
@@ -24,4 +24,3 @@ public class QueryIdUtilsTests
         Assert.Equal("CSAS_BAR_456", id);
     }
 }
-

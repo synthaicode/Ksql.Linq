@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
@@ -184,7 +184,7 @@ public class BarScheduleWeekendTests
             });
         }
 
-        // Warm-up ksql (schedule先行でCTAS起動を促す)
+        // Warm-up ksql (schedule蜈郁｡後〒CTAS襍ｷ蜍輔ｒ菫・☆)
         try { await ctx.QueryStreamCountAsync("SELECT * FROM bar_1d_live  EMIT CHANGES LIMIT 1;", TimeSpan.FromSeconds(30)); } catch { }
         try { await ctx.QueryStreamCountAsync("SELECT * FROM bar_1wk_live EMIT CHANGES LIMIT 1;", TimeSpan.FromSeconds(30)); } catch { }
 
@@ -194,8 +194,7 @@ public class BarScheduleWeekendTests
             await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = d.AddHours(12), Bid = 100 });
         }
 
-        // rows_last に対象キーの最新行が載るまで軽く待機（最大60s）
-        {
+        // rows_last 縺ｫ蟇ｾ雎｡繧ｭ繝ｼ縺ｮ譛譁ｰ陦後′霈峨ｋ縺ｾ縺ｧ霆ｽ縺丞ｾ・ｩ滂ｼ域怙螟ｧ60s・・        {
             var until = DateTime.UtcNow + TimeSpan.FromSeconds(60);
             while (DateTime.UtcNow < until)
             {
@@ -235,6 +234,5 @@ public class BarScheduleWeekendTests
         try { await ctx.DisposeAsync(); } catch (Confluent.Kafka.KafkaException) { }
     }
 }
-
 
 

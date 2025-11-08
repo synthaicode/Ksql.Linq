@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Configuration.Messaging;

@@ -1,4 +1,4 @@
-
+﻿
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Extensions;
@@ -302,5 +302,4 @@ internal class MappingRegistry
         return typeBuilder.CreateType()!;
     }
 }
-
 

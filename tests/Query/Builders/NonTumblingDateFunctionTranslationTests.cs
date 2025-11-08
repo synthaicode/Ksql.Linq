@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
@@ -49,6 +49,5 @@ public class NonTumblingDateFunctionTranslationTests
         Assert.Contains("DAYOFWEEK", dowExpr, System.StringComparison.OrdinalIgnoreCase);
     }
 }
-
 
 

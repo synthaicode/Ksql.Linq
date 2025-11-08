@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
@@ -102,20 +102,17 @@ public class BarScheduleMinuteTimeBucketTests
             try { await admin.CreateTopicsAsync(new[] { new TopicSpecification { Name = "deduprates", NumPartitions = 1, ReplicationFactor = 1 }, new TopicSpecification { Name = "marketschedule", NumPartitions = 1, ReplicationFactor = 1 } }); } catch { }
         }
 
-        // 固定基準時刻（決定論）: 2025-01-01 12:00:00Z
+        // 蝗ｺ螳壼渕貅匁凾蛻ｻ・域ｱｺ螳夊ｫ厄ｼ・ 2025-01-01 12:00:00Z
         var baseTs = Utc(2025, 1, 1, 12, 0, 0);
 
-        // スケジュール: 各PKごとに2回分（開始含む/終了含まない）
-        // B1/S1: [12:00,12:02) と [12:03,12:05)
+        // 繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｫ: 蜷ПK縺斐→縺ｫ2蝗槫・・磯幕蟋句性繧/邨ゆｺ・性縺ｾ縺ｪ縺・ｼ・        // B1/S1: [12:00,12:02) 縺ｨ [12:03,12:05)
         await ctx.Schedules.AddAsync(new MarketSchedule { Broker = "B1", Symbol = "S1", MarketDate = baseTs.Date, Open = baseTs, Close = baseTs.AddMinutes(2) });
         await ctx.Schedules.AddAsync(new MarketSchedule { Broker = "B1", Symbol = "S1", MarketDate = baseTs.Date, Open = baseTs.AddMinutes(3), Close = baseTs.AddMinutes(5) });
-        // B2/S2: [12:01,12:03) と [12:04,12:05)
+        // B2/S2: [12:01,12:03) 縺ｨ [12:04,12:05)
         await ctx.Schedules.AddAsync(new MarketSchedule { Broker = "B2", Symbol = "S2", MarketDate = baseTs.Date, Open = baseTs.AddMinutes(1), Close = baseTs.AddMinutes(3) });
         await ctx.Schedules.AddAsync(new MarketSchedule { Broker = "B2", Symbol = "S2", MarketDate = baseTs.Date, Open = baseTs.AddMinutes(4), Close = baseTs.AddMinutes(5) });
 
-        // データ投入: 各PKにバリエーション＋スケジュール外データを混在させる
-        // B1/S1 in-session minutes: 12:00,12:01,12:03,12:04（12:02 は外、12:05 も外）
-        var b1s1 = new (DateTime ts, decimal bid)[]
+        // 繝・・繧ｿ謚募・: 蜷ПK縺ｫ繝舌Μ繧ｨ繝ｼ繧ｷ繝ｧ繝ｳ・九せ繧ｱ繧ｸ繝･繝ｼ繝ｫ螟悶ョ繝ｼ繧ｿ繧呈ｷｷ蝨ｨ縺輔○繧・        // B1/S1 in-session minutes: 12:00,12:01,12:03,12:04・・2:02 縺ｯ螟悶・2:05 繧ょ､厄ｼ・        var b1s1 = new (DateTime ts, decimal bid)[]
         {
             (baseTs.AddSeconds(10), 100m), (baseTs.AddSeconds(20), 105m), (baseTs.AddSeconds(40), 101m), // 12:00
             (baseTs.AddMinutes(1).AddSeconds(15), 108m), (baseTs.AddMinutes(1).AddSeconds(25), 97m), // 12:01
@@ -131,21 +128,13 @@ public class BarScheduleMinuteTimeBucketTests
         foreach (var e in b1s1)
             await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = e.ts, Bid = e.bid });
 
-        // B1/S1 - 窓境界4点（開始-1ms/開始/終了-ε/終了）を追加投入
-        // 12:00 窓: start-1ms=11:59:59.999(除外), start=12:00:00(含む), end-ε=12:00:59.999(含む), end=12:01:00(次窓)
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMilliseconds(-1), Bid = 100m }); // 除外
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs, Bid = 100m });                    // 含む(open=100)
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(0).AddSeconds(59).AddMilliseconds(999), Bid = 101m }); // 含む(close=101)
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(1), Bid = 150m });       // 次窓（12:01）
-        // セッション境界 12:02 end / 12:03 start
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(2), Bid = 200m }); // 12:02:00（除外）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(3).AddMilliseconds(-1), Bid = 100m }); // 12:02:59.999（除外）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(3), Bid = 106m }); // 12:03:00（含む）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(4).AddSeconds(59).AddMilliseconds(999), Bid = 109m }); // 12:04:59.999（含む）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(5), Bid = 300m }); // 12:05:00（除外）
-
-        // B2/S2 in-session minutes: 12:01,12:02,12:04（12:00/12:03/12:05 は外）
-        var b2s2 = new (DateTime ts, decimal bid)[]
+        // B1/S1 - 遯灘｢・阜4轤ｹ・磯幕蟋・1ms/髢句ｧ・邨ゆｺ・ﾎｵ/邨ゆｺ・ｼ峨ｒ霑ｽ蜉謚募・
+        // 12:00 遯・ start-1ms=11:59:59.999(髯､螟・, start=12:00:00(蜷ｫ繧), end-ﾎｵ=12:00:59.999(蜷ｫ繧), end=12:01:00(谺｡遯・
+        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMilliseconds(-1), Bid = 100m }); // 髯､螟・        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs, Bid = 100m });                    // 蜷ｫ繧(open=100)
+        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(0).AddSeconds(59).AddMilliseconds(999), Bid = 101m }); // 蜷ｫ繧(close=101)
+        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(1), Bid = 150m });       // 谺｡遯難ｼ・2:01・・        // 繧ｻ繝・す繝ｧ繝ｳ蠅・阜 12:02 end / 12:03 start
+        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(2), Bid = 200m }); // 12:02:00・磯勁螟厄ｼ・        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(3).AddMilliseconds(-1), Bid = 100m }); // 12:02:59.999・磯勁螟厄ｼ・        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(3), Bid = 106m }); // 12:03:00・亥性繧・・        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(4).AddSeconds(59).AddMilliseconds(999), Bid = 109m }); // 12:04:59.999・亥性繧・・        await ctx.Rates.AddAsync(new Rate { Broker = "B1", Symbol = "S1", Timestamp = baseTs.AddMinutes(5), Bid = 300m }); // 12:05:00・磯勁螟厄ｼ・
+        // B2/S2 in-session minutes: 12:01,12:02,12:04・・2:00/12:03/12:05 縺ｯ螟厄ｼ・        var b2s2 = new (DateTime ts, decimal bid)[]
         {
             // out-of-session 12:00
             (baseTs.AddSeconds(15), 999m),
@@ -161,73 +150,57 @@ public class BarScheduleMinuteTimeBucketTests
         foreach (var e in b2s2)
             await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = e.ts, Bid = e.bid });
 
-        // B2/S2 - 窓境界4点を追加投入（12:01/12:02 窓、12:03 終端、12:04 開始、5m end-ε）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(1).AddMilliseconds(-1), Bid = 202m }); // 12:00:59.999（除外）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(1), Bid = 202m });                      // 12:01:00（含む）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(2).AddSeconds(59).AddMilliseconds(999), Bid = 205m }); // 12:02:59.999（含む）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(3), Bid = 999m }); // 12:03:00（除外）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(4), Bid = 210m }); // 12:04:00（含む）
-        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(4).AddSeconds(59).AddMilliseconds(999), Bid = 210m }); // 12:04:59.999（含む）
-
-        // ksql 側オブジェクトの起動/CTAS のリスト化待機（軽くプローブ）
-        try { await ctx.QueryStreamCountAsync("SELECT * FROM bar_1m_live EMIT CHANGES LIMIT 1;", TimeSpan.FromSeconds(30)); } catch { }
+        // B2/S2 - 遯灘｢・阜4轤ｹ繧定ｿｽ蜉謚募・・・2:01/12:02 遯薙・2:03 邨らｫｯ縲・2:04 髢句ｧ九・m end-ﾎｵ・・        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(1).AddMilliseconds(-1), Bid = 202m }); // 12:00:59.999・磯勁螟厄ｼ・        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(1), Bid = 202m });                      // 12:01:00・亥性繧・・        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(2).AddSeconds(59).AddMilliseconds(999), Bid = 205m }); // 12:02:59.999・亥性繧・・        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(3), Bid = 999m }); // 12:03:00・磯勁螟厄ｼ・        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(4), Bid = 210m }); // 12:04:00・亥性繧・・        await ctx.Rates.AddAsync(new Rate { Broker = "B2", Symbol = "S2", Timestamp = baseTs.AddMinutes(4).AddSeconds(59).AddMilliseconds(999), Bid = 210m }); // 12:04:59.999・亥性繧・・
+        // ksql 蛛ｴ繧ｪ繝悶ず繧ｧ繧ｯ繝医・襍ｷ蜍・CTAS 縺ｮ繝ｪ繧ｹ繝亥喧蠕・ｩ滂ｼ郁ｻｽ縺上・繝ｭ繝ｼ繝厄ｼ・        try { await ctx.QueryStreamCountAsync("SELECT * FROM bar_1m_live EMIT CHANGES LIMIT 1;", TimeSpan.FromSeconds(30)); } catch { }
         try { await ctx.QueryStreamCountAsync("SELECT * FROM bar_5m_live EMIT CHANGES LIMIT 1;", TimeSpan.FromSeconds(30)); } catch { }
 
-        // TimeBucket で 1m/5m を取得（キーごと）
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(300));
+        // TimeBucket 縺ｧ 1m/5m 繧貞叙蠕暦ｼ医く繝ｼ縺斐→・・        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(300));
         var list1m_b1 = await Ksql.Linq.TimeBucket.ReadAsync<Bar>(ctx, Period.Minutes(1), new[] { "B1", "S1" }, cts.Token);
         var list1m_b2 = await Ksql.Linq.TimeBucket.ReadAsync<Bar>(ctx, Period.Minutes(1), new[] { "B2", "S2" }, cts.Token);
         var list5m_b1 = await Ksql.Linq.TimeBucket.ReadAsync<Bar>(ctx, Period.Minutes(5), new[] { "B1", "S1" }, cts.Token);
         var list5m_b2 = await Ksql.Linq.TimeBucket.ReadAsync<Bar>(ctx, Period.Minutes(5), new[] { "B2", "S2" }, cts.Token);
 
-        // 期待窓集合（開始は含む/終了は含まない）
-        static DateTime FloorMinute(DateTime t, int size) => new DateTime((t.Ticks / TimeSpan.FromMinutes(size).Ticks) * TimeSpan.FromMinutes(size).Ticks, DateTimeKind.Utc);
+        // 譛溷ｾ・ｪ馴寔蜷茨ｼ磯幕蟋九・蜷ｫ繧/邨ゆｺ・・蜷ｫ縺ｾ縺ｪ縺・ｼ・        static DateTime FloorMinute(DateTime t, int size) => new DateTime((t.Ticks / TimeSpan.FromMinutes(size).Ticks) * TimeSpan.FromMinutes(size).Ticks, DateTimeKind.Utc);
         var expected1m_b1 = new HashSet<DateTime> { baseTs, baseTs.AddMinutes(1), baseTs.AddMinutes(3), baseTs.AddMinutes(4) };
         var expected1m_b2 = new HashSet<DateTime> { baseTs.AddMinutes(1), baseTs.AddMinutes(2), baseTs.AddMinutes(4) };
 
-        // 実測集合
+        // 螳滓ｸｬ髮・粋
         var actual1m_b1 = list1m_b1.Select(b => new DateTime(b.BucketStart.Year, b.BucketStart.Month, b.BucketStart.Day, b.BucketStart.Hour, b.BucketStart.Minute, 0, DateTimeKind.Utc)).ToHashSet();
         var actual1m_b2 = list1m_b2.Select(b => new DateTime(b.BucketStart.Year, b.BucketStart.Month, b.BucketStart.Day, b.BucketStart.Hour, b.BucketStart.Minute, 0, DateTimeKind.Utc)).ToHashSet();
 
         Assert.True(expected1m_b1.SetEquals(actual1m_b1), $"B1/S1 1m set mismatch. expected={expected1m_b1.Count} actual={actual1m_b1.Count}");
         Assert.True(expected1m_b2.SetEquals(actual1m_b2), $"B2/S2 1m set mismatch. expected={expected1m_b2.Count} actual={actual1m_b2.Count}");
 
-        // 件数チェック（固定基準）
-        Assert.Equal(expected1m_b1.Count, list1m_b1.Count);
+        // 莉ｶ謨ｰ繝√ぉ繝・け・亥崋螳壼渕貅厄ｼ・        Assert.Equal(expected1m_b1.Count, list1m_b1.Count);
         Assert.Equal(expected1m_b2.Count, list1m_b2.Count);
 
-        // 重要窓（12:00）を即値で断定（OHLC）
-        var b1200 = Assert.Single(list1m_b1.Where(b => b.BucketStart == baseTs));
+        // 驥崎ｦ∫ｪ難ｼ・2:00・峨ｒ蜊ｳ蛟､縺ｧ譁ｭ螳夲ｼ・HLC・・        var b1200 = Assert.Single(list1m_b1.Where(b => b.BucketStart == baseTs));
         Assert.Equal(100m, b1200.Open);
         Assert.Equal(105m, b1200.High);
         Assert.Equal(99m,  b1200.Low);
         Assert.Equal(101m, b1200.KsqlTimeFrameClose);
 
-        // B2/S2 の 12:02 を即値で断定（スケジュール内）
-        var b1202_b2 = Assert.Single(list1m_b2.Where(b => b.BucketStart == baseTs.AddMinutes(2)));
+        // B2/S2 縺ｮ 12:02 繧貞叉蛟､縺ｧ譁ｭ螳夲ｼ医せ繧ｱ繧ｸ繝･繝ｼ繝ｫ蜀・ｼ・        var b1202_b2 = Assert.Single(list1m_b2.Where(b => b.BucketStart == baseTs.AddMinutes(2)));
         Assert.Equal(204m, b1202_b2.Open);
         Assert.Equal(205m, b1202_b2.High);
         Assert.Equal(204m, b1202_b2.Low);
         Assert.Equal(205m, b1202_b2.KsqlTimeFrameClose);
 
-        // 5m の境界4点（開始-1ms/開始/終了-ε/終了）検証（集合=1、かつOHLC即値）
-        var start5 = FloorMinute(baseTs, 5);
+        // 5m 縺ｮ蠅・阜4轤ｹ・磯幕蟋・1ms/髢句ｧ・邨ゆｺ・ﾎｵ/邨ゆｺ・ｼ画､懆ｨｼ・磯寔蜷・1縲√°縺､OHLC蜊ｳ蛟､・・        var start5 = FloorMinute(baseTs, 5);
         var b5m_b1 = Assert.Single(list5m_b1);
         Assert.Equal(start5, b5m_b1.BucketStart);
         Assert.Equal(100m, b5m_b1.Open);  // 12:00:00
-        Assert.Equal(112m, b5m_b1.High);  // 最大値
-        Assert.Equal(97m,  b5m_b1.Low);   // 最小値
+        Assert.Equal(112m, b5m_b1.High);  // 譛螟ｧ蛟､
+        Assert.Equal(97m,  b5m_b1.Low);   // 譛蟆丞､
         Assert.Equal(109m, b5m_b1.KsqlTimeFrameClose); // 12:04:59.999
 
         var b5m_b2 = Assert.Single(list5m_b2);
         Assert.Equal(start5, b5m_b2.BucketStart);
-        Assert.Equal(202m, b5m_b2.Open);  // 12:01:00（最初のin-session）
-        Assert.Equal(210m, b5m_b2.High);  // 12:04:00/59.999
+        Assert.Equal(202m, b5m_b2.Open);  // 12:01:00・域怙蛻昴・in-session・・        Assert.Equal(210m, b5m_b2.High);  // 12:04:00/59.999
         Assert.Equal(202m, b5m_b2.Low);
         Assert.Equal(210m, b5m_b2.KsqlTimeFrameClose); // 12:04:59.999
 
-        // 後片付け
+        // 蠕檎援莉倥￠
         try { await ctx.DisposeAsync(); } catch { }
     }
 }
-

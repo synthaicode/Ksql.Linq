@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Ksql.Linq.Core.Attributes;
 
 namespace Examples.Contracts;
@@ -18,4 +18,3 @@ public class DedupRateRecord
     [KsqlDecimal(precision: 18, scale: 4)]
     public decimal Bid { get; set; }
 }
-

@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Core.Dlq;
+﻿namespace Ksql.Linq.Core.Dlq;
 
 public sealed class DlqReadOptions
 {

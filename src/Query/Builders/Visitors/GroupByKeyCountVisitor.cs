@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Builders.Visitors;
 internal class GroupByKeyCountVisitor : ExpressionVisitor

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -85,7 +85,7 @@ public class WhenEmptyScheduleTests
         var cursor = sch.OpenTimeUtc; decimal price = 100m;
         for (int s = 0; s < 600; s++)
         {
-            if (!(s >= 60 && s < 120)) // 2分目のティックを欠損
+            if (!(s >= 60 && s < 120)) // 2蛻・岼縺ｮ繝・ぅ繝・け繧呈ｬ謳・
                 ticks.Add(new Tick { Broker = broker, Symbol = symbol, TimestampUtc = cursor, Bid = Math.Round(price, 4, MidpointRounding.AwayFromZero) });
             cursor = cursor.AddSeconds(1); price += 0.01m;
         }
@@ -96,7 +96,7 @@ public class WhenEmptyScheduleTests
 
         var bars1 = Build1mBarsWithWhenEmpty(broker, symbol, sch, ticks);
         Assert.Equal(10, bars1.Count);
-        // 2分目（Open+1分）が WhenEmpty により前分Closeで埋まる
+        // 2蛻・岼・・pen+1蛻・ｼ峨′ WhenEmpty 縺ｫ繧医ｊ蜑榊・Close縺ｧ蝓九∪繧・
         var m1 = bars1[1];
         Assert.Equal(bars1[0].Close, m1.Open);
         Assert.Equal(m1.Open, m1.High);
@@ -124,4 +124,3 @@ public class WhenEmptyScheduleTests
         foreach (var b in bars5) _out.WriteLine($"[5m] {b.BucketStart:HH:mm} O:{b.Open} H:{b.High} L:{b.Low} C:{b.Close}");
     }
 }
-

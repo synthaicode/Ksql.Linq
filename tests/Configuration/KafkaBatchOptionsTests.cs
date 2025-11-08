@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Tests.Configuration;
+﻿namespace Ksql.Linq.Tests.Configuration;
 
 //public class KafkaBatchOptionsTests
 //{

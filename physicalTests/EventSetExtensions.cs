@@ -1,4 +1,4 @@
-using Ksql.Linq.Messaging.Producers;
+﻿using Ksql.Linq.Messaging.Producers;
 using Ksql.Linq.Core.Abstractions;
 
 #nullable enable

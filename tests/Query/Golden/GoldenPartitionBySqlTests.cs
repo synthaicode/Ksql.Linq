@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Attributes;
+﻿using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
@@ -26,6 +26,5 @@ public class GoldenPartitionBySqlTests
         GoldenSqlHelpers.AssertEqualsOrUpdate("tests/Query/Golden/partition_by_variants.sql", sql);
     }
 }
-
 
 

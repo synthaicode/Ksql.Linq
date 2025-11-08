@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Mapping;
+﻿namespace Ksql.Linq.Mapping;
 
 using Avro;
 using Avro.Generic;
@@ -265,8 +265,8 @@ internal class KeyValueTypeMapping
             if (prop == null)
                 continue; // skip if target property not found
             var str = i < parts.Length ? parts[i] : null;
-            // 重要: キー文字列に値が無い場合（例: WINDOWED TABLEでBucketStartがキーに含まれない）、
-            // 既にVALUE側で設定したプロパティを上書きしないためにスキップする。
+            // 驥崎ｦ・ 繧ｭ繝ｼ譁・ｭ怜・縺ｫ蛟､縺檎┌縺・ｴ蜷茨ｼ井ｾ・ WINDOWED TABLE縺ｧBucketStart縺後く繝ｼ縺ｫ蜷ｫ縺ｾ繧後↑縺・ｼ峨・
+            // 譌｢縺ｫVALUE蛛ｴ縺ｧ險ｭ螳壹＠縺溘・繝ｭ繝代ユ繧｣繧剃ｸ頑嶌縺阪＠縺ｪ縺・◆繧√↓繧ｹ繧ｭ繝・・縺吶ｋ縲・
             if (!string.IsNullOrEmpty(str))
             {
                 var val = FromKeyString(str, prop.PropertyType);
@@ -274,7 +274,7 @@ internal class KeyValueTypeMapping
             }
             else
             {
-                // 追加: 値レコードに同名フィールドが存在する場合は、そこから補完する
+                // 霑ｽ蜉: 蛟､繝ｬ繧ｳ繝ｼ繝峨↓蜷悟錐繝輔ぅ繝ｼ繝ｫ繝峨′蟄伜惠縺吶ｋ蝣ｴ蜷医・縲√◎縺薙°繧芽｣懷ｮ後☆繧・
                 try
                 {
                     if (avroValue is GenericRecord grecord)
@@ -826,5 +826,4 @@ internal class KeyValueTypeMapping
         }
     }
 }
-
 

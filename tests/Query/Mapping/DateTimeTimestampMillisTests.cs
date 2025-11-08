@@ -1,4 +1,4 @@
-using Avro.Generic;
+﻿using Avro.Generic;
 using Ksql.Linq.Core.Models;
 using Ksql.Linq.Mapping;
 using Ksql.Linq.Tests.Utils;
@@ -85,4 +85,3 @@ public class DateTimeTimestampMillisTests
         Assert.Equal("sym", krec[symbolField]);
     }
 }
-

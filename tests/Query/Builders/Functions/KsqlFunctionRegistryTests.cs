@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders.Functions;
+﻿using Ksql.Linq.Query.Builders.Functions;
 using System.Linq;
 using Xunit;
 
@@ -102,7 +102,7 @@ public class KsqlFunctionRegistryTests
         var info = KsqlFunctionRegistry.GetDebugInfo();
 
         Assert.Contains("[String]", info);
-        Assert.Contains("\u2022 ToUpper \u2192 UPPER", info); // bullet "•" and arrow "→"
+        Assert.Contains("\u2022 ToUpper \u2192 UPPER", info); // bullet "窶｢" and arrow "竊・
     }
 
     [Fact]

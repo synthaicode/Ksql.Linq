@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Dsl;

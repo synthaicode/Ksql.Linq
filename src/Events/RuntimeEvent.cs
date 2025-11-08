@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Ksql.Linq.Events;
 
@@ -19,4 +19,3 @@ public sealed class RuntimeEvent
     public string? AppId { get; init; }
     public string? State { get; init; }
 }
-

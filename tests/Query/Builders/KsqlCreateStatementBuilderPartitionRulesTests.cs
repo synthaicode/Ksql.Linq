@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -172,5 +172,4 @@ public class KsqlCreateStatementBuilderPartitionRulesTests
         Assert.Equal("QUOTES.Broker, TRADES.Broker", result);
     }
 }
-
 

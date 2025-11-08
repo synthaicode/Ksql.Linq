@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,18 +23,18 @@ using Xunit;
 namespace Ksql.Linq.Tests.Integration;
 
 /// <summary>
-/// テスト目的（Purpose）
-/// - 複数キー（Broker/Symbol）に対して、1m/5mのTUMBLING集約が正しく分離されることを確認する。
-/// - 各時間枠（1m/5m）で、窓開始（BucketStart）が期待どおりであり、件数が過不足なく一致することを確認する。
-/// - 各キーごとのOHLCが、固定基準データから導出される即値（decimal）と厳密一致することを確認する。
-/// - 監視（EMIT CHANGES）は観測用途のみ。合否はPullベースの厳密検証で判定する。
-/// 成功条件（Acceptance Criteria）
-/// - 1m/5m: 対象のBucketStartにおける行数がキー数に等しい（全キー分が存在）。
-/// - 各キー: 指定BucketStartで1行のみ、Open/High/Low/Closeが期待値と一致。
-/// - 各キー: 1m/5mのBucketStart集合が期待（bs1m/bs5m）と完全一致。
-/// 付記
-/// - 固定基準時刻（2025-01-01T12:00:00Z）を用い、環境変数による時刻上書きは行わない。
-/// - 数値は decimal 比較で誤差非許容。
+/// 繝・せ繝育岼逧・ｼ・urpose・・
+/// - 隍・焚繧ｭ繝ｼ・・roker/Symbol・峨↓蟇ｾ縺励※縲・m/5m縺ｮTUMBLING髮・ｴ・′豁｣縺励￥蛻・屬縺輔ｌ繧九％縺ｨ繧堤｢ｺ隱阪☆繧九・
+/// - 蜷・凾髢捺棧・・m/5m・峨〒縲∫ｪ馴幕蟋具ｼ・ucketStart・峨′譛溷ｾ・←縺翫ｊ縺ｧ縺ゅｊ縲∽ｻｶ謨ｰ縺碁℃荳崎ｶｳ縺ｪ縺丈ｸ閾ｴ縺吶ｋ縺薙→繧堤｢ｺ隱阪☆繧九・
+/// - 蜷・く繝ｼ縺斐→縺ｮOHLC縺後∝崋螳壼渕貅悶ョ繝ｼ繧ｿ縺九ｉ蟆主・縺輔ｌ繧句叉蛟､・・ecimal・峨→蜴ｳ蟇・ｸ閾ｴ縺吶ｋ縺薙→繧堤｢ｺ隱阪☆繧九・
+/// - 逶｣隕厄ｼ・MIT CHANGES・峨・隕ｳ貂ｬ逕ｨ騾斐・縺ｿ縲ょ粋蜷ｦ縺ｯPull繝吶・繧ｹ縺ｮ蜴ｳ蟇・､懆ｨｼ縺ｧ蛻､螳壹☆繧九・
+/// 謌仙粥譚｡莉ｶ・・cceptance Criteria・・
+/// - 1m/5m: 蟇ｾ雎｡縺ｮBucketStart縺ｫ縺翫￠繧玖｡梧焚縺後く繝ｼ謨ｰ縺ｫ遲峨＠縺・ｼ亥・繧ｭ繝ｼ蛻・′蟄伜惠・峨・
+/// - 蜷・く繝ｼ: 謖・ｮ咤ucketStart縺ｧ1陦後・縺ｿ縲＾pen/High/Low/Close縺梧悄蠕・､縺ｨ荳閾ｴ縲・
+/// - 蜷・く繝ｼ: 1m/5m縺ｮBucketStart髮・粋縺梧悄蠕・ｼ・s1m/bs5m・峨→螳悟・荳閾ｴ縲・
+/// 莉倩ｨ・
+/// - 蝗ｺ螳壼渕貅匁凾蛻ｻ・・025-01-01T12:00:00Z・峨ｒ逕ｨ縺・∫腸蠅・､画焚縺ｫ繧医ｋ譎ょ綾荳頑嶌縺阪・陦後ｏ縺ｪ縺・・
+/// - 謨ｰ蛟､縺ｯ decimal 豈碑ｼ・〒隱､蟾ｮ髱櫁ｨｱ螳ｹ縲・
 /// </summary>
 [Collection("KsqlExclusive")]
 public partial class BarChartTimeBucketTests
@@ -66,7 +66,7 @@ public partial class BarChartTimeBucketTests
         public int Year { get; set; }
     }
 
-    // ===== TestContext: テスト前提（接続設定・エンティティ定義） =====
+    // ===== TestContext: 繝・せ繝亥燕謠撰ｼ域磁邯夊ｨｭ螳壹・繧ｨ繝ｳ繝・ぅ繝・ぅ螳夂ｾｩ・・=====
     private sealed class TestContext : KsqlContext
     {
         private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(b =>
@@ -110,16 +110,15 @@ public partial class BarChartTimeBucketTests
         public static int Year(DateTime dt) => dt.Year;
     }
 
-    // ===== Test Code: テスト前提の直後に配置 =====
+    // ===== Test Code: 繝・せ繝亥燕謠舌・逶ｴ蠕後↓驟咲ｽｮ =====
     [Fact]
     public async Task Chart_1m_and_5m_With_TimeBucket_Verify()
     {
         await Chart_1m_and_5m_With_TimeBucket_Verify_Impl();
     }
 
-    // ===== Helpers: ここから下は補助関数（将来、別ファイルへ分離予定） =====
-    // 前提契約（period→テーブル名）は別の単体テストで担保する前提。本テストはE2Eの数値と窓に集中。
-    private static DateTime FixedBaseUtc()
+    // ===== Helpers: 縺薙％縺九ｉ荳九・陬懷勧髢｢謨ｰ・亥ｰ・擂縲∝挨繝輔ぃ繧､繝ｫ縺ｸ蛻・屬莠亥ｮ夲ｼ・=====
+    // 蜑肴署螂醍ｴ・ｼ・eriod竊偵ユ繝ｼ繝悶Ν蜷搾ｼ峨・蛻･縺ｮ蜊倅ｽ薙ユ繧ｹ繝医〒諡・ｿ昴☆繧句燕謠舌よ悽繝・せ繝医・E2E縺ｮ謨ｰ蛟､縺ｨ遯薙↓髮・ｸｭ縲・    private static DateTime FixedBaseUtc()
         => new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
 
     private static DateTime AlignToMinute(DateTime t)
@@ -129,8 +128,7 @@ public partial class BarChartTimeBucketTests
         => new DateTime(t.Year, t.Month, t.Day, t.Hour, (t.Minute / 5) * 5, 0, DateTimeKind.Utc);
 
     private static long Ms(DateTime dt) => (long)(dt - DateTime.UnixEpoch).TotalMilliseconds;
-    // /query-stream による観測ヘルパは削除（Pullのみで厳密検証）
-
+    // /query-stream 縺ｫ繧医ｋ隕ｳ貂ｬ繝倥Ν繝代・蜑企勁・・ull縺ｮ縺ｿ縺ｧ蜴ｳ蟇・､懆ｨｼ・・
     [Fact]
     public async Task NoWhenEmpty_GapMinute_NoRow_Verify()
     {
@@ -221,7 +219,7 @@ public partial class BarChartTimeBucketTests
             // Events around boundaries
             await ctx.Rates.AddAsync(new Rate { Broker = key.broker, Symbol = key.symbol, Timestamp = minuteStartUtc.AddMilliseconds(-1), Bid = 90 }); // prev minute
             await ctx.Rates.AddAsync(new Rate { Broker = key.broker, Symbol = key.symbol, Timestamp = minuteStartUtc, Bid = 100 });                 // exact start
-            await ctx.Rates.AddAsync(new Rate { Broker = key.broker, Symbol = key.symbol, Timestamp = minuteStartUtc.AddSeconds(59).AddMilliseconds(999), Bid = 105 }); // end-ε
+            await ctx.Rates.AddAsync(new Rate { Broker = key.broker, Symbol = key.symbol, Timestamp = minuteStartUtc.AddSeconds(59).AddMilliseconds(999), Bid = 105 }); // end-ﾎｵ
             await ctx.Rates.AddAsync(new Rate { Broker = key.broker, Symbol = key.symbol, Timestamp = minuteStartUtc.AddMinutes(1), Bid = 99 });   // next minute start
 
             // Read via TimeBucket IF (1m)
@@ -248,7 +246,7 @@ public partial class BarChartTimeBucketTests
             var list5 = await Ksql.Linq.TimeBucket.ReadAsync<Bar>(ctx, Period.Minutes(5), new[] { key.broker, key.symbol }, CancellationToken.None);
             var row5 = list5.SingleOrDefault(x => x.BucketStart == fiveStart);
             Assert.NotNull(row5);
-            // 5m includes 12:00:00(100), 12:00:59.999(105), 12:01:00(99) — excludes 11:59:59.999
+            // 5m includes 12:00:00(100), 12:00:59.999(105), 12:01:00(99) 窶・excludes 11:59:59.999
             Assert.Equal(100d, row5!.Open);
             Assert.Equal(105d, row5.High);
             Assert.Equal(99d,  row5.Low);
@@ -308,9 +306,7 @@ public partial class BarChartTimeBucketTests
 
         await PhysicalTestEnv.KsqlHelpers.TerminateAndDropBarArtifactsAsync("http://127.0.0.1:18088");
     }
-    // diag監視起動（PHYS_DIAG=1の時のみ）: 1m/5mの観測タスクを返す（不要時はnull）
-    // diag監視ヘルパは削除（テスト合否に寄与しないため）
-
+    // diag逶｣隕冶ｵｷ蜍包ｼ・HYS_DIAG=1縺ｮ譎ゅ・縺ｿ・・ 1m/5m縺ｮ隕ｳ貂ｬ繧ｿ繧ｹ繧ｯ繧定ｿ斐☆・井ｸ崎ｦ∵凾縺ｯnull・・    // diag逶｣隕悶・繝ｫ繝代・蜑企勁・医ユ繧ｹ繝亥粋蜷ｦ縺ｫ蟇・ｸ弱＠縺ｪ縺・◆繧・ｼ・
     private static async Task CleanupBarArtifactsAsync()
     {
         using var http = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:18088") };
@@ -444,9 +440,8 @@ public partial class BarChartTimeBucketTests
         }
     }
 
-    // 余計な前提判定ロジックは削除（本テストでは不要）
-
-    // SHOW QUERIESベースの走査は本テストでは不要のため削除
+    // 菴呵ｨ医↑蜑肴署蛻､螳壹Ο繧ｸ繝・け縺ｯ蜑企勁・域悽繝・せ繝医〒縺ｯ荳崎ｦ・ｼ・
+    // SHOW QUERIES繝吶・繧ｹ縺ｮ襍ｰ譟ｻ縺ｯ譛ｬ繝・せ繝医〒縺ｯ荳崎ｦ√・縺溘ａ蜑企勁
 
     // Not used
 
@@ -499,12 +494,11 @@ public partial class BarChartTimeBucketTests
 
         await using (var ctx = new TestContext())
         {
-            // 前提契約の明示チェックは本テストから除外（コア検証に集中）
-
-            // データ投入（決定論）: 現在依存を排し固定UTCベースを採用（PHYS_BASE_UTCで上書き可）
-            // 再現性のためPHYS_BASE_UTCは使用せず固定
+            // 蜑肴署螂醍ｴ・・譏守､ｺ繝√ぉ繝・け縺ｯ譛ｬ繝・せ繝医°繧蛾勁螟厄ｼ医さ繧｢讀懆ｨｼ縺ｫ髮・ｸｭ・・
+            // 繝・・繧ｿ謚募・・域ｱｺ螳夊ｫ厄ｼ・ 迴ｾ蝨ｨ萓晏ｭ倥ｒ謗偵＠蝗ｺ螳啅TC繝吶・繧ｹ繧呈治逕ｨ・・HYS_BASE_UTC縺ｧ荳頑嶌縺榊庄・・
+            // 蜀咲樟諤ｧ縺ｮ縺溘ａPHYS_BASE_UTC縺ｯ菴ｿ逕ｨ縺帙★蝗ｺ螳・
             var baseUtc = FixedBaseUtc();
-            // 複数キーで検証（グルーピングの健全性を担保）
+            // 隍・焚繧ｭ繝ｼ縺ｧ讀懆ｨｼ・医げ繝ｫ繝ｼ繝斐Φ繧ｰ縺ｮ蛛･蜈ｨ諤ｧ繧呈球菫晢ｼ・
             var keys = new (string broker, string symbol)[] { ("B", "S"), ("B2", "S2") };
             var minuteStartUtc = AlignToMinute(baseUtc);
             var bs1m = Ms(minuteStartUtc);
@@ -522,7 +516,7 @@ public partial class BarChartTimeBucketTests
                 }
                 else
                 {
-                    // 異なる系列（分離検証用）
+                    // 逡ｰ縺ｪ繧狗ｳｻ蛻暦ｼ亥・髮｢讀懆ｨｼ逕ｨ・・
                     await ctx.Rates.AddAsync(new Rate { Broker = b, Symbol = s, Timestamp = minuteStartUtc.AddSeconds(1), Bid = 200 });
                     await ctx.Rates.AddAsync(new Rate { Broker = b, Symbol = s, Timestamp = minuteStartUtc.AddSeconds(20), Bid = 220 });
                     await ctx.Rates.AddAsync(new Rate { Broker = b, Symbol = s, Timestamp = minuteStartUtc.AddSeconds(40), Bid = 190 });
@@ -539,12 +533,12 @@ public partial class BarChartTimeBucketTests
                 }
                 else
                 {
-                    // 異なる系列（分離検証用）
+                    // 逡ｰ縺ｪ繧狗ｳｻ蛻暦ｼ亥・髮｢讀懆ｨｼ逕ｨ・・
                     await ProduceOneSecondBarsAsync(b, s, minuteStartUtc, new[] { 100d, 103d, 105d, 99d, 102d, 101d });
                 }
-            }\r\n            // 観測系（diag）は使用しない\r\n
-            // 数値検証（pull）
-            // 件数とキー集合の厳密検証（1m/5m それぞれの時間枠）
+            }\r\n            // 隕ｳ貂ｬ邉ｻ・・iag・峨・菴ｿ逕ｨ縺励↑縺Ыr\n
+            // 謨ｰ蛟､讀懆ｨｼ・・ull・・
+            // 莉ｶ謨ｰ縺ｨ繧ｭ繝ｼ髮・粋縺ｮ蜴ｳ蟇・､懆ｨｼ・・m/5m 縺昴ｌ縺槭ｌ縺ｮ譎る俣譫・・
             await PhysOhlcAssertions.AssertBucketExactAsync(
                 QueryPullRowsAsync,
                 "BAR_1M_LIVE",
@@ -556,7 +550,7 @@ public partial class BarChartTimeBucketTests
                 },
                 TimeSpan.FromSeconds(20));
 
-            // 時間枠別の件数チェック（1m）：各キーでバケットは1つだけ
+            // 譎る俣譫蛻･縺ｮ莉ｶ謨ｰ繝√ぉ繝・け・・m・会ｼ壼推繧ｭ繝ｼ縺ｧ繝舌こ繝・ヨ縺ｯ1縺､縺縺・
             await AssertPerKeySingleBucketAsync(QueryPullRowsAsync, "BAR_1M_LIVE", keys, bs1m, TimeSpan.FromSeconds(20));
 
             await PhysOhlcAssertions.AssertBucketExactAsync(
@@ -570,7 +564,7 @@ public partial class BarChartTimeBucketTests
                 },
                 TimeSpan.FromSeconds(20));
 
-            // 時間枠別の件数チェック（5m）：各キーでバケットは1つだけ
+            // 譎る俣譫蛻･縺ｮ莉ｶ謨ｰ繝√ぉ繝・け・・m・会ｼ壼推繧ｭ繝ｼ縺ｧ繝舌こ繝・ヨ縺ｯ1縺､縺縺・
             await AssertPerKeySingleBucketAsync(QueryPullRowsAsync, "BAR_5M_LIVE", keys, bs5m, TimeSpan.FromSeconds(20));
         }
 
@@ -580,13 +574,12 @@ public partial class BarChartTimeBucketTests
     [Fact(Skip = "WhenEmpty fill KSQL is pending; will verify via TimeBucket once implemented")]
     public void WhenEmpty_Fills_Missing_Minute_With_Previous_Close()
     {
-        // docs/chart.md の WhenEmpty（欠損埋め）に対応する検証
-        // フィジカル生成（HB/Prev JOIN + Fill 投影）の具象化が未反映のため Skip。
-        // 実装後は 1分の欠損を直前 Close で埋めることを TimeBucket 経由で確認する。
+        // docs/chart.md 縺ｮ WhenEmpty・域ｬ謳榊沂繧・ｼ峨↓蟇ｾ蠢懊☆繧区､懆ｨｼ
+        // 繝輔ぅ繧ｸ繧ｫ繝ｫ逕滓・・・B/Prev JOIN + Fill 謚募ｽｱ・峨・蜈ｷ雎｡蛹悶′譛ｪ蜿肴丐縺ｮ縺溘ａ Skip縲・
+        // 螳溯｣・ｾ後・ 1蛻・・谺謳阪ｒ逶ｴ蜑・Close 縺ｧ蝓九ａ繧九％縺ｨ繧・TimeBucket 邨檎罰縺ｧ遒ｺ隱阪☆繧九・
     }
 
 }
-
 
 
 

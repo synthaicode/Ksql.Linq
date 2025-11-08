@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
@@ -69,4 +69,3 @@ public class ConsumerConfigLoggingTests
         Assert.True(found, "Expected Information log for consumer:test-topic config");
     }
 }
-

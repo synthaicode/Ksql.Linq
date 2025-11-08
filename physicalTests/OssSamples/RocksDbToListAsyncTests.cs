@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Configuration;
@@ -86,6 +86,5 @@ public static class EnvRocksDbTests
     internal const string KafkaBootstrapServers = "127.0.0.1:39092";
     internal const string KsqlDbUrl = "http://127.0.0.1:18088";
 }
-
 
 

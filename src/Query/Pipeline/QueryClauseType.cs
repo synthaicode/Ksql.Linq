@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Query.Pipeline;
+﻿namespace Ksql.Linq.Query.Pipeline;
 
 /// <summary>
 /// Enumeration of query clause types
@@ -14,4 +14,3 @@ internal enum QueryClauseType
     OrderBy,
     Limit
 }
-

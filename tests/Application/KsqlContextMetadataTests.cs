@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Query.Metadata;
 using Xunit;

@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Abstractions;
+﻿using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Dlq;
 using Ksql.Linq.Core.Extensions;
 using Microsoft.Extensions.Logging;

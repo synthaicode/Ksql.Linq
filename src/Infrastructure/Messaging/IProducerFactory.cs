@@ -1,7 +1,6 @@
-namespace Ksql.Linq.Infrastructure.Messaging;
+﻿namespace Ksql.Linq.Infrastructure.Messaging;
 
 public interface IProducerFactory
 {
 }
-
 

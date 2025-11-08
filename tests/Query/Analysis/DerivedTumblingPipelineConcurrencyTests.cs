@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Abstractions;
+﻿using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq;
 using Ksql.Linq.Query.Analysis;
@@ -64,12 +64,12 @@ public class DerivedTumblingPipelineConcurrencyTests
         // Continuation is handled at read/distribution layers; no WhenEmpty configuration required
         _ = await DerivedTumblingPipeline.RunAsync(qao, baseModel, model, Exec, Resolver, mapping, registry, new LoggerFactory().CreateLogger("test"));
 
-        // WhenEmpty ポリシー更新:
-        // - hub(_1s_rows) は作らない
-        // - hb は作らない
-        // - prev と fill は作らない
-        // - rows_last は KsqlContext.EnsureRowsLastTableForAsync で個別作成（RunAsync の計上対象外）
-        // 件数: 1s(hub)=1 + 1m(live)=1 + 5m(live)=1 → 合計 3
+        // WhenEmpty 繝昴Μ繧ｷ繝ｼ譖ｴ譁ｰ:
+        // - hub(_1s_rows) 縺ｯ菴懊ｉ縺ｪ縺・
+        // - hb 縺ｯ菴懊ｉ縺ｪ縺・
+        // - prev 縺ｨ fill 縺ｯ菴懊ｉ縺ｪ縺・
+        // - rows_last 縺ｯ KsqlContext.EnsureRowsLastTableForAsync 縺ｧ蛟句挨菴懈・・・unAsync 縺ｮ險井ｸ雁ｯｾ雎｡螟厄ｼ・
+        // 莉ｶ謨ｰ: 1s(hub)=1 + 1m(live)=1 + 5m(live)=1 竊・蜷郁ｨ・3
         var expected = 3;
         Assert.Equal(expected, registry.Count);
         Assert.Equal(expected, ddls.Count);
@@ -78,13 +78,12 @@ public class DerivedTumblingPipelineConcurrencyTests
             .Where(x => x.match.Success && x.match.Groups[1].Value.EndsWith("_final", StringComparison.OrdinalIgnoreCase))
             .Select(x => x.sql)
             .ToList();
-        // final TABLE は作らない（0 本）
+        // final TABLE 縺ｯ菴懊ｉ縺ｪ縺・ｼ・ 譛ｬ・・
         Assert.Empty(finals);
-        // live DDL は EMIT CHANGES であることを確認
+        // live DDL 縺ｯ EMIT CHANGES 縺ｧ縺ゅｋ縺薙→繧堤｢ｺ隱・
         var lives = ddls.Where(s => s.IndexOf("_live", StringComparison.OrdinalIgnoreCase) >= 0).ToList();
         Assert.Equal(2, lives.Count);
         Assert.All(lives, d => Assert.Contains("EMIT CHANGES", d, StringComparison.OrdinalIgnoreCase));
 
     }
 }
-

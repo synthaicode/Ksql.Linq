@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,4 +72,3 @@ internal sealed class WindowGrouping<TKey, TElement> : IWindowGrouping<TKey, TEl
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
-

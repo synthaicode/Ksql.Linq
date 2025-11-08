@@ -1,4 +1,4 @@
-using Ksql.Linq.Messaging;
+﻿using Ksql.Linq.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Threading;

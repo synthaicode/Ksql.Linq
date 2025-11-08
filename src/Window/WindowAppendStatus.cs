@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Window;
+﻿namespace Ksql.Linq.Window;
 
 internal enum WindowAppendStatus
 {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Ksql.Linq.Core.Dlq;
 
@@ -28,4 +28,3 @@ public sealed class SimpleRateLimiter : IRateLimiter
         return true;
     }
 }
-

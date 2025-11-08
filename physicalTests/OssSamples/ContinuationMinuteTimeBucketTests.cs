@@ -1,4 +1,4 @@
-using Confluent.Kafka.Admin;
+﻿using Confluent.Kafka.Admin;
 using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
@@ -186,5 +186,4 @@ public class ContinuationMinuteTimeBucketTests
         Assert.Equal(101d, next.Close);
     }
 }
-
 

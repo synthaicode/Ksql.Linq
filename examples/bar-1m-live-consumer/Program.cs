@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;

@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders;
+﻿using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Builders.Utilities;
 using Ksql.Linq.Query.Dsl;
@@ -13,7 +13,7 @@ namespace Ksql.Linq.Query.Planning;
 /// - Injects GRACE for tumbling windows when requested.
 /// - Surfaces sink sizing/retention from inputs into WITH clause via model.Extras.
 /// - Enables hub-input overrides to lift non-aggregate columns using LATEST_BY_OFFSET.
-/// Pure utility – safe for L2 unit testing without environment dependencies.
+/// Pure utility 窶・safe for L2 unit testing without environment dependencies.
 /// </summary>
 internal static class DdlPlanner
 {
@@ -111,6 +111,5 @@ internal static class DdlPlanner
         return sql;
     }
 }
-
 
 

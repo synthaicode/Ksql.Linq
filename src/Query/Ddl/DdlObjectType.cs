@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Query.Ddl;
+﻿namespace Ksql.Linq.Query.Ddl;
 
 public enum DdlObjectType
 {

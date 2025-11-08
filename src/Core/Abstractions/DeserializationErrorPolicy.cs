@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Core.Abstractions;
+﻿namespace Ksql.Linq.Core.Abstractions;
 
 public enum DeserializationErrorPolicy
 {

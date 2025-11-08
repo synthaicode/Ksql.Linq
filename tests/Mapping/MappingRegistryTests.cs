@@ -1,4 +1,4 @@
-using Avro.Generic;
+﻿using Avro.Generic;
 
 using Ksql.Linq.Core.Abstractions;
 
@@ -322,7 +322,6 @@ public class MappingRegistryTests
     }
 
 }
-
 
 
 

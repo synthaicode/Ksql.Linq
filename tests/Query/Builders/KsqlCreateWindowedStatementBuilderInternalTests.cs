@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using Ksql.Linq.Tests.Utils;
 using Xunit;
@@ -31,7 +31,6 @@ public class KsqlCreateWindowedStatementBuilderInternalTests
             "join rightsrc i");
     }
 }
-
 
 
 

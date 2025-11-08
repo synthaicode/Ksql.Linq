@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -291,6 +291,5 @@ internal static class KsqlFunctionRegistry
         return result.ToString();
     }
 }
-
 
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,10 +15,10 @@ using PhysicalTestEnv.Logging;
 namespace Ksql.Linq.Tests.Integration;
 
 /// <summary>
-/// Translations（LINQ → KSQL）最小カノニカルの物理テスト。
-/// 目的: 代表関数が正しく翻訳・集約され、TimeBucket 経由で決定論的に取得できることを確認。
-/// ポリシー: 固定基準時刻、1分窓、1枠=1行、decimal/double 即値比較。
-/// 依存: 観測（/query-stream）に依存せず、TimeBucket.ReadAsync で検証。
+/// Translations・・INQ 竊・KSQL・画怙蟆上き繝弱ル繧ｫ繝ｫ縺ｮ迚ｩ逅・ユ繧ｹ繝医・
+/// 逶ｮ逧・ 莉｣陦ｨ髢｢謨ｰ縺梧ｭ｣縺励￥鄙ｻ險ｳ繝ｻ髮・ｴ・＆繧後ゝimeBucket 邨檎罰縺ｧ豎ｺ螳夊ｫ也噪縺ｫ蜿門ｾ励〒縺阪ｋ縺薙→繧堤｢ｺ隱阪・
+/// 繝昴Μ繧ｷ繝ｼ: 蝗ｺ螳壼渕貅匁凾蛻ｻ縲・蛻・ｪ薙・譫=1陦後‥ecimal/double 蜊ｳ蛟､豈碑ｼ・・
+/// 萓晏ｭ・ 隕ｳ貂ｬ・・query-stream・峨↓萓晏ｭ倥○縺壹ゝimeBucket.ReadAsync 縺ｧ讀懆ｨｼ縲・
 /// </summary>
 [Collection("KsqlExclusive")]
 public class TranslationsTimeBucketTests
@@ -90,7 +90,7 @@ public class TranslationsTimeBucketTests
 
     private static class SqlFuncs
     {
-        // Expression用のダミー。実際はKsqlFunctionRegistryの Year → YEAR へ翻訳される。
+        // Expression逕ｨ縺ｮ繝繝溘・縲ょｮ滄圀縺ｯKsqlFunctionRegistry縺ｮ Year 竊・YEAR 縺ｸ鄙ｻ險ｳ縺輔ｌ繧九・
         public static int Year(DateTime dt) => dt.Year;
         public static int Month(DateTime dt) => dt.Month;
         public static int Day(DateTime dt) => dt.Day;
@@ -116,7 +116,7 @@ public class TranslationsTimeBucketTests
             KsqlDbUrl = "http://127.0.0.1:18088"
         }, _loggerFactory) { }
 
-        // 物理テストではスキーマ登録を有効化
+        // 迚ｩ逅・ユ繧ｹ繝医〒縺ｯ繧ｹ繧ｭ繝ｼ繝樒匳骭ｲ繧呈怏蜉ｹ蛹・
         protected override bool SkipSchemaRegistration => false;
 
         public EventSet<Rate> Rates { get; set; } = null!;
@@ -178,7 +178,7 @@ public class TranslationsTimeBucketTests
     [Fact]
     public async Task Translations_Minimal_Canonical()
     {
-        // 前後でksqlDBをクリーン（依存アーティファクトを極力残さない）
+        // 蜑榊ｾ後〒ksqlDB繧偵け繝ｪ繝ｼ繝ｳ・井ｾ晏ｭ倥い繝ｼ繝・ぅ繝輔ぃ繧ｯ繝医ｒ讌ｵ蜉帶ｮ九＆縺ｪ縺・ｼ・
         await PhysicalTestEnv.KsqlHelpers.TerminateAllAsync("http://127.0.0.1:18088");
 
         await using var ctx = new TestContext();
@@ -190,13 +190,13 @@ public class TranslationsTimeBucketTests
         var t0 = new DateTime(baseUtc.Year, baseUtc.Month, baseUtc.Day, baseUtc.Hour, baseUtc.Minute, 0, DateTimeKind.Utc);
 
         var broker = "brk";
-        var symbol = "sym"; // 小文字 → ToUpper で SYM へ
+        var symbol = "sym"; // 蟆乗枚蟄・竊・ToUpper 縺ｧ SYM 縺ｸ
 
-        // 同一1分枠内のイベント（Average=1.24 → Round(1) = 1.2）
+        // 蜷御ｸ1蛻・棧蜀・・繧､繝吶Φ繝茨ｼ・verage=1.24 竊・Round(1) = 1.2・・
         await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(5), Bid = 1.20, Json = "{\"a\":\"X\",\"list\":[1,2]}", Url = "https://example.com/p?q=1", Lat1 = 0, Lon1 = 0, Lat2 = 0, Lon2 = 0 });
         await ctx.Rates.AddAsync(new Rate { Broker = broker, Symbol = symbol, Timestamp = t0.AddSeconds(25), Bid = 1.28, Json = "{\"a\":\"X\",\"list\":[1,2]}", Url = "https://example.com/p?q=1", Lat1 = 0, Lon1 = 0, Lat2 = 0, Lon2 = 0 });
 
-        // TimeBucket で1枠=1行を取得
+        // TimeBucket 縺ｧ1譫=1陦後ｒ蜿門ｾ・
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
 
         var allRows = await Ksql.Linq.Runtime.TimeBucket
@@ -216,8 +216,7 @@ public class TranslationsTimeBucketTests
         var actualMs = row.WindowStartRaw ?? new DateTimeOffset(row.BucketStart).ToUnixTimeMilliseconds();
         Assert.Equal(targetMs, actualMs);
         Assert.Equal(t0, row.BucketStart);
-        // Live は集計と時間のみ検証（計算列は Rows 側で検証）
-
+        // Live 縺ｯ髮・ｨ医→譎る俣縺ｮ縺ｿ讀懆ｨｼ・郁ｨ育ｮ怜・縺ｯ Rows 蛛ｴ縺ｧ讀懆ｨｼ・・
         // Aggregates
         Assert.Equal(2.48, row.SumBid.GetValueOrDefault());
         Assert.Equal(1.28, row.MaxBid.GetValueOrDefault());
@@ -226,8 +225,7 @@ public class TranslationsTimeBucketTests
         Assert.Equal(1.20, row.FirstBid.GetValueOrDefault());
         Assert.Equal(1.28, row.LastBid.GetValueOrDefault());
 
-        // reserved for future: array/json/url（計算列は Live で検証しない）
-
+        // reserved for future: array/json/url・郁ｨ育ｮ怜・縺ｯ Live 縺ｧ讀懆ｨｼ縺励↑縺・ｼ・
         await PhysicalTestEnv.KsqlHelpers.TerminateAllAsync("http://127.0.0.1:18088");
     }
 
@@ -255,5 +253,4 @@ public class TranslationsTimeBucketTests
         }
     }
 }
-
 

@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Configuration;
@@ -35,8 +35,8 @@ public class SchemaNameCaseSensitivityTests
         }
     }
 
-    // Schema Registry はフィールド名も含めスキーマとの完全一致を要求する。
-    // 既存スキーマと一致するフィールド名・数を定義することで登録エラーを防ぐ。
+    // Schema Registry 縺ｯ繝輔ぅ繝ｼ繝ｫ繝牙錐繧ょ性繧√せ繧ｭ繝ｼ繝槭→縺ｮ螳悟・荳閾ｴ繧定ｦ∵ｱゅ☆繧九・
+    // 譌｢蟄倥せ繧ｭ繝ｼ繝槭→荳閾ｴ縺吶ｋ繝輔ぅ繝ｼ繝ｫ繝牙錐繝ｻ謨ｰ繧貞ｮ夂ｾｩ縺吶ｋ縺薙→縺ｧ逋ｻ骭ｲ繧ｨ繝ｩ繝ｼ繧帝亟縺舌・
     [Fact]
     [Trait("Category", "Integration")]
     public async Task LowercaseField_ShouldSucceed()
@@ -130,4 +130,3 @@ public class EnvSchemaNameCaseSensitivityTests
         protected override void OnModelCreating(IModelBuilder modelBuilder) { }
     }
 }
-

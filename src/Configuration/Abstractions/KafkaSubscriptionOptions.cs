@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using System;
 namespace Ksql.Linq.Configuration.Abstractions;
 public class KafkaSubscriptionOptions

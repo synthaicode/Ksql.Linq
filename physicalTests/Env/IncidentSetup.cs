@@ -1,4 +1,4 @@
-using Ksql.Linq.Incidents;
+﻿using Ksql.Linq.Incidents;
 using System.Runtime.CompilerServices;
 
 namespace Ksql.Linq.Tests.Integration;
@@ -12,4 +12,3 @@ internal static class IncidentSetup
         IncidentBus.SetSink(new LoggerIncidentSink());
     }
 }
-

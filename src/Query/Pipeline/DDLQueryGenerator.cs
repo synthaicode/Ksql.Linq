@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Modeling;
+﻿using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
@@ -108,7 +108,7 @@ internal class DDLQueryGenerator : GeneratorBase, IDDLQueryGenerator
             var replicas = schema.Replicas;
 
             var withParts = new List<string> { $"KAFKA_TOPIC='{topicName}'" };
-            // TABLE は通常主キーを持つが、念のためキー定義がある場合のみ KEY_FORMAT を付与
+            // TABLE 縺ｯ騾壼ｸｸ荳ｻ繧ｭ繝ｼ繧呈戟縺､縺後∝ｿｵ縺ｮ縺溘ａ繧ｭ繝ｼ螳夂ｾｩ縺後≠繧句ｴ蜷医・縺ｿ KEY_FORMAT 繧剃ｻ倅ｸ・
             if (hasKey)
             {
                 withParts.Add("KEY_FORMAT='AVRO'");
@@ -460,5 +460,4 @@ internal class DDLQueryGenerator : GeneratorBase, IDDLQueryGenerator
         };
     }
 }
-
 

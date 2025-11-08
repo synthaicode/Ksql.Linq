@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Configuration.Messaging;
 using Ksql.Linq.Core.Configuration;
 using Microsoft.Extensions.Configuration;

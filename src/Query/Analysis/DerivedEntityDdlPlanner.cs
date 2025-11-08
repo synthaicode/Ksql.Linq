@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Abstractions;
+﻿using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Core;
@@ -46,8 +46,7 @@ internal static class DerivedEntityDdlPlanner
         }
         else if (role == Role.Live)
         {
-            // Live も投影メタに基づく動的型を生成（集計列を型に載せてマッピング漏れを防ぐ）
-            var keyNames = finalKeys.Names ?? Array.Empty<string>();
+            // Live 繧よ兜蠖ｱ繝｡繧ｿ縺ｫ蝓ｺ縺･縺丞虚逧・梛繧堤函謌撰ｼ磯寔險亥・繧貞梛縺ｫ霈峨○縺ｦ繝槭ャ繝斐Φ繧ｰ貍上ｌ繧帝亟縺撰ｼ・            var keyNames = finalKeys.Names ?? Array.Empty<string>();
             var valueNames = finalProjection.Names ?? Array.Empty<string>();
             var valueTypes = finalProjection.Types?.Select(t => t ?? typeof(object)).ToArray() ?? Array.Empty<Type>();
             entityType = DerivedTypeFactory.GetDerivedType(context.Name, keyNames, valueNames, valueTypes);
@@ -289,8 +288,7 @@ internal static class DerivedEntityDdlPlanner
         EnsureValue(timestampName, timestampType, timestampNullable);
 
         // Do not auto-inject non-aggregate computed columns here.
-        // Rows DDL は ToQuery の設計に基づく列のみを宣言する。
-
+        // Rows DDL 縺ｯ ToQuery 縺ｮ險ｭ險医↓蝓ｺ縺･縺丞・縺ｮ縺ｿ繧貞ｮ｣險縺吶ｋ縲・
         static bool IsNullableType(Type type)
             => Nullable.GetUnderlyingType(type) != null || !type.IsValueType;
 
@@ -645,8 +643,7 @@ internal static class DerivedEntityDdlPlanner
             graceSeconds = metadata.GraceSeconds.Value;
         }
 
-        // Live でも投影メタを同期して、集計列を含む値シェイプを確定（マッピング漏れ防止）
-        try
+        // Live 縺ｧ繧よ兜蠖ｱ繝｡繧ｿ繧貞酔譛溘＠縺ｦ縲・寔險亥・繧貞性繧蛟､繧ｷ繧ｧ繧､繝励ｒ遒ｺ螳夲ｼ医・繝・ヴ繝ｳ繧ｰ貍上ｌ髦ｲ豁｢・・        try
         {
             var sourceType = (qm.SourceTypes?.Length ?? 0) > 0 ? qm.SourceTypes![0] : null;
             var projectionMetaForLive = qm.SelectProjectionMetadata ?? ProjectionMetadataAnalyzer.Build(qm, isHubInput: isHubInput);

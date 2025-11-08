@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Configuration;
@@ -86,6 +86,5 @@ class Program
         Console.WriteLine("Done. For assignment failover test, run a second instance with same group and observe logs.");
     }
 }
-
 
 

@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Abstractions;
+﻿using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Metadata;
 using System;
@@ -48,4 +48,3 @@ internal static class EntityModelAdapter
         return list;
     }
 }
-

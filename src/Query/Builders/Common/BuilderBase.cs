@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Abstractions;
+﻿using Ksql.Linq.Query.Abstractions;
 using System;
 using System.Linq.Expressions;
 
@@ -7,7 +7,7 @@ namespace Ksql.Linq.Query.Builders.Common;
 /// <summary>
 /// Base class for builders.
 /// Rationale: centralize common constraints/validation under separation-of-concerns design.
-/// Hard constraints: readonly fields only, static methods preferred, no external refs beyond Expression, side‑effect free.
+/// Hard constraints: readonly fields only, static methods preferred, no external refs beyond Expression, side窶粗ffect free.
 /// </summary>
 internal abstract class BuilderBase : IKsqlBuilder
 {

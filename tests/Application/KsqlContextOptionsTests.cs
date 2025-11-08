@@ -1,4 +1,4 @@
-using Confluent.SchemaRegistry;
+﻿using Confluent.SchemaRegistry;
 using Ksql.Linq.Application;
 using System;
 using Xunit;

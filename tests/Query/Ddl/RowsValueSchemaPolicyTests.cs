@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Attributes;
+﻿using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Mapping;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Dsl;
@@ -62,7 +62,7 @@ public class RowsValueSchemaPolicyTests
         _ = await DerivedTumblingPipeline.RunAsync(qao, baseModel, model, Exec, Resolver, mapping, registry, new LoggerFactory().CreateLogger("test"));
         var ddl = ddls.First(s => s.StartsWith("CREATE STREAM IF NOT EXISTS bar_1s_rows", StringComparison.OrdinalIgnoreCase));
 
-        // rowsはVALUE_AVRO_SCHEMA_FULL_NAMEを強制しない（GenericRecord整合）
+        // rows縺ｯVALUE_AVRO_SCHEMA_FULL_NAME繧貞ｼｷ蛻ｶ縺励↑縺・ｼ・enericRecord謨ｴ蜷茨ｼ・
         Assert.DoesNotContain("VALUE_AVRO_SCHEMA_FULL_NAME", ddl, StringComparison.OrdinalIgnoreCase);
         SqlAssert.ContainsNormalized(ddl, "(BROKER VARCHAR KEY, SYMBOL VARCHAR KEY, TIMESTAMP TIMESTAMP, BID DOUBLE)");
         SqlAssert.ContainsNormalized(ddl, "WITH (KAFKA_TOPIC='BAR_1S_ROWS'");

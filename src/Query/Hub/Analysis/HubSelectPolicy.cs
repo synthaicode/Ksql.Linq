@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ksql.Linq.Query.Builders.Common;
@@ -38,8 +38,7 @@ internal static class HubSelectPolicy
                 }
                 continue;
             }
-            // 非集計（Computed）は CTAS へ昇格させない（Rows のみ）。
-            if (m.Kind == ProjectionMemberKind.Computed)
+            // 髱樣寔險茨ｼ・omputed・峨・ CTAS 縺ｸ譏・ｼ縺輔○縺ｪ縺・ｼ・ows 縺ｮ縺ｿ・峨・            if (m.Kind == ProjectionMemberKind.Computed)
             {
                 var alias = m.Alias ?? m.ResolvedColumnName;
                 if (!string.IsNullOrWhiteSpace(alias))
@@ -51,8 +50,7 @@ internal static class HubSelectPolicy
 
     private static bool ShouldPromoteComputedAlias(ProjectionMember member, System.Collections.Generic.ISet<string>? availableColumns)
     {
-        // 新方針: Computed は昇格させない（常に Rows 側で完結）。
-        return false;
+        // 譁ｰ譁ｹ驥・ Computed 縺ｯ譏・ｼ縺輔○縺ｪ縺・ｼ亥ｸｸ縺ｫ Rows 蛛ｴ縺ｧ螳檎ｵ撰ｼ峨・        return false;
     }
 
     private static string? ResolveTargetColumn(ProjectionMember member)

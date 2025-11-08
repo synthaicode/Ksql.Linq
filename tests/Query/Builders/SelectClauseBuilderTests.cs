@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders;
+﻿using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
 using System;
 using System.Linq;
@@ -66,5 +66,4 @@ public class SelectClauseBuilderTests
         Assert.Equal("WINDOWSTART AS BucketStart", sql);
     }
 }
-
 

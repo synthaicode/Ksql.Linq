@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders;
+﻿using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
 using System;
 using System.Linq.Expressions;
@@ -36,5 +36,4 @@ public class GroupByClauseBuilderTests
 
     }
 }
-
 

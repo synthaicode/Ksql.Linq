@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Ksql.Linq.Core.Attributes;
 
@@ -6,4 +6,3 @@ namespace Ksql.Linq.Core.Attributes;
 public sealed class KsqlTableAttribute : Attribute
 {
 }
-

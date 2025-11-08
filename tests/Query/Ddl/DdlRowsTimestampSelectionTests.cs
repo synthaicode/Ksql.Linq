@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Abstractions;
+﻿using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Mapping;
 using Ksql.Linq.Query.Analysis;

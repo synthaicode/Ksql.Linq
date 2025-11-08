@@ -1,4 +1,4 @@
-//using Ksql.Linq.Core.Exceptions;
+﻿//using Ksql.Linq.Core.Exceptions;
 namespace Ksql.Linq.Tests.Core;
 
 //public class CoreExceptionsTests

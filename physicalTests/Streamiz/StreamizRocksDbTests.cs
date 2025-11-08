@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
@@ -63,7 +63,7 @@ public class StreamizRocksDbTests
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Trace)  // ここで最低ログレベル指定
+                .SetMinimumLevel(LogLevel.Trace)  // 縺薙％縺ｧ譛菴弱Ο繧ｰ繝ｬ繝吶Ν謖・ｮ・
                 .AddFilter("Streamiz.Kafka.Net", LogLevel.Trace)
                 .AddConsole();
         });
@@ -116,7 +116,7 @@ public class StreamizRocksDbTests
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Trace)  // ここで最低ログレベル指定
+                .SetMinimumLevel(LogLevel.Trace)  // 縺薙％縺ｧ譛菴弱Ο繧ｰ繝ｬ繝吶Ν謖・ｮ・
                 .AddFilter("Streamiz.Kafka.Net", LogLevel.Trace)
                 .AddConsole();
         });
@@ -158,7 +158,7 @@ public class StreamizRocksDbTests
 
     void OnStateChanged(object? _, KafkaStream.State s)
     {
-        // 必要な最小の処理だけ（例：ログ）
+        // 蠢・ｦ√↑譛蟆上・蜃ｦ逅・□縺托ｼ井ｾ具ｼ壹Ο繧ｰ・・
         _logger?.LogInformation("Streams state -> {State}", s);
     }
     private ILogger? _logger;
@@ -175,7 +175,7 @@ public class StreamizRocksDbTests
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Trace)  // ここで最低ログレベル指定
+                .SetMinimumLevel(LogLevel.Trace)  // 縺薙％縺ｧ譛菴弱Ο繧ｰ繝ｬ繝吶Ν謖・ｮ・
                 .AddFilter("Streamiz.Kafka.Net", LogLevel.Trace)
                 .AddConsole();
         });

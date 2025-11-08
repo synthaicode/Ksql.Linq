@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Cache.Configuration;
+﻿namespace Ksql.Linq.Cache.Configuration;
 
 using System.Collections.Generic;
 

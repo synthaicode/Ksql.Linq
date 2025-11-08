@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit.Abstractions;
@@ -31,4 +31,3 @@ public sealed class PriorityOrderer : ITestCaseOrderer
         return sorted;
     }
 }
-

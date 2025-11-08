@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
@@ -11,8 +11,8 @@ using Xunit;
 namespace Ksql.Linq.Tests.Integration;
 
 /// <summary>
-/// OnModelCreating → ToQuery → Materialize(SQL) → Verify の流れに統一。
-/// MarketSchedule 連携の1日/1週バーを検証。
+/// OnModelCreating 竊・ToQuery 竊・Materialize(SQL) 竊・Verify 縺ｮ豬√ｌ縺ｫ邨ｱ荳縲・
+/// MarketSchedule 騾｣謳ｺ縺ｮ1譌･/1騾ｱ繝舌・繧呈､懆ｨｼ縲・
 /// </summary>
 public class BarScheduleExplainTests
 {
@@ -139,6 +139,5 @@ public class BarScheduleExplainTests
         Assert.Contains("EMIT CHANGES", sql, StringComparison.OrdinalIgnoreCase);
     }
 }
-
 
 

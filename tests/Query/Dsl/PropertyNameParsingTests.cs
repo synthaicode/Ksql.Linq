@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Dsl;
+﻿using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Pipeline;
 using System;
 using System.Linq;
@@ -124,4 +124,3 @@ public class PropertyNameParsingTests
         Assert.True(model.Extras.TryGetValue("continuation", out var v) && v is bool b && b);
     }
 }
-

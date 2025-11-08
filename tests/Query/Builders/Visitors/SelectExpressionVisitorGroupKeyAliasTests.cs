@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Attributes;
+﻿using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using Ksql.Linq.Query.Builders.Clauses;
@@ -141,6 +141,5 @@ public class SelectExpressionVisitorGroupKeyAliasTests
         Assert.Equal("dedup.BROKER AS BROKER, dedup.SYMBOL AS SYMBOL", result);
     }
 }
-
 
 

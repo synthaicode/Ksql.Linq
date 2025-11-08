@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders;
+﻿using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
 using System;
@@ -120,5 +120,4 @@ public class KsqlCreateStatementBuilderDslTests
             .Build();
     }
 }
-
 

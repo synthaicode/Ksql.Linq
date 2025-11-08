@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Abstractions;
+﻿using Ksql.Linq.Core.Abstractions;
 using System;
 using System.Reflection;
 using System.Text.RegularExpressions;

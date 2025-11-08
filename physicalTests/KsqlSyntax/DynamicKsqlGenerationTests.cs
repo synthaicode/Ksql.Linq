@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Configuration;
@@ -224,7 +224,7 @@ public class DynamicKsqlGenerationTests
     //}
     //}
 
-    // OnModelCreating で生成したモデルから DDL/DML が正しく実行できるか検証
+    // OnModelCreating 縺ｧ逕滓・縺励◆繝｢繝・Ν縺九ｉ DDL/DML 縺梧ｭ｣縺励￥螳溯｡後〒縺阪ｋ縺区､懆ｨｼ
     //[Fact]
     //[Trait("Category", "Integration")]
     //public async Task CreateAllObjectsByOnModelCreating()
@@ -290,7 +290,7 @@ public class DynamicKsqlGenerationTests
     //            yield return new object[] { q.Ksql };
     //}
 
-    // 生成したすべてのDMLクエリがksqlDBで有効か確認
+    // 逕滓・縺励◆縺吶∋縺ｦ縺ｮDML繧ｯ繧ｨ繝ｪ縺渓sqlDB縺ｧ譛牙柑縺狗｢ｺ隱・
     //[Theory]
     //[Trait("Category", "Integration")]
     //[MemberData(nameof(AllDmlQueries), MemberType = typeof(DynamicKsqlGenerationTests))]

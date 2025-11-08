@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Cache.Core;
+﻿namespace Ksql.Linq.Cache.Core;
 
 internal interface ITableCache<T> : System.IDisposable where T : class
 {

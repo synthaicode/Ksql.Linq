@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Abstractions;
+﻿using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Common;
 using Ksql.Linq.Query.Builders.Visitors;
 using System;

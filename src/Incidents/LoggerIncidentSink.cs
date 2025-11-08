@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,4 +16,3 @@ public sealed class LoggerIncidentSink : IIncidentSink
         return Task.CompletedTask;
     }
 }
-

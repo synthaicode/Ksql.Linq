@@ -1,4 +1,4 @@
-using Avro;
+﻿using Avro;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
@@ -116,7 +116,7 @@ public abstract partial class KsqlContext
             list);
     }
 
-    // A案: tumbling（Derived）の安定化を単発で実行するアダプタ
+    // A譯・ tumbling・・erived・峨・螳牙ｮ壼喧繧貞腰逋ｺ縺ｧ螳溯｡後☆繧九い繝繝励ち
     internal Task EnsureDerivedQueryEntityDdlAdapterAsync(Type entityType, EntityModel baseModel)
     {
         if (_queryDdlMonitor == null)
@@ -929,7 +929,6 @@ public abstract partial class KsqlContext
         return method.Invoke(null, null)!;
     }
 }
-
 
 
 

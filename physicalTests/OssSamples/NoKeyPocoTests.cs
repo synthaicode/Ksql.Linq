@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Configuration;
@@ -120,4 +120,3 @@ static class EnvNoKeyPocoTests
         protected override void OnModelCreating(IModelBuilder modelBuilder) { }
     }
 }
-

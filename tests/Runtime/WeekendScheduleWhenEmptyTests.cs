@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -86,18 +86,18 @@ public class WeekendScheduleWhenEmptyTests
         var sun = fri.AddDays(2);
         var mon = fri.AddDays(3);
 
-        // Sessions: Fri 00:00-00:10, Mon 00:00-00:10 (Sat/Sun 休場)
+        // Sessions: Fri 00:00-00:10, Mon 00:00-00:10 (Sat/Sun 莨大ｴ)
         var friSch = new MarketSchedule { Broker = broker, Symbol = symbol, OpenTimeUtc = fri, CloseTimeUtc = fri.AddMinutes(10) };
         var monSch = new MarketSchedule { Broker = broker, Symbol = symbol, OpenTimeUtc = mon, CloseTimeUtc = mon.AddMinutes(10) };
 
-        // Ticks: FriとMonに1秒+0.01。Sat/Sunは生成してもTimeFrame(=sch範囲)で除外される想定
+        // Ticks: Fri縺ｨMon縺ｫ1遘・0.01縲４at/Sun縺ｯ逕滓・縺励※繧５imeFrame(=sch遽・峇)縺ｧ髯､螟悶＆繧後ｋ諠ｳ螳・
         var ticks = new List<Tick>();
         void AddTicks(DateTime start)
         {
             var cur = start; decimal px = 100m;
             for (int s = 0; s < 600; s++)
             {
-                // 2分目を欠損→WhenEmpty 確認
+                // 2蛻・岼繧呈ｬ謳坂・WhenEmpty 遒ｺ隱・
                 if (!(s >= 60 && s < 120))
                     ticks.Add(new Tick { Broker = broker, Symbol = symbol, TimestampUtc = cur, Bid = Math.Round(px, 4, MidpointRounding.AwayFromZero) });
                 cur = cur.AddSeconds(1); px += 0.01m;
@@ -105,7 +105,7 @@ public class WeekendScheduleWhenEmptyTests
         }
         AddTicks(fri);
         AddTicks(mon);
-        // ついでに土日のデータも投入（しかしスケジュール外なので無視される）
+        // 縺､縺・〒縺ｫ蝨滓律縺ｮ繝・・繧ｿ繧よ兜蜈･・医＠縺九＠繧ｹ繧ｱ繧ｸ繝･繝ｼ繝ｫ螟悶↑縺ｮ縺ｧ辟｡隕悶＆繧後ｋ・・
         ticks.Add(new Tick { Broker = broker, Symbol = symbol, TimestampUtc = sat.AddMinutes(1), Bid = 999m });
         ticks.Add(new Tick { Broker = broker, Symbol = symbol, TimestampUtc = sun.AddMinutes(1), Bid = 999m });
 
@@ -120,23 +120,22 @@ public class WeekendScheduleWhenEmptyTests
         Assert.Equal(10, friBars.Count);
         Assert.Equal(10, monBars.Count);
 
-        // 土日セッションは無い→結合後の全体バーにも土日の分は存在しない（TimeFrame 効いている前提）
+        // 蝨滓律繧ｻ繝・す繝ｧ繝ｳ縺ｯ辟｡縺・・邨仙粋蠕後・蜈ｨ菴薙ヰ繝ｼ縺ｫ繧ょ悄譌･縺ｮ蛻・・蟄伜惠縺励↑縺・ｼ・imeFrame 蜉ｹ縺・※縺・ｋ蜑肴署・・
         var allBars = new List<Rate>();
         allBars.AddRange(friBars);
         allBars.AddRange(monBars);
         Assert.DoesNotContain(allBars, b => b.BucketStart.Date == sat.Date || b.BucketStart.Date == sun.Date);
 
-        // Friの2分目が WhenEmpty 補完されていること
+        // Fri縺ｮ2蛻・岼縺・WhenEmpty 陬懷ｮ後＆繧後※縺・ｋ縺薙→
         Assert.Equal(friBars[0].Close, friBars[1].Open);
         Assert.Equal(friBars[1].Open, friBars[1].High);
         Assert.Equal(friBars[1].Open, friBars[1].Low);
         Assert.Equal(friBars[1].Open, friBars[1].Close);
 
-        // 5分ロールアップも平日のみ生成される
+        // 5蛻・Ο繝ｼ繝ｫ繧｢繝・・繧ょｹｳ譌･縺ｮ縺ｿ逕滓・縺輔ｌ繧・
         var fri5 = friBars.GroupBy(b => Floor5m(b.BucketStart)).Select(g => g.Key).ToList();
         var mon5 = monBars.GroupBy(b => Floor5m(b.BucketStart)).Select(g => g.Key).ToList();
         Assert.All(fri5, d => Assert.Equal(DayOfWeek.Friday, d.DayOfWeek));
         Assert.All(mon5, d => Assert.Equal(DayOfWeek.Monday, d.DayOfWeek));
     }
 }
-

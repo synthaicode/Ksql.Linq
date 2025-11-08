@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
 using Ksql.Linq.Query.Builders;
@@ -19,4 +19,3 @@ public class WindowStartDetectionVisitorTests
         Assert.Equal("Start", visitor.ColumnName);
     }
 }
-

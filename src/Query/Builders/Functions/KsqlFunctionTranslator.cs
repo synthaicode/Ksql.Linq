@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Query.Builders.Common;
 using System;
 using System.Collections.Generic;
@@ -107,7 +107,7 @@ internal static class KsqlFunctionTranslator
                          ?? (methodCall.Arguments.Count > 0 ? methodCall.Arguments[0].Type : null);
         var underlying = targetType != null ? (Nullable.GetUnderlyingType(targetType) ?? targetType) : null;
 
-        // Instance ToString() on DateTime/DateTimeOffset → FORMAT_TIMESTAMP with UTC
+        // Instance ToString() on DateTime/DateTimeOffset 竊・FORMAT_TIMESTAMP with UTC
         if (underlying == typeof(DateTime) || underlying == typeof(DateTimeOffset))
         {
             if (methodCall.Object != null)

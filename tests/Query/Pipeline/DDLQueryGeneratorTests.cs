@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Configuration.Messaging;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
@@ -364,4 +364,3 @@ public class DDLQueryGeneratorTests
         Assert.Contains("Windowed query requires exactly one WindowStart() in projection.", ex.Message);
     }
 }
-

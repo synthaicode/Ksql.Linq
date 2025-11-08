@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Modeling;
+﻿using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
@@ -524,5 +524,4 @@ internal class DMLQueryGenerator : GeneratorBase, IDMLQueryGenerator
         return optimizedQuery;
     }
 }
-
 

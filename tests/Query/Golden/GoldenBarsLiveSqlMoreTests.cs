@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Attributes;
+﻿using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
@@ -73,5 +73,4 @@ public class GoldenBarsLiveSqlMoreTests
         GoldenSqlHelpers.AssertEqualsOrUpdate("tests/Query/Golden/bars_60m_live.sql", sql);
     }
 }
-
 

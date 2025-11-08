@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Ksql.Linq.Query.Pipeline;
 using Xunit;
 
@@ -48,7 +48,6 @@ public class WindowValidatorTests
         result.Windows.Add("90s"); // >= 60s but not minute multiple
         result.BaseUnitSeconds = 1;
         var ex = Assert.Throws<InvalidOperationException>(() => WindowValidator.Validate(result));
-        Assert.Contains("Windows ≥ 1 minute", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Windows 竕･ 1 minute", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 }
-

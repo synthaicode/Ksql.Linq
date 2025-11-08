@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders.Clauses;
+﻿using Ksql.Linq.Query.Builders.Clauses;
 using Ksql.Linq.Query.Dsl;
 using System;
 using System.Collections.Generic;

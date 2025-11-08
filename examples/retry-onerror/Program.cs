@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Ksql.Linq.Core.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -36,4 +36,3 @@ class Program
         Console.WriteLine("Produced with retry + OnError(Dlq) configured.");
     }
 }
-

@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Attributes;
+﻿using Ksql.Linq.Core.Attributes;
 
 [KsqlTopic("bar_1m_live")]
 public class Bar1mLive
@@ -11,4 +11,3 @@ public class Bar1mLive
     public double Low   { get; set; }
     public double Close { get; set; }
 }
-

@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -41,4 +41,3 @@ public static class Health
         throw new TimeoutException($"HTTP not ready: {url}");
     }
 }
-

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Ksql.Linq.Query.Pipeline;
@@ -34,4 +34,3 @@ internal record QueryPipelineMetadata(
         return default;
     }
 }
-

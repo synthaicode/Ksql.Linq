@@ -1,4 +1,4 @@
-using Ksql.Linq.Runtime;
+﻿using Ksql.Linq.Runtime;
 using System;
 using Xunit;
 

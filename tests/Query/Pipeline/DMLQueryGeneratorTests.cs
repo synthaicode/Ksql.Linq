@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Attributes;
+﻿using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Query.Pipeline;
 using Ksql.Linq.Query.Dsl;

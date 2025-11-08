@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Analysis;
+﻿using Ksql.Linq.Query.Analysis;
 
 namespace Ksql.Linq.Query.Builders.Core;
 

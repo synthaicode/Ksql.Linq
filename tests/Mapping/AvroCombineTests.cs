@@ -1,4 +1,4 @@
-using Avro;
+﻿using Avro;
 using Avro.Specific;
 using Ksql.Linq.Core.Models;
 using Ksql.Linq.Mapping;
@@ -88,9 +88,9 @@ public class AvroCombineTests
         };
         var mapping = new KeyValueTypeMapping { ValueProperties = metas };
         var av = new AvroValueMissing();
-        // 欠落フィールドはスキップされ、例外は発生しない（寛容モード）
+        // 谺關ｽ繝輔ぅ繝ｼ繝ｫ繝峨・繧ｹ繧ｭ繝・・縺輔ｌ縲∽ｾ句､悶・逋ｺ逕溘＠縺ｪ縺・ｼ亥ｯ帛ｮｹ繝｢繝ｼ繝会ｼ・
         var poco = (Poco)mapping.CombineFromAvroKeyValue(null, av, typeof(Poco));
-        // マッピングされなかった Id は型の既定値（0）のまま
+        // 繝槭ャ繝斐Φ繧ｰ縺輔ｌ縺ｪ縺九▲縺・Id 縺ｯ蝙九・譌｢螳壼､・・・峨・縺ｾ縺ｾ
         Assert.Equal(0, poco.Id);
     }
 }
@@ -114,4 +114,3 @@ internal class AvroValueMissing : ISpecificRecord
         }
     }
 }
-

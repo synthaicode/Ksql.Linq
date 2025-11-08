@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Confluent.Kafka;
 using Ksql.Linq.Core.Configuration;
 using Xunit;
@@ -70,7 +70,7 @@ public class ManualCommitIntegrationTests
             {
                 if (sample.Id == 3)
                 {
-                    ctx.Samples.Commit(sample); // manual: 実コミット / autocommit: no-op
+                    ctx.Samples.Commit(sample); // manual: 螳溘さ繝溘ャ繝・/ autocommit: no-op
                     consumeCts.Cancel();
                 }
                 return Task.CompletedTask;
@@ -139,4 +139,3 @@ public static class EnvManualCommitIntegrationTests
     internal const string KafkaBootstrapServers = "127.0.0.1:39092";
     internal const string KsqlDbUrl = "http://127.0.0.1:18088";
 }
-

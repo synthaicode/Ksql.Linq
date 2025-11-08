@@ -1,4 +1,4 @@
-using Avro;
+﻿using Avro;
 using Avro.Specific;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Attributes;

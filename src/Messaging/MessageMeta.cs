@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Messaging;
+﻿namespace Ksql.Linq.Messaging;
 
 /// <summary>
 /// Metadata derived from a Kafka message.

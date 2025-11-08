@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 // Order test collections explicitly

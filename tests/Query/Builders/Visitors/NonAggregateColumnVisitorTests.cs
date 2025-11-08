@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders;
+﻿using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Linq;
@@ -41,4 +41,3 @@ public class NonAggregateColumnVisitorTests
         public int Id { get; set; }
     }
 }
-

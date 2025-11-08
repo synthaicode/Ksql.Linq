@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -73,7 +73,7 @@ internal static class HubRowsProjectionAdapter
             // by HubSelectPolicy + SelectExpressionVisitor via overrides/excludes.
             else
             {
-                newBindings.Add(b); // keep original for other members（Broker/Symbol 等）
+                newBindings.Add(b); // keep original for other members・・roker/Symbol 遲会ｼ・
             }
         }
 

@@ -1,4 +1,4 @@
-using DailyComparisonLib;
+﻿using DailyComparisonLib;
 using DailyComparisonLib.Models;
 using System;
 using Xunit;

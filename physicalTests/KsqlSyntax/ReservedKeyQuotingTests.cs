@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Query.Ddl;
 using Ksql.Linq.Query.Pipeline;
@@ -62,4 +62,3 @@ public class ReservedKeyQuotingTests
         public DdlSchemaDefinition GetSchema() => _schema;
     }
 }
-

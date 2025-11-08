@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Dsl;
+﻿using Ksql.Linq.Query.Dsl;
 using System;
 
 namespace Ksql.Linq.Core.Modeling;

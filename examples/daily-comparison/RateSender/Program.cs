@@ -1,4 +1,4 @@
-using DailyComparisonLib;
+﻿using DailyComparisonLib;
 using DailyComparisonLib.Models;
 
 await using var context = MyKsqlContext.FromAppSettings("appsettings.json");

@@ -1,4 +1,4 @@
-using Ksql.Linq.Configuration;
+﻿using Ksql.Linq.Configuration;
 using System;
 
 namespace Ksql.Linq.Core.Dlq;
@@ -16,4 +16,3 @@ public static class DlqGuard
         return true;
     }
 }
-

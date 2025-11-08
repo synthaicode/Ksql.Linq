@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Microsoft.Extensions.Configuration;
 
@@ -26,5 +26,4 @@ public class MyKsqlContext : KafkaKsqlContext
         return FromConfiguration(config);
     }
 }
-
 

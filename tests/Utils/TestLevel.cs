@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Tests.Utils;
+﻿namespace Ksql.Linq.Tests.Utils;
 
 /// <summary>
 /// Centralized test level tags for filtering in CI and local runs.
@@ -11,4 +11,3 @@ public static class TestLevel
     public const string L4 = "L4"; // Golden/canonical snapshot tests
     public const string L5 = "L5"; // Pseudo-E2E tests (fast, mocked externals)
 }
-

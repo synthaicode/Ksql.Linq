@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Dsl;

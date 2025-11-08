@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
@@ -70,5 +70,4 @@ public class HubAggregateOverrideBuilderTests
         SqlAssert.EndsWithSemicolon(sql);
     }
 }
-
 

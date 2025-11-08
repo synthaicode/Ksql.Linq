@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Configuration;
+﻿namespace Ksql.Linq.Configuration;
 
 
 public enum ValidationMode

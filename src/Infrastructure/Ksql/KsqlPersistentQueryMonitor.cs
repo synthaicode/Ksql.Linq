@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using ConfluentSchemaRegistry = Confluent.SchemaRegistry;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Models;

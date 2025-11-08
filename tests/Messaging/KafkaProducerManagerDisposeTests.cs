@@ -1,4 +1,4 @@
-using Confluent.SchemaRegistry;
+﻿using Confluent.SchemaRegistry;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Configuration;
 using Ksql.Linq.Core.Models;
@@ -110,6 +110,5 @@ public class KafkaProducerManagerDisposeTests
         Assert.True(GetDisposedFlag(manager));
     }
 }
-
 
 

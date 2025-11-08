@@ -1,4 +1,4 @@
-using Ksql.Linq;
+﻿using Ksql.Linq;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -270,6 +270,5 @@ public static class KsqlHelpers
         });
     }
 }
-
 
 

@@ -1,4 +1,4 @@
-using Ksql.Linq.Core.Extensions;
+﻿using Ksql.Linq.Core.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Xunit;

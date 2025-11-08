@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ksql.Linq.Incidents;
@@ -17,4 +17,3 @@ public static class IncidentBus
     public static Task PublishAsync(Incident incident, CancellationToken ct = default)
         => Sink is null ? Task.CompletedTask : Sink.PublishAsync(incident, ct);
 }
-

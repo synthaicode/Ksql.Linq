@@ -1,4 +1,4 @@
-namespace Ksql.Linq.Query.Builders.Statements;
+﻿namespace Ksql.Linq.Query.Builders.Statements;
 
 internal enum KeyPathStyle
 {

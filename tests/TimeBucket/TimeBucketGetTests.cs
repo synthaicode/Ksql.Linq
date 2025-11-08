@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 using System.Collections.Concurrent;
 
@@ -359,4 +359,3 @@ public class TimeBucketGetTests
     }
 
 }
-

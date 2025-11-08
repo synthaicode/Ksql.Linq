@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Builders;
+﻿using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
 using Xunit;
@@ -34,5 +34,4 @@ public class KsqlInsertStatementBuilderTests
         Assert.StartsWith("INSERT INTO orders", sql);
     }
 }
-
 

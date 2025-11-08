@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,4 +11,3 @@ public sealed class MarketScheduleServiceNoop : IMarketScheduleService
     public DateTime GetNowUtc() => DateTime.UtcNow;
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
-

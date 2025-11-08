@@ -1,4 +1,4 @@
-using Ksql.Linq.Query.Abstractions;
+﻿using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Hub.Analysis;
 using Ksql.Linq.Query.Builders.Common;
@@ -154,5 +154,4 @@ internal class SelectClauseBuilder : BuilderBase
         return visitor.HasNonAggregateColumns;
     }
 }
-
 
