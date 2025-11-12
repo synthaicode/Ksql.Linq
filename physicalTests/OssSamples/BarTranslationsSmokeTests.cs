@@ -145,7 +145,9 @@ public class BarTranslationsSmokeTests
 
         // Compare filtered vs unfiltered snapshots to isolate filter-related behavior.
         // Note: Unfiltered uses obsolete facade to allow null filter for diagnostics only.
-        var allRows = await TimeBucket.ToListAsync<BarT>(ctx, Ksql.Linq.Runtime.Period.Minutes(1), null, null, cts.Token);
+        var allRows = await Ksql.Linq.Runtime.TimeBucket
+            .Get<BarT>(ctx, Ksql.Linq.Runtime.Period.Minutes(1))
+            .ToListAsync(cts.Token);
         var filteredRows = await TimeBucket.ReadAsync<BarT>(ctx, Ksql.Linq.Runtime.Period.Minutes(1), new[] { broker, symbol }, cts.Token);
         Console.WriteLine($"[diag] 1m_all_count={allRows?.Count ?? -1} filtered_count={filteredRows?.Count ?? -1}");
         if ((allRows?.Count ?? 0) > 0)
@@ -300,4 +302,3 @@ public class BarTranslationsSmokeTests
         }
     }
 }
-

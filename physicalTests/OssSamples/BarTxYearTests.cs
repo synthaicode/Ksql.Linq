@@ -138,7 +138,7 @@ public class BarTxYearTests
         // Keyless probe: take a snapshot from cache to confirm RocksDB arrival (short timeout)
         using (var probeCts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
         {
-            var probeList = await Ksql.Linq.TimeBucket
+            var probeList = await Ksql.Linq.Runtime.TimeBucket
                 .Get<BarY>(ctx, Ksql.Linq.Runtime.Period.Minutes(1))
                 .ToListAsync(probeCts.Token);
             Console.WriteLine($"[test.probe] cache.rows={probeList.Count}");

@@ -240,7 +240,7 @@ public class TimeBucketGetTests
 
 
 
-        var bucket = Ksql.Linq.TimeBucket.Get<TestBar>(ctx, OneMinute);
+        var bucket = Ksql.Linq.Runtime.TimeBucket.Get<TestBar>(ctx, OneMinute);
 
         var result = await bucket.ToListAsync(new[] { "B", "S" }, CancellationToken.None);
 
@@ -288,7 +288,7 @@ public class TimeBucketGetTests
 
 
 
-        var bucket = Ksql.Linq.TimeBucket.Get<TestBar>(ctx, OneMinute);
+        var bucket = Ksql.Linq.Runtime.TimeBucket.Get<TestBar>(ctx, OneMinute);
 
         var result = await bucket.ToListAsync(new[] { "B", "S" }, CancellationToken.None);
 
@@ -313,7 +313,7 @@ public class TimeBucketGetTests
     {
         var registry = new TableCacheRegistry();
         var ctx = CreateContext(registry);
-        var bucket = Ksql.Linq.TimeBucket.Get<TestBar>(ctx, OneMinute);
+        var bucket = Ksql.Linq.Runtime.TimeBucket.Get<TestBar>(ctx, OneMinute);
         Assert.Equal("tb_unit_1m_live", bucket.LiveTopicName);
     }
     [Fact]
@@ -338,7 +338,7 @@ public class TimeBucketGetTests
 
 
 
-        var bucket = Ksql.Linq.TimeBucket.Get<TestBar>(ctx, OneMinute);
+        var bucket = Ksql.Linq.Runtime.TimeBucket.Get<TestBar>(ctx, OneMinute);
 
         var result = await bucket.ToListAsync(CancellationToken.None);
 

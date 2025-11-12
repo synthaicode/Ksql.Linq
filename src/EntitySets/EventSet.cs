@@ -677,7 +677,7 @@ internal class MappedEventSet<T> : EventSet<T> where T : class
     /// <summary>
     /// Helper method to create a MappedEventSet
     /// </summary>
-    public static MappedEventSet<T> Create(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink? errorSink = null)
+    internal static MappedEventSet<T> Create(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink? errorSink = null)
     {
         return new MappedEventSet<T>(mappedItems, context, originalEntityModel, errorSink);
     }
@@ -685,7 +685,7 @@ internal class MappedEventSet<T> : EventSet<T> where T : class
     /// <summary>
     /// Create a MappedEventSet with DLQ support
     /// </summary>
-    public static MappedEventSet<T> CreateWithDlq(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink dlqErrorSink)
+    internal static MappedEventSet<T> CreateWithDlq(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink dlqErrorSink)
     {
         return new MappedEventSet<T>(mappedItems, context, originalEntityModel, dlqErrorSink);
     }

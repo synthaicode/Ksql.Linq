@@ -10,6 +10,25 @@ P:Ksql.Linq.KsqlDbResponse.Message
 P:Ksql.Linq.KsqlDbResponse.ErrorCode
 P:Ksql.Linq.KsqlDbResponse.ErrorDetail
 
+// Builder/options (public, used in wiki/examples)
+// Note: Types already shipped; keep only new members here.
+
+// Configuration abstractions (public DTOs)
+T:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions
+M:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.#ctor
+T:Ksql.Linq.Configuration.DefaultValueBinder
+M:Ksql.Linq.Configuration.DefaultValueBinder.ApplyDefaults(System.Object)
+
+// Enums used in configuration and modeling
+T:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy
+F:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy.Skip
+F:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy.Retry
+F:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy.DLQ
+T:Ksql.Linq.Core.Abstractions.EntityAccessMode
+F:Ksql.Linq.Core.Abstractions.EntityAccessMode.ReadWrite
+F:Ksql.Linq.Core.Abstractions.EntityAccessMode.ReadOnly
+F:Ksql.Linq.Core.Abstractions.EntityAccessMode.WriteOnly
+
 // Messaging configuration (public surface for appsettings binding)
 P:Ksql.Linq.Configuration.Messaging.TopicSection.TopicName
 P:Ksql.Linq.Configuration.Messaging.TopicSection.Producer

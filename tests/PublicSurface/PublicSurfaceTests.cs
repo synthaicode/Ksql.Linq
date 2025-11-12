@@ -36,7 +36,13 @@ public class PublicSurfaceTests
             .ToHashSet(StringComparer.Ordinal);
 
         var missing = allowed.Where(a => !exported.Contains(a)).ToList();
+        var unexpected = exported.Where(e => !allowed.Contains(e)).ToList();
         Assert.True(missing.Count == 0, "Missing expected public types:\n" + string.Join("\n", missing));
+        var strict = Environment.GetEnvironmentVariable("STRICT_PUBLIC_SURFACE") == "1";
+        if (strict)
+        {
+            Assert.True(unexpected.Count == 0, "Unexpected public types:\n" + string.Join("\n", unexpected));
+        }
     }
 
     // No wildcard helpers needed for explicit list

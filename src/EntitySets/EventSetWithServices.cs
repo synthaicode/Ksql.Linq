@@ -10,7 +10,7 @@ internal class EventSetWithServices<T> : EventSet<T> where T : class
 {
     private readonly KsqlContext _ksqlContext;
 
-    public EventSetWithServices(KsqlContext context, EntityModel entityModel)
+    internal EventSetWithServices(KsqlContext context, EntityModel entityModel)
         : base(context, entityModel, null, context.GetDlqProducer(), context.GetCommitManager())
     {
         _ksqlContext = context ?? throw new ArgumentNullException(nameof(context));

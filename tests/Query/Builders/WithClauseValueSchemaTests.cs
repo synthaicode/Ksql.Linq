@@ -3,7 +3,6 @@ using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Tests.Utils;
-using Ksql.Linq.Tests.Utils;
 using Xunit;
 
 namespace Ksql.Linq.Tests.Query.Builders;
@@ -58,5 +57,4 @@ public class WithClauseValueSchemaTests
         SqlAssert.EndsWithSemicolon(sql);
     }
 }
-
 

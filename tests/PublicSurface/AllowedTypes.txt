@@ -39,3 +39,17 @@ Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
 
 # Messaging meta
 Ksql.Linq.Messaging.MessageMeta
+
+# Configuration (appsettings)
+Ksql.Linq.Configuration.KsqlDslOptions
+Ksql.Linq.Configuration.KsqlServerOptions
+Ksql.Linq.Configuration.CommonSection
+Ksql.Linq.Core.Configuration.SchemaRegistrySection
+Ksql.Linq.Configuration.Messaging.TopicSection
+Ksql.Linq.Configuration.Messaging.TopicCreationSection
+Ksql.Linq.Configuration.Messaging.ProducerSection
+Ksql.Linq.Configuration.Messaging.ConsumerSection
+Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions
+
+# DLQ client
+Ksql.Linq.Core.Dlq.IDlqClient
