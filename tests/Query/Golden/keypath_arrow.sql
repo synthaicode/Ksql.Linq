@@ -1,1 +1,1 @@
-create table if not exists keypath_arrow with(kafka_topic='keypath_arrow', cleanup_policy='compact', key_format='avro', value_format='avro')as select key->broker as broker, key->symbol as symbol, sum(qty)as total from tableentity group by key->broker, key->symbol emit changes;
+create table if not exists keypath_arrow with(kafka_topic='keypath_arrow', key_format='avro', value_format='avro')as select key->broker as broker, key->symbol as symbol, sum(qty)as total from tableentity group by key->broker, key->symbol emit changes;

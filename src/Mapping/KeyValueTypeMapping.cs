@@ -340,7 +340,7 @@ internal class KeyValueTypeMapping
             return Guid.TryParse(s, out var g) ? g : Guid.Empty;
         if (t.IsEnum)
             return Enum.Parse(t, s, true);
-        return Convert.ChangeType(s, t, CultureInfo.InvariantCulture);
+        return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(s, t);
     }
 
     private static Action<object, object> BuildPlan(Type pocoType, Schema schema, PropertyMeta[] metas, bool generic)
@@ -464,11 +464,11 @@ internal class KeyValueTypeMapping
         {
             if (raw is AvroDecimal adv) return (decimal)adv;
             if (raw is decimal d) return d;
-            try { return Convert.ChangeType(raw, t); } catch { }
+            try { return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(raw, t); } catch { }
         }
         if (t == typeof(Guid) && raw is string sg && Guid.TryParse(sg, out var g))
             return g;
-        try { return Convert.ChangeType(raw, t); }
+        try { return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(raw, t); }
         catch { return raw; }
     }
 
@@ -826,5 +826,4 @@ internal class KeyValueTypeMapping
         }
     }
 }
-
 

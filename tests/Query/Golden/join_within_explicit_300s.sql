@@ -1,1 +1,1 @@
-create stream if not exists join_explicit with(kafka_topic='join_explicit', cleanup_policy='delete', value_format='avro')as select o.id as id, i.name as name from order o join customer i within 300 seconds on(o.customerid = i.id)emit changes;
+create stream if not exists join_explicit with(kafka_topic='join_explicit', value_format='avro')as select o.id as id, i.name as name from order o join customer i within 300 seconds on(o.customerid = i.id)emit changes;

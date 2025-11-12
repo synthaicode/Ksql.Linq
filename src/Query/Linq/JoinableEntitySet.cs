@@ -35,19 +35,46 @@ public class JoinableEntitySet<T> : IEntitySet<T>, IJoinableEntitySet<T> where T
         return _baseEntitySet.ToListAsync(cancellationToken);
     }
 
-    public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
         return _baseEntitySet.ForEachAsync((e, h, _) => action(e), timeout, autoCommit, cancellationToken);
     }
 
+    // Convenience overloads
+    public Task ForEachAsync(Func<T, Task> action)
+        => _baseEntitySet.ForEachAsync(action);
+
+    public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout)
+        => _baseEntitySet.ForEachAsync(action, timeout);
+
+    public Task ForEachAsync(Func<T, Task> action, CancellationToken cancellationToken)
+        => _baseEntitySet.ForEachAsync(action, cancellationToken);
+
     [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
         => _baseEntitySet.ForEachAsync((e, h, _) => action(e, h), timeout, autoCommit, cancellationToken);
 
-    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action)
+        => _baseEntitySet.ForEachAsync(action);
+
+    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout)
+        => _baseEntitySet.ForEachAsync(action, timeout);
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
         return _baseEntitySet.ForEachAsync(action, timeout, autoCommit, cancellationToken);
     }
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action)
+        => _baseEntitySet.ForEachAsync(action);
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit)
+        => _baseEntitySet.ForEachAsync(action, autoCommit);
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout)
+        => _baseEntitySet.ForEachAsync(action, timeout);
 
     public string GetTopicName() => _baseEntitySet.GetTopicName();
 

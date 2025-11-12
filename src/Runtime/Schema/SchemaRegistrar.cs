@@ -16,7 +16,7 @@ namespace Ksql.Linq.Runtime.Schema;
 /// <summary>
 /// Orchestrates schema registration and related readiness steps, leveraging context adapters.
 /// </summary>
-    public sealed class SchemaRegistrar : ISchemaRegistrar
+    internal sealed class SchemaRegistrar : ISchemaRegistrar
     {
         private readonly KsqlContext _context;
 
@@ -95,7 +95,7 @@ namespace Ksql.Linq.Runtime.Schema;
                 var queryId = await _context.TryGetQueryIdFromShowQueriesAdapterAsync(model.GetTopicName(), ddl).ConfigureAwait(false);
                 try
                 {
-                    await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                     {
                         Name = "query.run",
                         Phase = "start",
@@ -111,7 +111,7 @@ namespace Ksql.Linq.Runtime.Schema;
                     await _context.WaitForQueryRunningAdapterAsync(model.GetTopicName(), TimeSpan.FromSeconds(60), queryId).ConfigureAwait(false);
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "query.run",
                             Phase = "done",
@@ -127,7 +127,7 @@ namespace Ksql.Linq.Runtime.Schema;
                 {
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "query.run",
                             Phase = "timeout",
@@ -179,38 +179,47 @@ namespace Ksql.Linq.Runtime.Schema;
 
     private async Task<Ksql.Linq.KsqlDbResponse> ExecuteWithRetryAsync(string sql, CancellationToken ct)
     {
-        var attempts = 0;
-        var configured = _context.GetKsqlDdlRetryCountAdapter();
-        var maxAttempts = Math.Max(0, configured) + 1; // include first try
-        var delayMs = Math.Max(0, _context.GetKsqlDdlRetryInitialDelayMsAdapter());
+        var maxAttempts = Math.Max(0, _context.GetKsqlDdlRetryCountAdapter()) + 1;
+        var initialDelay = TimeSpan.FromMilliseconds(Math.Max(0, _context.GetKsqlDdlRetryInitialDelayMsAdapter()));
         if (maxAttempts <= 0) maxAttempts = 1;
-        if (delayMs <= 0) delayMs = 500;
-        while (true)
+        if (initialDelay == TimeSpan.Zero) initialDelay = TimeSpan.FromMilliseconds(500);
+
+        var policy = new Ksql.Linq.Core.Retry.RetryPolicy
         {
-            ct.ThrowIfCancellationRequested();
-            var result = await _context.ExecuteStatementAsync(sql).ConfigureAwait(false);
-            if (result.IsSuccess)
-                return result;
-            attempts++;
-            if (!IsRetryableKsqlError(result.Message))
-                return result;
-            if (attempts >= maxAttempts)
-                return result;
-            _context.Logger?.LogWarning("Retrying DDL due to: {Reason} (attempt {Attempt})", result.Message, attempts);
-            try
+            MaxAttempts = maxAttempts,
+            InitialDelay = initialDelay,
+            Strategy = Ksql.Linq.Core.Retry.BackoffStrategy.Exponential,
+            IsRetryable = ex => IsRetryableKsqlError(ex.Message)
+        };
+
+        try
+        {
+            return await policy.ExecuteAsync(async () =>
             {
-                await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                ct.ThrowIfCancellationRequested();
+                var res = await _context.ExecuteStatementAsync(sql).ConfigureAwait(false);
+                if (res.IsSuccess)
+                    return res;
+                // Non-success: throw with message so policy can decide
+                throw new InvalidOperationException(res.Message ?? "DDL execution failed");
+            }, ct, (attempt, ex) =>
+            {
+                _context.Logger?.LogWarning("Retrying DDL due to: {Reason} (attempt {Attempt})", ex.Message, attempt);
+                RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                 {
                     Name = "ddl.simple.retry",
                     Phase = "retry",
                     SqlPreview = sql,
                     Success = false,
-                    Message = result.Message
-                }, ct).ConfigureAwait(false);
-            }
-            catch { }
-            try { await Task.Delay(TimeSpan.FromMilliseconds(delayMs), ct).ConfigureAwait(false); } catch { }
-            delayMs = Math.Min(delayMs * 2, 8000);
+                    Message = ex.Message
+                }, ct);
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Final failure after retries: return an error response-like result for consistency
+            _context.Logger?.LogError(ex, "DDL execution failed after retries.");
+            return new Ksql.Linq.KsqlDbResponse(false, ex.Message);
         }
     }
 
@@ -241,10 +250,8 @@ namespace Ksql.Linq.Runtime.Schema;
                 }
             }
             catch { }
-            try { await Task.Delay(500, ct).ConfigureAwait(false); } catch { }
+            await Ksql.Linq.Core.Async.SafeDelay.Milliseconds(500, ct).ConfigureAwait(false);
         }
         throw new TimeoutException("ksqlDB warmup timed out (SHOW TOPICS did not succeed).");
     }
 }
-
-

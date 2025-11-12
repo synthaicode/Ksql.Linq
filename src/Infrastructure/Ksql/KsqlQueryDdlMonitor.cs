@@ -18,6 +18,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ksql.Linq.Core.Retry;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 
@@ -128,32 +129,40 @@ internal sealed class KsqlQueryDdlMonitor
 
     private async Task<KsqlDbResponse> ExecuteWithRetryAsync(Type entityType, string sql)
     {
-        var attempts = 0;
-        var maxAttempts = Math.Max(0, _deps.Options.KsqlDdlRetryCount) + 1;
-        var delayMs = Math.Max(0, _deps.Options.KsqlDdlRetryInitialDelayMs);
+        var policy = new RetryPolicy
+        {
+            MaxAttempts = Math.Max(0, _deps.Options.KsqlDdlRetryCount) + 1,
+            InitialDelay = TimeSpan.FromMilliseconds(Math.Max(0, _deps.Options.KsqlDdlRetryInitialDelayMs)),
+            Strategy = BackoffStrategy.Exponential,
+            IsRetryable = ex => IsRetryableKsqlError(ex.Message)
+        };
 
-        while (true)
+        KsqlDbResponse? last = null;
+        await policy.ExecuteAsync(async () =>
         {
             var result = await _deps.ExecuteStatementAsync(sql).ConfigureAwait(false);
+            last = result;
             if (result.IsSuccess)
-                return result;
+                return;
 
             if (IsNonFatalCreateConflict(sql, result.Message))
-                return new KsqlDbResponse(true, result.Message ?? string.Empty, result.ErrorCode, result.ErrorDetail);
-
-            attempts++;
-            var retryable = IsRetryableKsqlError(result.Message);
-            if (!retryable || attempts >= maxAttempts)
             {
-                var msg = $"DDL execution failed for {entityType.Name}: {result.Message}";
-                _deps.Logger?.LogError(msg);
-                throw new InvalidOperationException(msg);
+                last = new KsqlDbResponse(true, result.Message ?? string.Empty, result.ErrorCode, result.ErrorDetail);
+                return;
             }
 
-            _deps.Logger?.LogWarning("Retrying DDL for {Entity} (attempt {Attempt}/{Max}) due to: {Reason}", entityType.Name, attempts, maxAttempts - 1, result.Message);
-            await _deps.DelayAsync(TimeSpan.FromMilliseconds(delayMs), CancellationToken.None).ConfigureAwait(false);
-            delayMs = Math.Min(delayMs * 2, 8000);
-        }
+            if (!IsRetryableKsqlError(result.Message))
+                throw new InvalidOperationException(result.Message ?? "DDL execution failed");
+
+            throw new InvalidOperationException(result.Message ?? "DDL retryable failure");
+        }, CancellationToken.None, (attempt, ex) =>
+        {
+            _deps.Logger?.LogWarning("Retrying DDL for {Entity} (attempt {Attempt}) due to: {Reason}", entityType.Name, attempt, ex.Message);
+        }).ConfigureAwait(false);
+
+        if (last == null)
+            last = new KsqlDbResponse(true, string.Empty);
+        return last;
     }
 
     private string ResolveSourceName(Type? type)
@@ -167,7 +176,7 @@ internal sealed class KsqlQueryDdlMonitor
         }
 
         if (type != null && _deps.EntityModels.TryGetValue(type, out var srcModel))
-            return srcModel.GetTopicName().ToUpperInvariant();
+            return global::Ksql.Linq.Core.Sql.Identifiers.Normalize(srcModel.GetTopicName());
 
         return key;
     }
@@ -200,5 +209,3 @@ internal sealed class KsqlQueryDdlMonitor
     }
 
 }
-
-

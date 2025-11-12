@@ -231,12 +231,12 @@ public abstract partial class KsqlContext
                 var mapping = _mappingRegistry.GetMapping(type);
                 if (model.QueryModel == null && model.QueryExpression == null && model.HasKeys() && mapping.AvroKeySchema != null)
                 {
-                    var keySubject = $"{model.GetTopicName()}-key";
+                    var keySubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName());
                     await client.RegisterSchemaIfNewAsync(keySubject, mapping.AvroKeySchema);
                     var keySchema = Avro.Schema.Parse(mapping.AvroKeySchema);
                     model.KeySchemaFullName = keySchema.Fullname;
                 }
-                var valueSubject = $"{model.GetTopicName()}-value";
+                var valueSubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(model.GetTopicName());
                 var valueResult = await client.RegisterSchemaIfNewAsync(valueSubject, mapping.AvroValueSchema!);
                 var valueSchema = Avro.Schema.Parse(mapping.AvroValueSchema!);
                 if (mapping.AvroValueType == typeof(Avro.Generic.GenericRecord))
@@ -258,7 +258,7 @@ public abstract partial class KsqlContext
                         Entity = type.Name,
                         Topic = model.GetTopicName(),
                         Success = true,
-                        Message = $"subjects {model.GetTopicName()}-key,{model.GetTopicName()}-value registered"
+                        Message = $"subjects {Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName())},{Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(model.GetTopicName())} registered"
                     }).ConfigureAwait(false);
                 }
                 catch { }
@@ -333,40 +333,29 @@ public abstract partial class KsqlContext
             : generator.GenerateCreateStream(schemaProvider);
         Logger.LogInformation("KSQL DDL (simple {Entity}): {Sql}", type.Name, ddl);
         // Retry DDL with exponential backoff to tolerate ksqlDB command-topic warmup
-        var attempts = 0;
-        var maxAttempts = Math.Max(0, _dslOptions.KsqlDdlRetryCount) + 1; // include first try
-        var delayMs = Math.Max(0, _dslOptions.KsqlDdlRetryInitialDelayMs);
-        while (true)
+        var policy = new Ksql.Linq.Core.Retry.RetryPolicy
         {
-            var result = await ExecuteStatementAsync(ddl);
-            if (result.IsSuccess)
-                break;
-            attempts++;
-            var retryable = IsRetryableKsqlError(result.Message);
-            if (!retryable || attempts >= maxAttempts)
+            MaxAttempts = Math.Max(0, _dslOptions.KsqlDdlRetryCount) + 1,
+            InitialDelay = TimeSpan.FromMilliseconds(Math.Max(0, _dslOptions.KsqlDdlRetryInitialDelayMs)),
+            Strategy = Ksql.Linq.Core.Retry.BackoffStrategy.Exponential,
+            IsRetryable = msgEx => IsRetryableKsqlError(msgEx.Message)
+        };
+        try
+        {
+            await policy.ExecuteAsync(async () =>
             {
-                var msg = $"DDL execution failed for {type.Name}: {result.Message}";
-                Logger.LogError(msg);
-                try
-                {
-                    await Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
-                    {
-                        Name = "ddl.simple.fail",
-                        Phase = "fail",
-                        Entity = type.Name,
-                        Topic = model.GetTopicName(),
-                        SqlPreview = Preview(ddl),
-                        Success = false,
-                        Message = result.Message
-                    }).ConfigureAwait(false);
-                }
-                catch { }
-                throw new InvalidOperationException(msg);
-            }
-            Logger.LogWarning("Retrying DDL for {Entity} (attempt {Attempt}/{Max}) due to: {Reason}", type.Name, attempts, maxAttempts - 1, result.Message);
-            try
+                var result = await ExecuteStatementAsync(ddl);
+                if (result.IsSuccess)
+                    return;
+                // If non-retryable, surface as terminal failure to the policy
+                if (!IsRetryableKsqlError(result.Message))
+                    throw new InvalidOperationException($"Non-retryable DDL error: {result.Message}");
+                // Retryable: throw to trigger policy backoff
+                throw new InvalidOperationException(result.Message ?? "DDL failed");
+            }, default, (attempt, ex) =>
             {
-                await Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
+                Logger.LogWarning("Retrying DDL for {Entity} (attempt {Attempt}) due to: {Reason}", type.Name, attempt, ex.Message);
+                Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new Ksql.Linq.Events.RuntimeEvent
                 {
                     Name = "ddl.simple.retry",
                     Phase = "retry",
@@ -374,12 +363,25 @@ public abstract partial class KsqlContext
                     Topic = model.GetTopicName(),
                     SqlPreview = Preview(ddl),
                     Success = false,
-                    Message = result.Message
-                }).ConfigureAwait(false);
-            }
-            catch { }
-            await _delay(TimeSpan.FromMilliseconds(delayMs), default);
-            delayMs = Math.Min(delayMs * 2, 8000);
+                    Message = ex.Message
+                });
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            var msg = $"DDL execution failed for {type.Name}: {ex.Message}";
+            Logger.LogError(msg);
+            await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new Ksql.Linq.Events.RuntimeEvent
+            {
+                Name = "ddl.simple.fail",
+                Phase = "fail",
+                Entity = type.Name,
+                Topic = model.GetTopicName(),
+                SqlPreview = Preview(ddl),
+                Success = false,
+                Message = ex.Message
+            }).ConfigureAwait(false);
+            throw new InvalidOperationException(msg);
         }
         // Ensure the entity is visible to ksqlDB metadata before proceeding
         await WaitForEntityDdlAsync(model, TimeSpan.FromSeconds(12));
@@ -792,7 +794,7 @@ public abstract partial class KsqlContext
                 return;
 
             var client = GetSchemaRegistryClient();
-            var subject = $"{topic}-key";
+            var subject = global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic);
             var schemaMetadata = await client.GetLatestSchemaAsync(subject).ConfigureAwait(false);
             var schemaString = schemaMetadata?.SchemaString;
             if (string.IsNullOrWhiteSpace(schemaString))
@@ -860,7 +862,7 @@ public abstract partial class KsqlContext
         }
         catch (ConfluentSchemaRegistry.SchemaRegistryException ex) when (ex.ErrorCode == 404 || ex.ErrorCode == 40401)
         {
-            Logger.LogDebug(ex, "Schema subject {Subject} not found while aligning mapping.", $"{model.GetTopicName()}-key");
+            Logger.LogDebug(ex, "Schema subject {Subject} not found while aligning mapping.", Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName()));
         }
         catch (Exception ex)
         {
@@ -929,10 +931,6 @@ public abstract partial class KsqlContext
         return method.Invoke(null, null)!;
     }
 }
-
-
-
-
 
 
 

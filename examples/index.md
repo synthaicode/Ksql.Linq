@@ -58,6 +58,10 @@ dotnet run --project examples/basic-produce-consume
 ## Operations & maintenance
 - `streamiz-clear`: Clear Streamiz local state caches (RocksDB). One-off maintenance tool. Run: `dotnet run --project examples/streamiz-clear/StreamizClear.csproj`.
 - `runtime-events`: Observe runtime/diagnostic events and counters.
+- `startup-warmup`: Read-only warmup of ksqlDB paths at app startup.
+- `options-validation-timeouts`: Configure validation behavior and schema registration timeouts.
+- `ksql-response-inspect`: Execute KSQL and inspect `KsqlDbResponse`.
+- `custom-executor`: Implement and use a custom `IKsqlExecutor` (direct call demo).
 
 ---
 

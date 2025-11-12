@@ -131,7 +131,7 @@ internal static class KsqlContextCacheExtensions
             if (Diag)
             {
                 try { System.Console.WriteLine($"[cache.enum] MemStore rows={mc} store={storeName}"); } catch { }
-                _ = RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "cache.enum", Phase = "mem.rows", Topic = storeName, Success = true, Message = mc.ToString() });
+                Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent { Name = "cache.enum", Phase = "mem.rows", Topic = storeName, Success = true, Message = mc.ToString() });
             }
             yield break;
         }
@@ -150,7 +150,7 @@ internal static class KsqlContextCacheExtensions
                 if (Diag)
                 {
                     try { System.Console.WriteLine($"[cache.enum] TimestampedKV opened store={storeName} type={tsStoreObj.GetType().Name}"); } catch { }
-                    _ = RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "cache.enum", Phase = "tskv.open", Topic = storeName, Success = true, Message = tsStoreObj.GetType().Name });
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent { Name = "cache.enum", Phase = "tskv.open", Topic = storeName, Success = true, Message = tsStoreObj.GetType().Name });
                 }
                 var storeType = tsStoreObj.GetType();
                 var allMethod = storeType.GetMethod("All", BindingFlags.Public | BindingFlags.Instance);
@@ -184,7 +184,7 @@ internal static class KsqlContextCacheExtensions
                         if (Diag)
                         {
                             try { System.Console.WriteLine($"[cache.enum] TimestampedKV rows={c} store={storeName}"); } catch { }
-                            _ = RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "cache.enum", Phase = "tskv.rows", Topic = storeName, Success = true, Message = c.ToString() });
+                            Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent { Name = "cache.enum", Phase = "tskv.rows", Topic = storeName, Success = true, Message = c.ToString() });
                         }
                         if (c > 0)
                             tsHasAny = true;
@@ -217,7 +217,7 @@ internal static class KsqlContextCacheExtensions
             if (Diag)
             {
                 try { System.Console.WriteLine($"[cache.enum] KV opened store={storeName} type={store?.GetType().Name ?? "<null>"}"); } catch { }
-                _ = RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "cache.enum", Phase = "kv.open", Topic = storeName, Success = true, Message = store?.GetType().Name ?? "<null>" });
+                Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent { Name = "cache.enum", Phase = "kv.open", Topic = storeName, Success = true, Message = store?.GetType().Name ?? "<null>" });
             }
 
             if (store == null)
@@ -263,7 +263,7 @@ internal static class KsqlContextCacheExtensions
                 if (Diag)
                 {
                     try { System.Console.WriteLine($"[cache.enum] KV rows={c2} store={storeName}"); } catch { }
-                    _ = RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "cache.enum", Phase = "kv.rows", Topic = storeName, Success = true, Message = c2.ToString() });
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent { Name = "cache.enum", Phase = "kv.rows", Topic = storeName, Success = true, Message = c2.ToString() });
                 }
                 if (c2 == 0 && ReflectionFallbackEnabled)
                 {
@@ -377,7 +377,7 @@ internal static class KsqlContextCacheExtensions
                 if (Diag)
                 {
                     try { System.Console.WriteLine($"[cache.retry] attempt={attempt} store={storeName} msg={ex.Message}"); } catch { }
-                    _ = RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "cache.error", Phase = "retry", Topic = storeName, Success = false, Message = ex.Message });
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent { Name = "cache.error", Phase = "retry", Topic = storeName, Success = false, Message = ex.Message });
                 }
                 System.Threading.Thread.Sleep(delayMs);
                 continue;
@@ -443,7 +443,7 @@ internal static class KsqlContextCacheExtensions
             {
                 if (s == KafkaStream.State.RUNNING)
                 {
-                    RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                     {
                         Name = "streamiz.state",
                         Phase = "running",
@@ -457,7 +457,7 @@ internal static class KsqlContextCacheExtensions
                 }
                 else if (s == KafkaStream.State.ERROR)
                 {
-                    RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                     {
                         Name = "streamiz.state",
                         Phase = "error",
@@ -471,7 +471,7 @@ internal static class KsqlContextCacheExtensions
                 }
                 else if (s == KafkaStream.State.NOT_RUNNING)
                 {
-                    RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                     {
                         Name = "streamiz.state",
                         Phase = "not_running",
@@ -515,7 +515,7 @@ internal static class KsqlContextCacheExtensions
                     if (Diag)
                     {
                         try { System.Console.WriteLine($"[rocks.probe] store={storeName} rows={count}"); } catch { }
-                        try { _ = RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "rocks.probe", Phase = "rows", Topic = storeName, Success = true, Message = count.ToString() }); } catch { }
+                        try { Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent { Name = "rocks.probe", Phase = "rows", Topic = storeName, Success = true, Message = count.ToString() }); } catch { }
                     }
                 }
                 catch { }
@@ -530,7 +530,7 @@ internal static class KsqlContextCacheExtensions
         registry.Register(regType, cache);
         try
         {
-            _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
+            Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
             {
                 Name = "streamiz.register",
                 Phase = "init",
@@ -551,7 +551,7 @@ internal static class KsqlContextCacheExtensions
                 try
                 {
                     // small settle before initial snapshot
-                    try { await Task.Delay(200).ConfigureAwait(false); } catch { }
+                    await Ksql.Linq.Core.Async.SafeDelay.Milliseconds(200).ConfigureAwait(false);
                     var toList = cache.GetType().GetMethod("ToListAsync", new[] { typeof(List<string>), typeof(TimeSpan?) });
                     if (toList != null)
                     {
@@ -640,7 +640,7 @@ internal static class KsqlContextCacheExtensions
                             started = true;
                             try
                             {
-                                _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
+                                Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                                 {
                                     Name = "streamiz.start",
                                     Phase = "begin",
@@ -660,7 +660,7 @@ internal static class KsqlContextCacheExtensions
                 {
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "streamiz.wait",
                             Phase = "timeout",
@@ -672,7 +672,7 @@ internal static class KsqlContextCacheExtensions
                     catch { }
                     throw new TimeoutException("KafkaStream failed to reach RUNNING state within timeout");
                 }
-                try { await Task.Delay(250).ConfigureAwait(false); } catch { }
+                await Ksql.Linq.Core.Async.SafeDelay.Milliseconds(250).ConfigureAwait(false);
             }
 
             // Once RUNNING (or if it was already), probe until state store becomes queryable to avoid early InvalidStateStoreException
@@ -709,7 +709,7 @@ internal static class KsqlContextCacheExtensions
 
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "store.ready",
                             Phase = "open",
@@ -737,8 +737,8 @@ internal static class KsqlContextCacheExtensions
         {
             var config = new Confluent.SchemaRegistry.SchemaRegistryConfig { Url = schemaUrl };
             using var client = new Confluent.SchemaRegistry.CachedSchemaRegistryClient(config);
-            var keySubject = $"{topic}-key";
-            var valueSubject = $"{topic}-value";
+            var keySubject = global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic);
+            var valueSubject = global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(topic);
             while (true)
             {
                 try
@@ -1214,7 +1214,7 @@ internal static class KsqlContextCacheExtensions
         {
             var config = new SchemaRegistryConfig { Url = schemaUrl };
             using var client = new CachedSchemaRegistryClient(config);
-            var subject = $"{topic}-key";
+            var subject = global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic);
             var metadata = client.GetLatestSchemaAsync(subject).GetAwaiter().GetResult();
             var schemaString = metadata?.SchemaString;
             if (string.IsNullOrWhiteSpace(schemaString))
@@ -1280,7 +1280,7 @@ internal static class KsqlContextCacheExtensions
         }
         catch (SchemaRegistryException ex) when (ex.ErrorCode == 404 || ex.ErrorCode == 40401)
         {
-            loggerFactory?.CreateLogger(typeof(KsqlContextCacheExtensions))?.LogDebug(ex, "Schema subject {Subject} not found while aligning cache mapping.", $"{topic}-key");
+            loggerFactory?.CreateLogger(typeof(KsqlContextCacheExtensions))?.LogDebug(ex, "Schema subject {Subject} not found while aligning cache mapping.", global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic));
         }
         catch (Exception ex)
         {
@@ -1303,7 +1303,7 @@ internal static class KsqlContextCacheExtensions
         {
             var config = new SchemaRegistryConfig { Url = schemaUrl };
             using var client = new CachedSchemaRegistryClient(config);
-            var subject = $"{topic}-value";
+            var subject = global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(topic);
             var metadata = client.GetLatestSchemaAsync(subject).GetAwaiter().GetResult();
             var schemaString = metadata?.SchemaString;
             if (string.IsNullOrWhiteSpace(schemaString))
@@ -1415,7 +1415,8 @@ internal static class KsqlContextCacheExtensions
                 }
                 else
                 {
-                    value = Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType);
+                    value = Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(
+                        value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType);
                 }
             }
             catch
@@ -1429,5 +1430,3 @@ internal static class KsqlContextCacheExtensions
         property.SetValue(target, value);
     }
 }
-
-

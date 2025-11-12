@@ -97,7 +97,7 @@ public class SelectExpressionVisitorGroupKeyAliasTests
         var visitor = new SelectExpressionVisitor();
         visitor.Visit(select.Body);
         var result = visitor.GetResult();
-        Assert.Equal("BROKER AS Broker, SYMBOL AS Symbol, WINDOWSTART AS BucketStart, EARLIEST_BY_OFFSET(Bid) AS Open, MAX(Bid) AS High, MIN(Bid) AS Low, LATEST_BY_OFFSET(Bid) AS Close", result);
+        Assert.Equal("BROKER AS Broker, SYMBOL AS Symbol, WINDOWSTART AS BucketStart, EARLIEST_BY_OFFSET(BID) AS Open, MAX(BID) AS High, MIN(BID) AS Low, LATEST_BY_OFFSET(BID) AS Close", result);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class SelectExpressionVisitorGroupKeyAliasTests
         var visitor = new SelectExpressionVisitor(new System.Collections.Generic.Dictionary<string, string> { ["g"] = "dedup" });
         visitor.Visit(select.Body);
         var result = visitor.GetResult();
-        Assert.Equal("dedup.BROKER AS Broker, dedup.SYMBOL AS Symbol, WINDOWSTART AS BucketStart, EARLIEST_BY_OFFSET(Bid) AS Open, MAX(Bid) AS High, MIN(Bid) AS Low, LATEST_BY_OFFSET(Bid) AS Close", result);
+        Assert.Equal("dedup.BROKER AS Broker, dedup.SYMBOL AS Symbol, WINDOWSTART AS BucketStart, EARLIEST_BY_OFFSET(dedup.BID) AS Open, MAX(dedup.BID) AS High, MIN(dedup.BID) AS Low, LATEST_BY_OFFSET(dedup.BID) AS Close", result);
     }
 
     [Fact]
@@ -141,6 +141,4 @@ public class SelectExpressionVisitorGroupKeyAliasTests
         Assert.Equal("dedup.BROKER AS BROKER, dedup.SYMBOL AS SYMBOL", result);
     }
 }
-
-
 

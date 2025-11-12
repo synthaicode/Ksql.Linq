@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Ksql.Linq.Window;
 
-public sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposable
+internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposable
     where TKey : notnull
 {
     private const int MaxEmitAttempts = 3;
@@ -310,7 +310,6 @@ public sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposable
         }
     }
 }
-
 
 
 

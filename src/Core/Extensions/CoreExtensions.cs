@@ -41,7 +41,7 @@ internal static class CoreExtensions
         return type.IsClass && !type.IsAbstract;
     }
 
-    public static string GetKafkaTopicName(this Type type)
+    internal static string GetKafkaTopicName(this Type type)
     {
         return type.Name.ToLowerInvariant();
     }

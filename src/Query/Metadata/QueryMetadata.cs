@@ -7,7 +7,7 @@ namespace Ksql.Linq.Query.Metadata;
 /// Typed representation of the derived query metadata previously stored inside
 /// <see cref="Core.Abstractions.EntityModel.AdditionalSettings"/>.
 /// </summary>
-public sealed record QueryMetadata
+internal sealed record QueryMetadata
 {
     public string? Identifier { get; init; }
     public string? Namespace { get; init; }
@@ -33,17 +33,17 @@ public sealed record QueryMetadata
     public IReadOnlyDictionary<string, object?> Extras { get; init; } = new Dictionary<string, object?>();
 }
 
-public sealed record QueryKeyShape(string[] Names, Type[] Types, bool[] NullableFlags)
+internal sealed record QueryKeyShape(string[] Names, Type[] Types, bool[] NullableFlags)
 {
     public static readonly QueryKeyShape Empty = new(Array.Empty<string>(), Array.Empty<Type>(), Array.Empty<bool>());
 }
 
-public sealed record QueryProjectionShape(string[] Names, Type[] Types, bool[] NullableFlags)
+internal sealed record QueryProjectionShape(string[] Names, Type[] Types, bool[] NullableFlags)
 {
     public static readonly QueryProjectionShape Empty = new(Array.Empty<string>(), Array.Empty<Type>(), Array.Empty<bool>());
 }
 
-public sealed record QueryBasedOnShape(
+internal sealed record QueryBasedOnShape(
     string[] JoinKeys,
     string? OpenProperty,
     string? CloseProperty,

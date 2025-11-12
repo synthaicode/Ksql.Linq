@@ -333,7 +333,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
                         : $"snapshot size={list.Count} prefix={prefix.Replace('\u0000', '|')}";
                     // Console echo to surface in test output
                     try { System.Console.WriteLine($"[cache] {typeof(T).Name} store={_storeName} {msg}"); } catch { }
-                    _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                     {
                         Name = "cache.snapshot",
                         Phase = "read",
@@ -346,7 +346,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
                     for (int i = 0; i < sampleKeys.Count && i < sampleValues.Count; i++)
                     {
                         try { System.Console.WriteLine($"[cache] key={sampleKeys[i]} value={sampleValues[i]}"); } catch { }
-                        _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                         {
                             Name = "cache.row",
                             Phase = "observed",
@@ -359,7 +359,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
                     if (list.Count > 0)
                     {
                         var sample = string.Join(",", sampleKeys);
-                        _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                         {
                             Name = "cache.first_data",
                             Phase = "observed",
@@ -381,7 +381,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
             {
                 try
                 {
-                    _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                     {
                         Name = "cache.error",
                         Phase = "retry",
@@ -443,7 +443,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
             return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
         if (core == typeof(DateTimeOffset))
             return DateTimeOffset.FromUnixTimeMilliseconds(ms);
-        try { return Convert.ChangeType(ms, core, CultureInfo.InvariantCulture); }
+        try { return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(ms, core); }
         catch { return ms; }
     }
 
@@ -458,23 +458,23 @@ internal class TableCache<T> : ITableCache<T> where T : class
                 if (raw is float ff) return Convert.ToDecimal(ff, CultureInfo.InvariantCulture);
                 if (raw is long ll) return Convert.ToDecimal(ll, CultureInfo.InvariantCulture);
                 if (raw is int ii) return Convert.ToDecimal(ii, CultureInfo.InvariantCulture);
-                return Convert.ChangeType(raw, core, CultureInfo.InvariantCulture);
+                return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(raw, core);
             }
             if (core == typeof(double))
             {
-                return Convert.ChangeType(raw, core, CultureInfo.InvariantCulture);
+                return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(raw, core);
             }
             if (core == typeof(long))
             {
                 if (raw is int ii) return (long)ii;
-                return Convert.ChangeType(raw, core, CultureInfo.InvariantCulture);
+                return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(raw, core);
             }
             if (core == typeof(int))
             {
                 if (raw is long ll) return (int)ll;
-                return Convert.ChangeType(raw, core, CultureInfo.InvariantCulture);
+                return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(raw, core);
             }
-            return Convert.ChangeType(raw, core, CultureInfo.InvariantCulture);
+            return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(raw, core);
         }
         catch { return null; }
     }

@@ -2,7 +2,7 @@ using System.Threading;
 
 namespace Ksql.Linq.Window;
 
-public sealed class WindowAggregatorMetrics
+internal sealed class WindowAggregatorMetrics
 {
     private long _emitted;
     private long _emitFailures;

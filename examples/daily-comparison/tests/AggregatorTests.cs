@@ -3,6 +3,7 @@ using DailyComparisonLib.Models;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Core.Context;
+using Ksql.Linq.Core.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -33,7 +34,7 @@ public class AggregatorTests
         public void AddItem(T item) { _items.Add(item); _query = _items.AsQueryable(); }
         public Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) => Task.FromResult(_items.ToList());
         public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout = default, CancellationToken cancellationToken = default) => Task.WhenAll(_items.Select(action));
-        public string GetTopicName() => _model.TopicName ?? typeof(T).Name.ToLowerInvariant();
+        public string GetTopicName() => _model.GetTopicName();
         public EntityModel GetEntityModel() => _model;
         public IKsqlContext GetContext() => _context;
         public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)

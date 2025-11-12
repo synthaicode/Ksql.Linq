@@ -117,7 +117,7 @@ public abstract partial class KsqlContext
         {
             var config = _dslOptions.Entities.FirstOrDefault(e => string.Equals(e.Entity, type.Name, StringComparison.OrdinalIgnoreCase));
 
-            var defaultTopic = model.TopicName ?? type.Name.ToLowerInvariant();
+            var defaultTopic = model.TopicName ?? type.GetKafkaTopicName();
             var sourceTopic = config?.SourceTopic ?? defaultTopic;
 
             var defaultCache = model.EnableCache;
@@ -277,7 +277,7 @@ public abstract partial class KsqlContext
         var model = new EntityModel
         {
             EntityType = entityType,
-            TopicName = entityType.Name.ToLowerInvariant(),
+            TopicName = entityType.GetKafkaTopicName(),
             Partitions = 1,
             ReplicationFactor = 1,
             AllProperties = allProperties,

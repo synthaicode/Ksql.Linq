@@ -31,8 +31,8 @@ public static class SchemaRegistryMetaProvider
 
         var topicName = model.GetTopicName();
 
-        var keySubject = $"{topicName}-key";
-        var valueSubject = $"{topicName}-value";
+        var keySubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topicName);
+        var valueSubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(topicName);
 
         PropertyMeta[] keyMeta;
         try

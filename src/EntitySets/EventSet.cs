@@ -1,6 +1,7 @@
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Dlq;
 using Ksql.Linq.Core.Extensions;
+using Ksql.Linq.Core.Retry;
 using Microsoft.Extensions.Logging;
 using Ksql.Linq.Messaging;
 using Ksql.Linq.Messaging.Internal;
@@ -210,7 +211,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
     /// REDESIGNED: ForEachAsync supporting continuous Kafka consumption
     /// Design change: ToListAsync() is disallowed; now based on GetAsyncEnumerator
     /// </summary>
-    public virtual async Task ForEachAsync(Func<T, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public virtual async Task ForEachAsync(Func<T, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
         if (action == null)
             throw new ArgumentNullException(nameof(action));
@@ -231,82 +232,89 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
             {
                 ctxLogger.Logger?.LogInformation("EventSet consumed {EntityType} from {Topic} offset {Offset} timestamp {Timestamp}", typeof(T).Name, GetTopicName(), meta.Offset, meta.TimestampUtc);
             }
-            var maxAttempts = _errorHandlingContext.ErrorAction == ErrorAction.Retry
-                ? _errorHandlingContext.RetryCount + 1
-                : 1;
-
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            var useRetry = _errorHandlingContext.ErrorAction == ErrorAction.Retry;
+            var policy = new RetryPolicy
             {
-                try
-                {
-                    await action(entity);
-                    break;
-                }
-                catch (Exception ex)
+                MaxAttempts = useRetry ? _errorHandlingContext.RetryCount + 1 : 1,
+                InitialDelay = _errorHandlingContext.RetryInterval,
+                Strategy = BackoffStrategy.Fixed,
+                IsRetryable = _ => true
+            };
+            try
+            {
+                await policy.ExecuteAsync(() => action(entity), linkedCts.Token, (attempt, _) =>
                 {
                     _errorHandlingContext.CurrentAttempt = attempt;
-
-                    if (attempt < maxAttempts && _errorHandlingContext.ErrorAction == ErrorAction.Retry)
-                    {
-                        await Task.Delay(_errorHandlingContext.RetryInterval, linkedCts.Token);
-                        continue;
-                    }
-
-                    var dlq = context.DlqOptions;
-                    var logger2 = (context as KsqlContext)?.Logger;
-                    // When retries are exhausted (or not configured), emit a warning indicating final failure
-                    if (_errorHandlingContext.ErrorAction == ErrorAction.Retry && attempt == maxAttempts)
-                    {
-                        logger2?.LogWarning(
-                            "All retry attempts exhausted for {EntityType} on topic {Topic}. Error={ErrorType}: {Message}",
-                            typeof(T).Name,
-                            GetTopicName(),
-                            ex.GetType().Name,
-                            ex.Message);
-                    }
-                    // Emit error with context for handler failure
-                    logger2?.LogError(ex,
-                        "Handler failed for {EntityType} on topic {Topic}. Error={ErrorType}: {Message}",
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingContext.CurrentAttempt = policy.MaxAttempts;
+                var dlq = context.DlqOptions;
+                var logger2 = (context as KsqlContext)?.Logger;
+                if (useRetry)
+                {
+                    logger2?.LogWarning(
+                        "All retry attempts exhausted for {EntityType} on topic {Topic}. Error={ErrorType}: {Message}",
                         typeof(T).Name,
                         GetTopicName(),
                         ex.GetType().Name,
                         ex.Message);
-                    if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
-                    {
-                        try
-                        {
-                            await RuntimeEventBus.PublishAsync(new RuntimeEvent
-                            {
-                                Name = "dlq.enqueue",
-                                Phase = "handler_error",
-                                Entity = typeof(T).Name,
-                                Topic = context.GetDlqTopicName(),
-                                Success = false,
-                                Message = ex.Message,
-                                Exception = ex
-                            }).ConfigureAwait(false);
-                        }
-                        catch { }
-                        var env = DlqEnvelopeFactory.From(
-                            meta, ex,
-                            dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,
-                            dlq.ErrorMessageMaxLength, dlq.StackTraceMaxLength, dlq.NormalizeStackTraceWhitespace);
-                        await _dlqProducer.ProduceAsync(env, linkedCts.Token).ConfigureAwait(false);
-                    }
-
-                    if (!autoCommit)
-                        _commitManager?.Commit(entity);
-                    break;
                 }
+                logger2?.LogError(ex,
+                    "Handler failed for {EntityType} on topic {Topic}. Error={ErrorType}: {Message}",
+                    typeof(T).Name,
+                    GetTopicName(),
+                    ex.GetType().Name,
+                    ex.Message);
+                if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
+                {
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
+                        {
+                            Name = "dlq.enqueue",
+                            Phase = "handler_error",
+                            Entity = typeof(T).Name,
+                            Topic = context.GetDlqTopicName(),
+                            Success = false,
+                            Message = ex.Message,
+                            Exception = ex
+                        }).ConfigureAwait(false);
+                    var env = DlqEnvelopeFactory.From(
+                        meta, ex,
+                        dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,
+                        dlq.ErrorMessageMaxLength, dlq.StackTraceMaxLength, dlq.NormalizeStackTraceWhitespace);
+                    await _dlqProducer.ProduceAsync(env, linkedCts.Token).ConfigureAwait(false);
+                }
+
+                if (!autoCommit)
+                    _commitManager?.Commit(entity);
             }
         }
     }
 
+    // Convenience overloads (no optional parameters)
+    public Task ForEachAsync(Func<T, Task> action)
+        => ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout)
+        => ForEachAsync(action, timeout, true, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Task> action, CancellationToken cancellationToken)
+        => ForEachAsync(action, TimeSpan.Zero, true, cancellationToken);
+
     [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public virtual Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public virtual Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
         => ForEachAsync((e, h, _) => action(e, h), timeout, autoCommit, cancellationToken);
 
-    public virtual async Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action)
+        => ForEachAsync((e, h, _) => action(e, h), TimeSpan.Zero, true, CancellationToken.None);
+
+    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout)
+        => ForEachAsync((e, h, _) => action(e, h), timeout, true, CancellationToken.None);
+
+    public virtual async Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
         if (action == null)
             throw new ArgumentNullException(nameof(action));
@@ -328,63 +336,63 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
             }
             // Headered overload intentionally allows dummy records to pass through
 
-            var maxAttempts = _errorHandlingContext.ErrorAction == ErrorAction.Retry
-                ? _errorHandlingContext.RetryCount + 1
-                : 1;
-
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            var useRetry2 = _errorHandlingContext.ErrorAction == ErrorAction.Retry;
+            var policy2 = new RetryPolicy
             {
-                try
-                {
-                    await action(entity, headers, meta);
-                    break;
-                }
-                catch (Exception ex)
+                MaxAttempts = useRetry2 ? _errorHandlingContext.RetryCount + 1 : 1,
+                InitialDelay = _errorHandlingContext.RetryInterval,
+                Strategy = BackoffStrategy.Fixed,
+                IsRetryable = _ => true
+            };
+            try
+            {
+                await policy2.ExecuteAsync(() => action(entity, headers, meta), linkedCts.Token, (attempt, _) =>
                 {
                     _errorHandlingContext.CurrentAttempt = attempt;
-
-                    if (attempt < maxAttempts && _errorHandlingContext.ErrorAction == ErrorAction.Retry)
-                    {
-                        await Task.Delay(_errorHandlingContext.RetryInterval, linkedCts.Token);
-                        continue;
-                    }
-
-                    var dlq = context.DlqOptions;
-                    if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
-                    {
-                        try
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _errorHandlingContext.CurrentAttempt = policy2.MaxAttempts;
+                var dlq = context.DlqOptions;
+                if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
+                {
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
-                            await RuntimeEventBus.PublishAsync(new RuntimeEvent
-                            {
-                                Name = "dlq.enqueue",
-                                Phase = "enumerator_error",
-                                Entity = typeof(T).Name,
-                                Topic = context.GetDlqTopicName(),
-                                Success = false,
-                                Message = ex.Message,
-                                Exception = ex
-                            }).ConfigureAwait(false);
-                        }
-                        catch { }
-                        var env = DlqEnvelopeFactory.From(
-                            meta, ex,
-                            dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,
-                            dlq.ErrorMessageMaxLength, dlq.StackTraceMaxLength, dlq.NormalizeStackTraceWhitespace);
-                        await _dlqProducer.ProduceAsync(env, linkedCts.Token).ConfigureAwait(false);
-                    }
-
-                    if (!autoCommit)
-                        _commitManager?.Commit(entity);
-                    break;
+                            Name = "dlq.enqueue",
+                            Phase = "enumerator_error",
+                            Entity = typeof(T).Name,
+                            Topic = context.GetDlqTopicName(),
+                            Success = false,
+                            Message = ex.Message,
+                            Exception = ex
+                        }).ConfigureAwait(false);
+                    var env = DlqEnvelopeFactory.From(
+                        meta, ex,
+                        dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,
+                        dlq.ErrorMessageMaxLength, dlq.StackTraceMaxLength, dlq.NormalizeStackTraceWhitespace);
+                    await _dlqProducer.ProduceAsync(env, linkedCts.Token).ConfigureAwait(false);
                 }
+
+                if (!autoCommit)
+                    _commitManager?.Commit(entity);
             }
         }
     }
 
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action)
+        => ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit)
+        => ForEachAsync(action, TimeSpan.Zero, autoCommit, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout)
+        => ForEachAsync(action, timeout, true, CancellationToken.None);
+
     /// <summary>
     /// IEntitySet<T> implementation: retrieve metadata
     /// </summary>
-    public string GetTopicName() => (_entityModel.TopicName ?? _entityModel.EntityType.Name).ToLowerInvariant();
+    public string GetTopicName() => _entityModel.GetTopicName();
 
     public EntityModel GetEntityModel() => _entityModel;
 
@@ -532,7 +540,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
         return new EntityModel
         {
             EntityType = typeof(TResult),
-            TopicName = $"{typeof(TResult).Name.ToLowerInvariant()}_mapped",
+            TopicName = $"{typeof(TResult).GetKafkaTopicName()}_mapped",
             AllProperties = typeof(TResult).GetProperties(),
             KeyProperties = Array.Empty<System.Reflection.PropertyInfo>(),
             ValidationResult = new ValidationResult { IsValid = true }
@@ -548,38 +556,32 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
         List<TResult> results,
         ErrorHandlingContext errorContext) where TResult : class
     {
-        var maxAttempts = errorContext.ErrorAction == ErrorAction.Retry
-            ? errorContext.RetryCount + 1
-            : 1;
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        var useRetry = errorContext.ErrorAction == ErrorAction.Retry;
+        var policy = new RetryPolicy
         {
-            try
-            {
-                var result = await mapper(item);
-                results.Add(result);
-                return; // Processing completed successfully
-            }
-            catch (Exception ex)
+            MaxAttempts = useRetry ? errorContext.RetryCount + 1 : 1,
+            InitialDelay = errorContext.RetryInterval,
+            Strategy = BackoffStrategy.Fixed,
+            IsRetryable = _ => true
+        };
+        try
+        {
+            var result = await policy.ExecuteAsync(() => mapper(item), default, (attempt, ex) =>
             {
                 errorContext.CurrentAttempt = attempt;
-
-                // Retry regardless of ErrorAction if this is not the final attempt
-                if (attempt < maxAttempts && errorContext.ErrorAction == ErrorAction.Retry)
+                if (useRetry)
                 {
-                    Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Retry {attempt}/{errorContext.RetryCount}: {ex.Message}");
-                    await Task.Delay(errorContext.RetryInterval);
-                    continue;
+                    try { Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Retry {attempt}/{errorContext.RetryCount}: {ex.Message}"); } catch { }
                 }
-
-                // Perform error handling on the last attempt or when not retrying
-                var shouldContinue = await errorContext.HandleErrorAsync(item, ex, CreateContext(item, errorContext));
-
-                if (!shouldContinue)
-                {
-                    return; // Skip this item and move to the next
-                }
-            }
+            }).ConfigureAwait(false);
+            results.Add(result);
+        }
+        catch (Exception ex)
+        {
+            errorContext.CurrentAttempt = policy.MaxAttempts;
+            var shouldContinue = await errorContext.HandleErrorAsync(item, ex, CreateContext(item, errorContext));
+            if (!shouldContinue)
+                return;
         }
     }
 
@@ -592,38 +594,32 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
         List<TResult> results,
         ErrorHandlingContext errorContext) where TResult : class
     {
-        var maxAttempts = errorContext.ErrorAction == ErrorAction.Retry
-            ? errorContext.RetryCount + 1
-            : 1;
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        var useRetry2 = errorContext.ErrorAction == ErrorAction.Retry;
+        var policy2 = new RetryPolicy
         {
-            try
-            {
-                var result = mapper(item);
-                results.Add(result);
-                return; // Processing completed successfully
-            }
-            catch (Exception ex)
+            MaxAttempts = useRetry2 ? errorContext.RetryCount + 1 : 1,
+            InitialDelay = errorContext.RetryInterval,
+            Strategy = BackoffStrategy.Fixed,
+            IsRetryable = _ => true
+        };
+        try
+        {
+            var result = policy2.ExecuteAsync(() => Task.FromResult(mapper(item)), default, (attempt, ex) =>
             {
                 errorContext.CurrentAttempt = attempt;
-
-                // Retry regardless of ErrorAction if this is not the final attempt
-                if (attempt < maxAttempts && errorContext.ErrorAction == ErrorAction.Retry)
+                if (useRetry2)
                 {
-                    Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Retry {attempt}/{errorContext.RetryCount}: {ex.Message}");
-                    Thread.Sleep(errorContext.RetryInterval);
-                    continue;
+                    try { Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Retry {attempt}/{errorContext.RetryCount}: {ex.Message}"); } catch { }
                 }
-
-                // Perform error handling on the last attempt or when not retrying
-                var shouldContinue = errorContext.HandleErrorAsync(item, ex, CreateContext(item, errorContext)).GetAwaiter().GetResult();
-
-                if (!shouldContinue)
-                {
-                    return; // Skip this item and proceed to the next
-                }
-            }
+            }).GetAwaiter().GetResult();
+            results.Add(result);
+        }
+        catch (Exception ex)
+        {
+            errorContext.CurrentAttempt = policy2.MaxAttempts;
+            var shouldContinue = errorContext.HandleErrorAsync(item, ex, CreateContext(item, errorContext)).GetAwaiter().GetResult();
+            if (!shouldContinue)
+                return;
         }
     }
 
@@ -708,7 +704,7 @@ internal class MappedEventSet<T> : EventSet<T> where T : class
     /// <summary>
     /// Helper method to create a MappedEventSet
     /// </summary>
-    public static MappedEventSet<T> Create(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink? errorSink = null)
+    internal static MappedEventSet<T> Create(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink? errorSink = null)
     {
         return new MappedEventSet<T>(mappedItems, context, originalEntityModel, errorSink);
     }
@@ -716,7 +712,7 @@ internal class MappedEventSet<T> : EventSet<T> where T : class
     /// <summary>
     /// Create a MappedEventSet with DLQ support
     /// </summary>
-    public static MappedEventSet<T> CreateWithDlq(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink dlqErrorSink)
+    internal static MappedEventSet<T> CreateWithDlq(List<T> mappedItems, IKsqlContext context, EntityModel originalEntityModel, IErrorSink dlqErrorSink)
     {
         return new MappedEventSet<T>(mappedItems, context, originalEntityModel, dlqErrorSink);
     }

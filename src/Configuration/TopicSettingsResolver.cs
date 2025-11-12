@@ -1,6 +1,7 @@
 using System;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Configuration.Messaging;
+using Ksql.Linq.Core.Extensions;
 
 namespace Ksql.Linq.Configuration;
 
@@ -14,7 +15,7 @@ internal static class TopicSettingsResolver
     {
         if (options == null || model == null) return;
 
-        var topic = (model.TopicName ?? model.EntityType.Name).ToLowerInvariant();
+        var topic = model.GetTopicName();
 
         TopicSection? section = null;
         if (options.Topics.TryGetValue(topic, out var sec) && sec?.Creation != null)
@@ -51,4 +52,3 @@ internal static class TopicSettingsResolver
         if (model.ReplicationFactor <= 0) model.ReplicationFactor = 1;
     }
 }
-

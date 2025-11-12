@@ -80,7 +80,7 @@ internal class KafkaProducerManager : IDisposable
         return new EntityModel
         {
             EntityType = type,
-            TopicName = type.Name.ToLowerInvariant(),
+            TopicName = type.GetKafkaTopicName(),
             KeyProperties = Array.Empty<PropertyInfo>(),
             AllProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
         };
@@ -493,7 +493,7 @@ internal class KafkaProducerManager : IDisposable
         // Key subject: 常に SR を参照（GenericRecord なら mapping に反映、Specific はウォームアップのみ）
         try
         {
-            var latestKey = _schemaRegistryClient.GetLatestSchemaAsync($"{topic}-key").GetAwaiter().GetResult();
+            var latestKey = _schemaRegistryClient.GetLatestSchemaAsync(global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic)).GetAwaiter().GetResult();
             var keySchemaString = latestKey?.SchemaString;
             if (!string.IsNullOrWhiteSpace(keySchemaString))
             {
@@ -520,7 +520,7 @@ internal class KafkaProducerManager : IDisposable
         // Value subject: 常に SR を参照（GenericRecord なら mapping に反映、Specific はウォームアップのみ）
         try
         {
-            var latestVal = _schemaRegistryClient.GetLatestSchemaAsync($"{topic}-value").GetAwaiter().GetResult();
+            var latestVal = _schemaRegistryClient.GetLatestSchemaAsync(global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(topic)).GetAwaiter().GetResult();
             var valSchemaString = latestVal?.SchemaString;
             if (!string.IsNullOrWhiteSpace(valSchemaString))
             {
@@ -612,4 +612,3 @@ internal class KafkaProducerManager : IDisposable
         return headers;
     }
 }
-

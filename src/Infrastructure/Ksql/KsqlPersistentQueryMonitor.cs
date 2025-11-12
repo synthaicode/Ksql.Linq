@@ -266,47 +266,45 @@ internal static class KsqlPersistentQueryMonitor
 
         var subjects = new[]
         {
-            $"{targetTopic}-key",
-            $"{targetTopic}-value"
+            global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(targetTopic),
+            global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(targetTopic)
         };
 
-        var deadline = DateTime.UtcNow + timeout;
-        while (DateTime.UtcNow < deadline)
+        async Task<bool> SubjectsReady(CancellationToken _)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var allReady = true;
             foreach (var subject in subjects)
-            {
                 if (!await SubjectExistsAsync(client, subject).ConfigureAwait(false))
-                {
-                    allReady = false;
-                    break;
-                }
-            }
+                    return false;
+            return true;
+        }
 
-            if (allReady)
+        var ok = await global::Ksql.Linq.Core.Async.SafePoll.UntilAsync(
+            SubjectsReady,
+            TimeSpan.FromMilliseconds(1000),
+            timeout,
+            requiredConsecutive: 1,
+            stabilizationWindow: TimeSpan.Zero,
+            ct: cancellationToken).ConfigureAwait(false);
+
+        if (ok)
+        {
+            if (!string.IsNullOrWhiteSpace(targetModel?.ValueSchemaFullName))
             {
-                if (!string.IsNullOrWhiteSpace(targetModel?.ValueSchemaFullName))
+                try
                 {
-                    try
+                    var latest = await client.GetLatestSchemaAsync(subjects[1]).ConfigureAwait(false);
+                    if (latest?.SchemaString != null &&
+                        latest.SchemaString.IndexOf(targetModel.ValueSchemaFullName, StringComparison.Ordinal) < 0)
                     {
-                        var latest = await client.GetLatestSchemaAsync(subjects[1]).ConfigureAwait(false);
-                        if (latest?.SchemaString != null &&
-                            latest.SchemaString.IndexOf(targetModel.ValueSchemaFullName, StringComparison.Ordinal) < 0)
-                        {
-                            logger?.LogWarning("Schema subject {Subject} does not include expected full name {Expected}", subjects[1], targetModel.ValueSchemaFullName);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        logger?.LogDebug(ex, "Failed to verify schema full name for subject {Subject}", subjects[1]);
+                        logger?.LogWarning("Schema subject {Subject} does not include expected full name {Expected}", subjects[1], targetModel.ValueSchemaFullName);
                     }
                 }
-                return;
+                catch (Exception ex)
+                {
+                    logger?.LogDebug(ex, "Failed to verify schema full name for subject {Subject}", subjects[1]);
+                }
             }
-
-            await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
+            return;
         }
 
         logger?.LogWarning("Schema subjects for {Topic} were not ready within {Seconds:F0}s", targetTopic, timeout.TotalSeconds);

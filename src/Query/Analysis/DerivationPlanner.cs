@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
+using Ksql.Linq.Core.Extensions;
 
 namespace Ksql.Linq.Query.Analysis;
 
@@ -24,7 +25,7 @@ internal static class DerivationPlanner
         var basedOn = qao.BasedOn;
 
         var topicAttr = model.EntityType.GetCustomAttribute<KsqlTopicAttribute>();
-        var baseId = (topicAttr?.Name ?? model.TopicName ?? model.EntityType.Name).ToLowerInvariant();
+        var baseId = ModelNaming.GetBaseId(model);
         var windows = qao.Windows
             .OrderBy(w => w.Unit switch
             {
@@ -99,4 +100,3 @@ internal static class DerivationPlanner
         return entities;
     }
 }
-

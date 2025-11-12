@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Events;
 
 namespace Ksql.Linq.Runtime;
@@ -279,7 +280,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
                     try
                     {
                         // Emit leader-loss event for hub consumer
-                        RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                         {
                             Name = "hub.consumer.leader",
                             Phase = "lost",
@@ -361,7 +362,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
             {
                 try
                 {
-                    RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                     {
                         Name = "hub.consumer.leader",
                         Phase = "elected",
@@ -559,7 +560,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
 
             _aggregator!.ProcessMessage(entity);
             return Task.CompletedTask;
-        }, autoCommit: false, cancellationToken: token).ConfigureAwait(false);
+        }, TimeSpan.Zero, false, token).ConfigureAwait(false);
     }
 
     private void EnsureAggregator()
@@ -1076,7 +1077,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
             if (target == typeof(float)) return (float)value;
             if (target == typeof(long)) return (long)value;
             if (target == typeof(int)) return (int)value;
-            return Convert.ChangeType(value, target);
+            return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(value, target);
         }
     }
 
@@ -1135,7 +1136,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
                 if (value != null && !tp.PropertyType.IsInstanceOfType(value))
                 {
                     var targetType = Nullable.GetUnderlyingType(tp.PropertyType) ?? tp.PropertyType;
-                    value = Convert.ChangeType(value, targetType);
+                    value = Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(value, targetType);
                 }
                 tp.SetValue(target, value);
             }
@@ -1167,7 +1168,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
     }
 
     private static string GetTopicName(EntityModel model)
-        => (model.TopicName ?? model.EntityType.Name).ToLowerInvariant();
+        => model.GetTopicName();
 
     private Func<TSource, bool>? CompileWherePredicate(Expression? whereExpression)
     {
@@ -1394,7 +1395,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
             if (target == typeof(float)) return (float)value;
             if (target == typeof(long)) return (long)value;
             if (target == typeof(int)) return (int)value;
-            return Convert.ChangeType(value, target);
+            return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(value, target);
         }
     }
 
@@ -1496,5 +1497,3 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
         }
     }
 }
-
-

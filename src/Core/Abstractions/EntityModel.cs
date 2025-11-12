@@ -137,6 +137,6 @@ public class EntityModel
     /// Strongly typed metadata derived from <see cref="AdditionalSettings"/>.
     /// Over time this will supersede direct dictionary access.
     /// </summary>
-    public QueryMetadata? QueryMetadata { get; set; }
+    internal QueryMetadata? QueryMetadata { get; set; }
 
 }

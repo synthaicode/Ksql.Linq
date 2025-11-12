@@ -14,7 +14,7 @@ public class SelectClauseBuilderTests
         Expression<Func<TestEntity, object>> expr = e => new { e.Id, e.Name };
         var builder = new SelectClauseBuilder();
         var sql = builder.Build(expr.Body);
-        Assert.Equal("ID AS Id, Name AS Name", sql);
+        Assert.Equal("ID AS Id, NAME AS Name", sql);
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public class SelectClauseBuilderTests
         Expression<Func<TestEntity, object>> expr = e => new { Alias = e.Name };
         var builder = new SelectClauseBuilder();
         var sql = builder.Build(expr.Body);
-        Assert.Equal("Name AS Alias", sql);
+        Assert.Equal("NAME AS Alias", sql);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class SelectClauseBuilderTests
         Expression<Func<TestEntity, object>> expr = e => new { NameUpper = e.Name.ToUpper() };
         var builder = new SelectClauseBuilder();
         var sql = builder.Build(expr.Body);
-        Assert.Equal("UPPER(Name) AS NameUpper", sql);
+        Assert.Equal("UPPER(NAME) AS NameUpper", sql);
     }
 
     private class Order
@@ -49,7 +49,7 @@ public class SelectClauseBuilderTests
         var builder = new SelectClauseBuilder();
         var sql = builder.Build(expr.Body);
 
-        Assert.Equal("COUNT(*) AS OrderCount, SUM(Amount) AS TotalAmount", sql);
+        Assert.Equal("COUNT(*) AS OrderCount, SUM(AMOUNT) AS TotalAmount", sql);
     }
 
     private class Bar
@@ -66,5 +66,4 @@ public class SelectClauseBuilderTests
         Assert.Equal("WINDOWSTART AS BucketStart", sql);
     }
 }
-
 

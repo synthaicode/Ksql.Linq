@@ -121,10 +121,10 @@ public class BarScheduleExplainTests
         Assert.StartsWith("CREATE TABLE IF NOT EXISTS bar_1d_live", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("WINDOW TUMBLING (SIZE 1 DAYS)", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("EMIT CHANGES", sql, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("EARLIEST_BY_OFFSET(Bid)", sql);
-        Assert.Contains("LATEST_BY_OFFSET(Bid)", sql);
-        Assert.Contains("MAX(Bid)", sql);
-        Assert.Contains("MIN(Bid)", sql);
+        Assert.Contains("EARLIEST_BY_OFFSET(BID)", sql);
+        Assert.Contains("LATEST_BY_OFFSET(BID)", sql);
+        Assert.Contains("MAX(BID)", sql);
+        Assert.Contains("MIN(BID)", sql);
     }
 
     [Fact]
@@ -139,11 +139,10 @@ public class BarScheduleExplainTests
         Assert.StartsWith("CREATE TABLE IF NOT EXISTS bar_1wk_live", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("WINDOW TUMBLING (SIZE 7 DAYS)", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("EMIT CHANGES", sql, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("EARLIEST_BY_OFFSET(Bid)", sql);
-        Assert.Contains("LATEST_BY_OFFSET(Bid)", sql);
-        Assert.Contains("MAX(Bid)", sql);
-        Assert.Contains("MIN(Bid)", sql);
+        Assert.Contains("EARLIEST_BY_OFFSET(BID)", sql);
+        Assert.Contains("LATEST_BY_OFFSET(BID)", sql);
+        Assert.Contains("MAX(BID)", sql);
+        Assert.Contains("MIN(BID)", sql);
     }
 }
-
 

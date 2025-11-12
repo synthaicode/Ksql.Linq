@@ -56,14 +56,34 @@ internal class TypedJoinResultEntitySet<TOuter, TInner, TResult> : IEntitySet<TR
         throw new NotSupportedException("Cannot remove entities from a join result set");
     }
 
-    public Task ForEachAsync(Func<TResult, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public Task ForEachAsync(Func<TResult, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
         => throw new NotSupportedException("ForEachAsync not supported on join result sets");
 
     [Obsolete("Use ForEachAsync(Func<TResult, Dictionary<string,string>, MessageMeta, Task>)")]
-    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
         => throw new NotSupportedException("ForEachAsync not supported on join result sets");
 
-    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+
+    // Convenience overloads
+    public Task ForEachAsync(Func<TResult, Task> action)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+    public Task ForEachAsync(Func<TResult, Task> action, TimeSpan timeout)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+    public Task ForEachAsync(Func<TResult, Task> action, CancellationToken cancellationToken)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+    [Obsolete("Use ForEachAsync(Func<TResult, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, Task> action)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+    [Obsolete("Use ForEachAsync(Func<TResult, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, Task> action, TimeSpan timeout)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, MessageMeta, Task> action)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit)
+        => throw new NotSupportedException("ForEachAsync not supported on join result sets");
+    public Task ForEachAsync(Func<TResult, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout)
         => throw new NotSupportedException("ForEachAsync not supported on join result sets");
 
     public string GetTopicName() => (_entityModel.TopicName ?? typeof(TResult).Name).ToLowerInvariant();

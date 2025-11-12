@@ -93,12 +93,22 @@ public abstract partial class KsqlContext : IKsqlContext
 
     public const string DefaultSectionName = "KsqlDsl";
 
-    protected KsqlContext(IConfiguration configuration, ILoggerFactory? loggerFactory = null)
+    protected KsqlContext(IConfiguration configuration)
+        : this(configuration, DefaultSectionName, null)
+    {
+    }
+
+    protected KsqlContext(IConfiguration configuration, ILoggerFactory? loggerFactory)
         : this(configuration, DefaultSectionName, loggerFactory)
     {
     }
 
-    protected KsqlContext(IConfiguration configuration, string sectionName, ILoggerFactory? loggerFactory = null)
+    protected KsqlContext(IConfiguration configuration, string sectionName)
+        : this(configuration, sectionName, null)
+    {
+    }
+
+    protected KsqlContext(IConfiguration configuration, string sectionName, ILoggerFactory? loggerFactory)
     {
         _dslOptions = new KsqlDslOptions();
         configuration.GetSection(sectionName).Bind(_dslOptions);
@@ -108,7 +118,12 @@ public abstract partial class KsqlContext : IKsqlContext
 
     }
 
-    protected KsqlContext(KsqlDslOptions options, ILoggerFactory? loggerFactory = null)
+    protected KsqlContext(KsqlDslOptions options)
+        : this(options, null)
+    {
+    }
+
+    protected KsqlContext(KsqlDslOptions options, ILoggerFactory? loggerFactory)
     {
         _dslOptions = options;
         DefaultValueBinder.ApplyDefaults(_dslOptions);
@@ -489,7 +504,7 @@ public abstract partial class KsqlContext : IKsqlContext
         if (!string.IsNullOrWhiteSpace(metadata.Identifier) && metadata.Identifier.EndsWith("_1s_rows", StringComparison.OrdinalIgnoreCase))
             return true;
         // Fallback: topic name convention
-        var topic = (model.TopicName ?? model.EntityType?.Name ?? string.Empty).ToLowerInvariant();
+        var topic = model.GetTopicName();
         return topic.EndsWith("_1s_rows", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -569,7 +584,7 @@ public abstract partial class KsqlContext : IKsqlContext
     
 
     private static string GetTopicName(EntityModel model)
-        => (model.TopicName ?? model.EntityType.Name).ToLowerInvariant();
+        => model.GetTopicName();
 
     // Adapters for RowMonitorCoordinator ownership
     internal bool IsRowsRoleAdapter(EntityModel model) => IsRowsRole(model);
@@ -668,7 +683,7 @@ public abstract partial class KsqlContext : IKsqlContext
             await rowsSet.AddAsync(converted, headers, token).ConfigureAwait(false);
             _logger?.LogInformation("Hub bridge produce {Rows} @ {Timestamp}", rowsTopicName, meta.TimestampUtc);
             finalEventSet.Commit(entity);
-        }, autoCommit: false, cancellationToken: token);
+        }, TimeSpan.Zero, false, token);
     }
 
     // Removed domain-specific sample entity and producer (DedupRateInput) from OSS core
@@ -769,9 +784,9 @@ public abstract partial class KsqlContext : IKsqlContext
         var models = GetEntityModels();
         if (models.TryGetValue(typeof(T), out var model))
         {
-            return (model.TopicName ?? typeof(T).Name).ToLowerInvariant();
+            return model.GetTopicName();
         }
-        return typeof(T).Name.ToLowerInvariant();
+        return typeof(T).GetKafkaTopicName();
     }
 
     internal async Task<bool> IsEntityReadyAsync<T>(CancellationToken cancellationToken = default) where T : class
@@ -784,7 +799,7 @@ public abstract partial class KsqlContext : IKsqlContext
             ? "SHOW TABLES;"
             : "SHOW STREAMS;";
 
-        var name = (model.TopicName ?? typeof(T).Name).ToUpperInvariant();
+        var name = model.GetTopicName().ToUpperInvariant();
         var response = await ExecuteStatementAsync(statement);
         if (!response.IsSuccess)
             return false;
@@ -942,6 +957,3 @@ public abstract partial class KsqlContext : IKsqlContext
 
     
 }
-
-
-

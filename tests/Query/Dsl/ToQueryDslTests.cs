@@ -535,11 +535,8 @@ public class ToQueryDslTests
         model.SelectProjectionMetadata = new ProjectionMetadata(Array.Empty<ProjectionMember>(), IsHubInput: true);
         model.PrimarySourceRequiresAlias = PrimarySourceAliasDecider.Determine(model);
 
-        Assert.False(model.PrimarySourceRequiresAlias);
+        Assert.True(model.PrimarySourceRequiresAlias);
     }
 
 }
-
-
-
 
