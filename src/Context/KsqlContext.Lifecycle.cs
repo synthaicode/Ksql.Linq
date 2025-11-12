@@ -489,7 +489,7 @@ public abstract partial class KsqlContext : IKsqlContext
         if (!string.IsNullOrWhiteSpace(metadata.Identifier) && metadata.Identifier.EndsWith("_1s_rows", StringComparison.OrdinalIgnoreCase))
             return true;
         // Fallback: topic name convention
-        var topic = (model.TopicName ?? model.EntityType?.Name ?? string.Empty).ToLowerInvariant();
+        var topic = model.GetTopicName();
         return topic.EndsWith("_1s_rows", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -942,5 +942,4 @@ public abstract partial class KsqlContext : IKsqlContext
 
     
 }
-
 

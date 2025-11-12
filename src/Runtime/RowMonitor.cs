@@ -1167,7 +1167,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
     }
 
     private static string GetTopicName(EntityModel model)
-        => (model.TopicName ?? model.EntityType.Name).ToLowerInvariant();
+        => model.GetTopicName();
 
     private Func<TSource, bool>? CompileWherePredicate(Expression? whereExpression)
     {
@@ -1496,5 +1496,4 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
         }
     }
 }
-
 
