@@ -28,7 +28,6 @@ jobs:
         run: |
           dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo
 
-
       - name: Compute package version
         id: ver
         shell: pwsh
@@ -74,3 +73,4 @@ jobs:
             dotnet build "$proj" -c Release --nologo
             echo "::endgroup::"
           done
+
