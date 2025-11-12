@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Ksql.Linq.Core.Async;
 
-public static class SafePoll
+internal static class SafePoll
 {
     public static async Task<bool> UntilAsync(
         Func<CancellationToken, Task<bool>> condition,
@@ -49,4 +49,3 @@ public static class SafePoll
         return false;
     }
 }
-

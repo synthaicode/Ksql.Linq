@@ -53,6 +53,13 @@
     <AdditionalFiles Include="PublicAPI.Shipped.txt" />
     <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
   </ItemGroup>
+  <!-- Ensure PublicAPI files are only provided as AdditionalFiles (not also as None/Content) -->
+  <ItemGroup>
+    <None Remove="PublicAPI.Shipped.txt" />
+    <None Remove="PublicAPI.Unshipped.txt" />
+    <Content Remove="PublicAPI.Shipped.txt" />
+    <Content Remove="PublicAPI.Unshipped.txt" />
+  </ItemGroup>
   <!-- Keep RS0025/RS0026 as non-errors globally; RS0016/RS0017 enforcement is controlled per-job -->
   <PropertyGroup>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);RS0025;RS0026</WarningsNotAsErrors>

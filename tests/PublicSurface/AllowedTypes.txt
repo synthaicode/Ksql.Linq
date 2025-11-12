@@ -55,7 +55,6 @@ Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions
 Ksql.Linq.Core.Dlq.IDlqClient
 
 # Added from STRICT unexpected list (documented as public)
-Ksql.Linq.Configuration.DecimalPrecisionConfig
 Ksql.Linq.Configuration.DefaultValueBinder
 Ksql.Linq.Configuration.DlqMetrics
 Ksql.Linq.Configuration.DlqOptions
@@ -83,8 +82,6 @@ Ksql.Linq.Core.Abstractions.IModelBuilder
 Ksql.Linq.Core.Abstractions.IRemovableEntitySet`1
 Ksql.Linq.Core.Abstractions.KafkaMessageContext
 Ksql.Linq.Core.Abstractions.ValidationResult
-Ksql.Linq.Core.Async.SafeDelay
-Ksql.Linq.Core.Async.SafePoll
 Ksql.Linq.Core.Attributes.KsqlDecimalAttribute
 Ksql.Linq.Core.Attributes.KsqlIgnoreAttribute
 Ksql.Linq.Core.Attributes.KsqlKeyAttribute

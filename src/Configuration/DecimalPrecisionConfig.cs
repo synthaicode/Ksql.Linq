@@ -6,7 +6,7 @@ namespace Ksql.Linq.Configuration;
 /// <summary>
 /// Global decimal precision settings used across query generation and schema definitions.
 /// </summary>
-public static class DecimalPrecisionConfig
+internal static class DecimalPrecisionConfig
 {
     public static int DecimalPrecision { get; private set; } = 18;
     public static int DecimalScale { get; private set; } = 2;
