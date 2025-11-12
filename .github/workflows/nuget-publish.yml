@@ -29,11 +29,7 @@ jobs:
       - name: Public API strict check (tagged only)
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo \
-            "-p:StrictPublicApi=true" \
-            "-p:WarningsAsErrors=RS0016;RS0017" \
-            "-p:WarningsNotAsErrors=" \
-            "-p:TreatWarningsAsErrors=false"
+          dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo -p:StrictPublicApi=true -warnaserror:RS0016,RS0017
 
       - name: Test (unit only)
         run: dotnet test tests/Ksql.Linq.Tests.csproj -c Release --no-build --filter "TestCategory!=Integration"
@@ -44,7 +40,11 @@ jobs:
           VERSION="${GITHUB_REF#refs/tags/}"   # e.g., v0.9.1-rc
           VERSION="${VERSION#v}"               # e.g., 0.9.1-rc
           mkdir -p .artifacts/nuget
-          dotnet pack src/Ksql.Linq.csproj -c Release -p:ContinuousIntegrationBuild=true -p:Version="$VERSION" -o ./.artifacts/nuget
+          # Explicitly set PackageVersion to override any env PackageVersion (e.g., 'main')
+          dotnet pack src/Ksql.Linq.csproj -c Release \
+            -p:ContinuousIntegrationBuild=true \
+            -p:PackageVersion="$VERSION" \
+            -o ./.artifacts/nuget
 
       - name: Upload package artifact (tagged)
         if: startsWith(github.ref, 'refs/tags/')
