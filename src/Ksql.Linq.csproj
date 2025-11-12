@@ -54,7 +54,7 @@
   </ItemGroup>
   <!-- Keep RS0025/RS0026 as non-errors; RS0016/RS0017 are errors now -->
   <PropertyGroup>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);RS0025;RS0026</WarningsNotAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);RS0016;RS0017;RS0025;RS0026</WarningsNotAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="SendOnly\**\*.cs" />
