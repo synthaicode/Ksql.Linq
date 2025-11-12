@@ -41,6 +41,15 @@ jobs:
       - name: Build
         run: dotnet build -c Release --no-restore
 
+      - name: Public API strict check (tagged only)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo \
+            "-p:StrictPublicApi=true" \
+            "-p:WarningsAsErrors=RS0016;RS0017" \
+            "-p:WarningsNotAsErrors=" \
+            "-p:TreatWarningsAsErrors=false"
+
       - name: Test (unit only)
         run: dotnet test tests/Ksql.Linq.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test.trx" --filter "TestCategory!=Integration"
 
