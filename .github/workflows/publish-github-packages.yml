@@ -1,0 +1,67 @@
+name: Publish to GitHub Packages (NuGet)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'         # 例: v0.1.0
+      - 'v*.*.*-rc.*'    # 例: v0.1.0-rc.1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write    # ← GITHUB_TOKEN でパッケージ公開するのに必須
+
+jobs:
+  pack-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+
+      - name: Determine version from tag
+        id: ver
+        shell: bash
+        run: |
+          # refs/tags/v0.1.0 → 0.1.0 / refs/tags/v0.1.0-rc.1 → 0.1.0-rc.1
+          RAW="${GITHUB_REF_NAME}"
+          VERSION="${RAW#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version=$VERSION"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Test
+        run: dotnet test -c Release --no-build --logger "trx;LogFileName=test.trx"
+
+      - name: Pack (use tag version)
+        run: |
+          dotnet pack -c Release --no-build \
+            -p:PackageVersion=${{ steps.ver.outputs.version }} \
+            -p:ContinuousIntegrationBuild=true \
+            -o ./artifacts
+
+      - name: Add GitHub Packages source
+        run: |
+          dotnet nuget add source \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.SYNTHAICODE_PACKAGE }}" \
+            --store-password-in-clear-text \
+            --name "github" \
+            "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+      - name: Publish to GitHub Packages
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --source "github" \
+            --skip-duplicate

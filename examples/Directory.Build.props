@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <RestoreSources>$(RestoreSources);$(MSBuildThisFileDirectory)..\.artifacts\nuget</RestoreSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Centralize Ksql.Linq reference for all example projects -->
+    <PackageReference Include="Ksql.Linq" Version="0.9.0-preview.*" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,109 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Ksql.Linq</RootNamespace>
+    <AssemblyName>Ksql.Linq</AssemblyName>
+    <!-- ✅ Enable nullable reference types -->
+    <Nullable>enable</Nullable>
+    <!-- ✅ Treat warnings as errors (improves development quality) -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- ✅ Keep nullable warnings as warnings (for phased migration) -->
+    <WarningsNotAsErrors>CS8600;CS8601;CS8602;CS8603;CS8618;CS8619;CS8620;CS8625;CS1570;CS1573;CS1587</WarningsNotAsErrors>
+    <PackageId>Ksql.Linq</PackageId>
+    <Version>0.9.0-preview.1</Version>
+    <Authors>SynthAICode</Authors>
+    <Company>SynthAICode</Company>
+    <Description>LINQ-style DSL for Kafka ksqlDB. Define time-windowed aggregations in C# and generate KSQL. Avro/Schema Registry integration, Streamiz-backed materialization.</Description>
+    <PackageTags>kafka;ksqldb;linq;stream-processing;avro;schema-registry;streamiz;dotnet;csharp</PackageTags>
+    <PackageProjectUrl>https://github.com/synthaicode/Ksql.Linq</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/synthaicode/Ksql.Linq</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>KsqlLinq-icon-128.png</PackageIcon>
+    <PackageReleaseNotes>WindowStart key-based policy; Live CTAS aggregates-only; explicit null assignment for Avro unions; examples and physical tests verified.</PackageReleaseNotes>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <NoWarn>$(NoWarn);1591;CS1570;CS1573;CS1587;CS8603;CS8618;CS8625</NoWarn>
+    <UseStreamizPackages>true</UseStreamizPackages>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <StreamizCoreVersion Condition="'$(StreamizCoreVersion)' == ''">1.7.1</StreamizCoreVersion>
+    <StreamizSerdesAvroVersion Condition="'$(StreamizSerdesAvroVersion)' == ''">1.7.1</StreamizSerdesAvroVersion>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Ksql.Linq.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Ksql.Linq.Cache.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- Public API Analyzer setup -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
+  <!-- Keep RS0025/RS0026 as non-errors; RS0016/RS0017 are errors now -->
+  <PropertyGroup>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);RS0025;RS0026</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="SendOnly\**\*.cs" />
+    <Compile Remove="ReceiveOnly\**\*.cs" />
+    <!-- Exclude Samples from main package; moved to separate assembly -->
+    <Compile Remove="Entities\Samples\**\*.cs" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<None Include="KsqlLinq-icon-128.png" Pack="true" PackagePath="" />
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<ItemGroup>
+        <PackageReference Include="Confluent.Kafka" Version="2.12.0" />
+        <PackageReference Include="Confluent.SchemaRegistry" Version="2.12.0" />
+        <PackageReference Include="Confluent.SchemaRegistry.Serdes.Avro" Version="2.12.0" />
+        <PackageReference Include="Apache.Avro" Version="1.12.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+        <!-- Switched to local project references for Streamiz to enable instrumentation/debug -->
+        </ItemGroup>
+
+  <!-- Use project references by default; allow switching to NuGet packages by setting UseStreamizPackages=true -->
+  <ItemGroup Condition="'$(UseStreamizPackages)' != 'true'">
+    <ProjectReference Include="..\..\..\streamiz\core\Streamiz.Kafka.Net.csproj" />
+    <ProjectReference Include="..\..\..\streamiz\serdes\Streamiz.Kafka.Net.SchemaRegistry.SerDes.Avro\Streamiz.Kafka.Net.SchemaRegistry.SerDes.Avro.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseStreamizPackages)' == 'true'">
+    <!-- Set versions via /p:StreamizCoreVersion=... and /p:StreamizSerdesAvroVersion=... -->
+    <PackageReference Include="Streamiz.Kafka.Net" Version="$(StreamizCoreVersion)" />
+    <PackageReference Include="Streamiz.Kafka.Net.SchemaRegistry.SerDes.Avro" Version="$(StreamizSerdesAvroVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Query\Builders\Common\" />
+    <Folder Include="Query\Dsl\" />
+  </ItemGroup>
+</Project>

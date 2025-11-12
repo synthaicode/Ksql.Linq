@@ -1,0 +1,12 @@
+# Root editorconfig for analyzers
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+# Public API Analyzers severity (soft during convergence)
+dotnet_diagnostic.RS0016.severity = error
+dotnet_diagnostic.RS0017.severity = error
+dotnet_diagnostic.RS0025.severity = suggestion
+dotnet_diagnostic.RS0026.severity = suggestion

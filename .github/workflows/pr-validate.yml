@@ -1,0 +1,69 @@
+name: PR Validate (Public API + Examples)
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release/**
+
+concurrency:
+  group: pr-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build library with Public API checks (RS0016/RS0017 as errors)
+        run: |
+          dotnet restore src/Ksql.Linq.csproj
+          dotnet build src/Ksql.Linq.csproj -c Release -p:WarningsAsErrors=RS0016;RS0017 --no-incremental --nologo
+
+      - name: Compute package version
+        id: ver
+        shell: pwsh
+        run: |
+          $xml = Get-Content src/Ksql.Linq.csproj -Raw
+          $base = ([regex]::Match($xml, '<Version>([^<]+)</Version>')).Groups[1].Value
+          $pkg = "$base-pr.${{ github.run_number }}"
+          "pkg=$pkg" >> $env:GITHUB_OUTPUT
+
+      - name: Pack local preview (PR)
+        run: |
+          dotnet pack src/Ksql.Linq.csproj -c Release -o ./.artifacts/nuget \
+            -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg \
+            -p:PackageVersion=${{ steps.ver.outputs.pkg }}
+
+      - name: Point examples to local package version
+        shell: pwsh
+        run: |
+          $ver='${{ steps.ver.outputs.pkg }}'
+          $p = 'examples/Directory.Build.props'
+          $xml = Get-Content $p -Raw
+          if ($xml -match 'PackageReference Include="Ksql\.Linq"') {
+            $xml = $xml -replace '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)',("`$1" + $ver + "`$3")
+          } else {
+            # fallback: add central reference if not exists
+            $xml = $xml -replace '</Project>', "  <ItemGroup>`n    <PackageReference Include=\"Ksql.Linq\" Version=\"$ver\" />`n  </ItemGroup>`n</Project>"
+          }
+          Set-Content -Path $p -Value $xml -Encoding UTF8
+
+      - name: Build examples against local nupkg
+        run: |
+          for proj in $(find examples -name '*.csproj'); do
+            echo "::group::Building $proj"
+            dotnet restore "$proj"
+            dotnet build "$proj" -c Release --nologo
+            echo "::endgroup::"
+          done
+

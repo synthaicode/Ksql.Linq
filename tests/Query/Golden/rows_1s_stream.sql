@@ -1,0 +1,1 @@
+create stream if not exists bar_1s_rows(broker varchar key, symbol varchar key, timestamp timestamp, bucketstart bigint, open double, high double, low double, close double)with(kafka_topic='bar_1s_rows', cleanup_policy='delete', key_format='avro', value_format='avro', timestamp='timestamp', partitions=1, replicas=1, retention_ms=604800000);

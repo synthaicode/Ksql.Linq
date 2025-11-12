@@ -1,0 +1,1 @@
+create table if not exists keypath_none with(kafka_topic='keypath_none', cleanup_policy='compact', key_format='avro', value_format='avro')as select broker as broker, symbol as symbol, sum(qty)as total from tableentity group by broker, symbol emit changes;

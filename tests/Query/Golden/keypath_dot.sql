@@ -1,0 +1,1 @@
+create table if not exists keypath_dot with(kafka_topic='keypath_dot', cleanup_policy='compact', key_format='avro', value_format='avro')as select key.broker as broker, key.symbol as symbol, sum(qty)as total from tableentity group by key.broker, key.symbol emit changes;
