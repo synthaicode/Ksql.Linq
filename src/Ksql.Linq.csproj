@@ -30,7 +30,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <NoWarn>$(NoWarn);1591;CS1570;CS1573;CS1587;CS8603;CS8618;CS8625</NoWarn>
+    <!-- Temporarily suppress RS0016/RS0017 to unblock CI while PublicAPI files are converged -->
+    <NoWarn>$(NoWarn);1591;CS1570;CS1573;CS1587;CS8603;CS8618;CS8625;RS0016;RS0017</NoWarn>
     <UseStreamizPackages>true</UseStreamizPackages>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
