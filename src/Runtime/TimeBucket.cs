@@ -484,7 +484,7 @@ public sealed class TimeBucket<T> where T : class
                         }).ConfigureAwait(false);
                     }
                     catch { }
-                    if (pulled.Count > 0)
+                    if (pulled != null && pulled.Count > 0)
                     {
                         var bsProp2 = typeof(T).GetProperty("BucketStart");
                         if (bsProp2 != null)
