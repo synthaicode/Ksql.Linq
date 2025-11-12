@@ -6,8 +6,7 @@ namespace Ksql.Linq.Runtime.Cache;
 /// <summary>
 /// Manages registration and lifecycle of table caches.
 /// </summary>
-public interface ITableCacheManager
+internal interface ITableCacheManager
 {
     Task InitializeAsync(CancellationToken ct = default);
 }
-

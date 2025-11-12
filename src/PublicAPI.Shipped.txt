@@ -59,7 +59,5 @@ T:Ksql.Linq.Events.IRuntimeEventSink
 
 # DI interfaces (extensibility points)
 T:Ksql.Linq.Infrastructure.Kafka.ITopicAdmin
-T:Ksql.Linq.Infrastructure.Messaging.IProducerFactory
-T:Ksql.Linq.Infrastructure.Messaging.IConsumerFactory
 T:Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
 T:Ksql.Linq.Infrastructure.Ksql.IKsqlExecutor

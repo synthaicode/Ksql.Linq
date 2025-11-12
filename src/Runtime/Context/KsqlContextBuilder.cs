@@ -5,7 +5,6 @@ using Ksql.Linq.Runtime.Scheduling;
 using Ksql.Linq.Runtime.Cache;
 using Ksql.Linq.Infrastructure.Ksql;
 using Ksql.Linq.Infrastructure.Kafka;
-using Ksql.Linq.Infrastructure.Messaging;
 using Ksql.Linq.Runtime.Dlq;
 using Ksql.Linq.Runtime.Fill;
 
@@ -15,7 +14,7 @@ namespace Ksql.Linq.Runtime.Context;
 /// Fluent builder to compose optional services for KsqlContext orchestration.
 /// This is additive and non-breaking; existing constructors remain valid.
 /// </summary>
-public sealed class KsqlContextBuilder
+internal sealed class KsqlContextBuilder
 {
     private readonly KsqlContextDependencies _deps = new();
 
@@ -27,12 +26,6 @@ public sealed class KsqlContextBuilder
 
     public KsqlContextBuilder WithTopicAdmin(ITopicAdmin admin)
     { _deps.TopicAdmin = admin; return this; }
-
-    public KsqlContextBuilder WithProducerFactory(IProducerFactory pf)
-    { _deps.ProducerFactory = pf; return this; }
-
-    public KsqlContextBuilder WithConsumerFactory(IConsumerFactory cf)
-    { _deps.ConsumerFactory = cf; return this; }
 
     public KsqlContextBuilder WithDlqService(IDlqService dlq)
     { _deps.DlqService = dlq; return this; }

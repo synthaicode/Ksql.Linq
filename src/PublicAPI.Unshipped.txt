@@ -64,12 +64,9 @@ T:Ksql.Linq.Query.Dsl.Windows
 T:Ksql.Linq.Query.JoinableEntitySet
 T:Ksql.Linq.Query.Pipeline.IDMLQueryGenerator
 T:Ksql.Linq.Query.Pipeline.QueryExecutionMode
-T:Ksql.Linq.Runtime.Cache.ITableCacheManager
-T:Ksql.Linq.Runtime.Dlq.IDlqService
 T:Ksql.Linq.Runtime.Fill.IStartupFillService
 T:Ksql.Linq.Runtime.Heartbeat.IMarketScheduleProvider
 T:Ksql.Linq.Runtime.Monitor.IRowMonitorCoordinator
 T:Ksql.Linq.Runtime.PeriodUnit
-T:Ksql.Linq.Runtime.Scheduling.IMarketScheduleService
 T:Ksql.Linq.Runtime.Schema.ISchemaRegistrar
 T:Ksql.Linq.Window.IWindowGrouping
