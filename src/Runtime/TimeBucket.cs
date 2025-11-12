@@ -788,15 +788,25 @@ public sealed class TimeBucketScope<T> where T : class
 
     public Task<List<T>> ToListAsync(IReadOnlyList<string>? pkFilter) => _tb.ToListAsync(pkFilter ?? _keys, _ct);
 
-    public Task<List<T>> ReadAsync(IReadOnlyList<string> pkFilter, DateTime bucketStartUtc, TimeSpan? tolerance = null)
+    public Task<List<T>> ReadAsync(IReadOnlyList<string> pkFilter, DateTime bucketStartUtc, TimeSpan? tolerance)
         => _tb.ReadAsync(pkFilter, bucketStartUtc, tolerance, _ct);
 
+    public Task<List<T>> ReadAsync(IReadOnlyList<string> pkFilter, DateTime bucketStartUtc)
+        => _tb.ReadAsync(pkFilter, bucketStartUtc, null, _ct);
+
     // Use bound keys
-    public Task<List<T>> ReadAsync(DateTime bucketStartUtc, TimeSpan? tolerance = null)
+    public Task<List<T>> ReadAsync(DateTime bucketStartUtc, TimeSpan? tolerance)
     {
         if (_keys is null || _keys.Count == 0)
             throw new InvalidOperationException("No default keys bound. Call WithKeys(...) or use the overload that accepts pkFilter.");
         return _tb.ReadAsync(_keys, bucketStartUtc, tolerance, _ct);
+    }
+
+    public Task<List<T>> ReadAsync(DateTime bucketStartUtc)
+    {
+        if (_keys is null || _keys.Count == 0)
+            throw new InvalidOperationException("No default keys bound. Call WithKeys(...) or use the overload that accepts pkFilter.");
+        return _tb.ReadAsync(_keys, bucketStartUtc, null, _ct);
     }
 
     public Task<bool> WaitForBucketAsync(

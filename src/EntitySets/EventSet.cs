@@ -211,7 +211,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
     /// REDESIGNED: ForEachAsync supporting continuous Kafka consumption
     /// Design change: ToListAsync() is disallowed; now based on GetAsyncEnumerator
     /// </summary>
-    public virtual async Task ForEachAsync(Func<T, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public virtual async Task ForEachAsync(Func<T, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
         if (action == null)
             throw new ArgumentNullException(nameof(action));
@@ -292,11 +292,29 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
         }
     }
 
+    // Convenience overloads (no optional parameters)
+    public Task ForEachAsync(Func<T, Task> action)
+        => ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout)
+        => ForEachAsync(action, timeout, true, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Task> action, CancellationToken cancellationToken)
+        => ForEachAsync(action, TimeSpan.Zero, true, cancellationToken);
+
     [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public virtual Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    public virtual Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
         => ForEachAsync((e, h, _) => action(e, h), timeout, autoCommit, cancellationToken);
 
-    public virtual async Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
+    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action)
+        => ForEachAsync((e, h, _) => action(e, h), TimeSpan.Zero, true, CancellationToken.None);
+
+    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout)
+        => ForEachAsync((e, h, _) => action(e, h), timeout, true, CancellationToken.None);
+
+    public virtual async Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
         if (action == null)
             throw new ArgumentNullException(nameof(action));
@@ -361,6 +379,15 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
             }
         }
     }
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action)
+        => ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit)
+        => ForEachAsync(action, TimeSpan.Zero, autoCommit, CancellationToken.None);
+
+    public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout)
+        => ForEachAsync(action, timeout, true, CancellationToken.None);
 
     /// <summary>
     /// IEntitySet<T> implementation: retrieve metadata

@@ -27,7 +27,7 @@ public class RetryPolicy
         Strategy = BackoffStrategy.Exponential
     };
 
-    public async Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken = default, Action<int, Exception>? onRetry = null)
+    public async Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken, Action<int, Exception>? onRetry)
     {
         if (action == null) throw new ArgumentNullException(nameof(action));
 
@@ -53,7 +53,7 @@ public class RetryPolicy
         }
     }
 
-    public async Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default, Action<int, Exception>? onRetry = null)
+    public async Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken, Action<int, Exception>? onRetry)
     {
         if (action == null) throw new ArgumentNullException(nameof(action));
 
@@ -77,6 +77,12 @@ public class RetryPolicy
             }
         }
     }
+
+    // Convenience overloads without optional parameters
+    public Task ExecuteAsync(Func<Task> action) => ExecuteAsync(action, CancellationToken.None, null);
+    public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken) => ExecuteAsync(action, cancellationToken, null);
+    public Task<T> ExecuteAsync<T>(Func<Task<T>> action) => ExecuteAsync(action, CancellationToken.None, null);
+    public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken) => ExecuteAsync(action, cancellationToken, null);
 
     private bool ShouldRetry(Exception ex, int attempt)
     {
@@ -105,4 +111,3 @@ public class RetryPolicy
 
     private TimeSpan Cap(TimeSpan d) => d > MaxDelay ? MaxDelay : d;
 }
-

@@ -93,12 +93,22 @@ public abstract partial class KsqlContext : IKsqlContext
 
     public const string DefaultSectionName = "KsqlDsl";
 
-    protected KsqlContext(IConfiguration configuration, ILoggerFactory? loggerFactory = null)
+    protected KsqlContext(IConfiguration configuration)
+        : this(configuration, DefaultSectionName, null)
+    {
+    }
+
+    protected KsqlContext(IConfiguration configuration, ILoggerFactory? loggerFactory)
         : this(configuration, DefaultSectionName, loggerFactory)
     {
     }
 
-    protected KsqlContext(IConfiguration configuration, string sectionName, ILoggerFactory? loggerFactory = null)
+    protected KsqlContext(IConfiguration configuration, string sectionName)
+        : this(configuration, sectionName, null)
+    {
+    }
+
+    protected KsqlContext(IConfiguration configuration, string sectionName, ILoggerFactory? loggerFactory)
     {
         _dslOptions = new KsqlDslOptions();
         configuration.GetSection(sectionName).Bind(_dslOptions);
@@ -108,7 +118,12 @@ public abstract partial class KsqlContext : IKsqlContext
 
     }
 
-    protected KsqlContext(KsqlDslOptions options, ILoggerFactory? loggerFactory = null)
+    protected KsqlContext(KsqlDslOptions options)
+        : this(options, null)
+    {
+    }
+
+    protected KsqlContext(KsqlDslOptions options, ILoggerFactory? loggerFactory)
     {
         _dslOptions = options;
         DefaultValueBinder.ApplyDefaults(_dslOptions);
@@ -668,7 +683,7 @@ public abstract partial class KsqlContext : IKsqlContext
             await rowsSet.AddAsync(converted, headers, token).ConfigureAwait(false);
             _logger?.LogInformation("Hub bridge produce {Rows} @ {Timestamp}", rowsTopicName, meta.TimestampUtc);
             finalEventSet.Commit(entity);
-        }, autoCommit: false, cancellationToken: token);
+        }, TimeSpan.Zero, false, token);
     }
 
     // Removed domain-specific sample entity and producer (DedupRateInput) from OSS core

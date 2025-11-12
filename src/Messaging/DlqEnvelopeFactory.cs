@@ -33,9 +33,9 @@ public static class DlqEnvelopeFactory
         string? consumerGroup,
         string? host,
         IReadOnlyDictionary<string, string> headerAllowList,
-        int maxMsg = 1024,
-        int maxStack = 2048,
-        bool normalizeStack = false)
+        int maxMsg,
+        int maxStack,
+        bool normalizeStack)
         where TKey : class
         where TValue : class
     {
@@ -80,9 +80,9 @@ public static class DlqEnvelopeFactory
         string? applicationId,
         string? consumerGroup,
         string? host,
-        int maxMsg = 1024,
-        int maxStack = 2048,
-        bool normalizeStack = false)
+        int maxMsg,
+        int maxStack,
+        bool normalizeStack)
     {
         var msgShort = TrimStr(ex.Message, maxMsg);
         var stack = ex.StackTrace;
@@ -116,4 +116,33 @@ public static class DlqEnvelopeFactory
             Headers = new Dictionary<string, string>(meta.HeaderAllowList, StringComparer.OrdinalIgnoreCase)
         };
     }
+
+    // Convenience overloads without optional parameters
+    public static DlqEnvelope From<TKey, TValue>(
+        ConsumeResult<TKey, TValue> r,
+        Exception ex,
+        string? applicationId,
+        string? consumerGroup,
+        string? host,
+        IReadOnlyDictionary<string, string> headerAllowList)
+        where TKey : class
+        where TValue : class
+        => From(r, ex, applicationId, consumerGroup, host, headerAllowList, 1024, 2048, false);
+
+    public static DlqEnvelope From(
+        MessageMeta meta,
+        Exception ex,
+        string? applicationId,
+        string? consumerGroup,
+        string? host)
+        => From(meta, ex, applicationId, consumerGroup, host, 1024, 2048, false);
+
+    public static DlqEnvelope From(
+        MessageMeta meta,
+        Exception ex,
+        string? applicationId,
+        string? consumerGroup,
+        string? host,
+        int maxMsg)
+        => From(meta, ex, applicationId, consumerGroup, host, maxMsg, 2048, false);
 }

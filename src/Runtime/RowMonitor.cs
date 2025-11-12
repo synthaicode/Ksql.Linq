@@ -560,7 +560,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
 
             _aggregator!.ProcessMessage(entity);
             return Task.CompletedTask;
-        }, autoCommit: false, cancellationToken: token).ConfigureAwait(false);
+        }, TimeSpan.Zero, false, token).ConfigureAwait(false);
     }
 
     private void EnsureAggregator()

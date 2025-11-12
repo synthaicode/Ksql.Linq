@@ -60,7 +60,8 @@
   <!-- When not in strict public API mode, also suppress RS0016/RS0017 to unblock CI.
        PR validation overrides this by setting -p:StrictPublicApi=true. -->
   <PropertyGroup Condition="'$(StrictPublicApi)' != 'true'">
-    <NoWarn>$(NoWarn);RS0016;RS0017</NoWarn>
+    <!-- Suppress RS0016/RS0017/RS0026 warnings in non-strict CI builds for cleaner logs -->
+    <NoWarn>$(NoWarn);RS0016;RS0017;RS0026</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="SendOnly\**\*.cs" />
