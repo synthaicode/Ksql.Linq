@@ -54,8 +54,9 @@ jobs:
             $pattern = '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)'
             $xml = [regex]::Replace($xml, $pattern, ('$1' + $ver + '$3'))
           } else {
-            # Fallback: add central reference if not exists (compose with explicit newlines)
-            $append = "<ItemGroup>`n  <PackageReference Include=\"Ksql.Linq\" Version=\"$ver\" />`n</ItemGroup>`n</Project>"
+            # Fallback: add central reference if not exists
+            # Use format operator and doubled quotes to avoid PowerShell parsing issues
+            $append = ("<ItemGroup>`n  <PackageReference Include=""Ksql.Linq"" Version=""{0}"" />`n</ItemGroup>`n</Project>" -f $ver)
             $xml = $xml.Replace('</Project>', $append)
           }
           Set-Content -Path $p -Value $xml -Encoding UTF8
