@@ -42,8 +42,6 @@ T:Ksql.Linq.Infrastructure.Ksql.IKsqlExecutor
 T:Ksql.Linq.Infrastructure.Ksql.IWaitDiagnosticsSink
 T:Ksql.Linq.Infrastructure.Ksql.IWaitSettings
 T:Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
-T:Ksql.Linq.Infrastructure.Messaging.IConsumerFactory
-T:Ksql.Linq.Infrastructure.Messaging.IProducerFactory
 T:Ksql.Linq.Messaging.Consumers.ICommitManager
 T:Ksql.Linq.Messaging.DlqEnvelope
 T:Ksql.Linq.Messaging.Internal.ErrorHandlingContext
@@ -64,12 +62,9 @@ T:Ksql.Linq.Query.Dsl.Windows
 T:Ksql.Linq.Query.JoinableEntitySet
 T:Ksql.Linq.Query.Pipeline.IDMLQueryGenerator
 T:Ksql.Linq.Query.Pipeline.QueryExecutionMode
-T:Ksql.Linq.Runtime.Cache.ITableCacheManager
-T:Ksql.Linq.Runtime.Dlq.IDlqService
 T:Ksql.Linq.Runtime.Fill.IStartupFillService
 T:Ksql.Linq.Runtime.Heartbeat.IMarketScheduleProvider
 T:Ksql.Linq.Runtime.Monitor.IRowMonitorCoordinator
 T:Ksql.Linq.Runtime.PeriodUnit
-T:Ksql.Linq.Runtime.Scheduling.IMarketScheduleService
 T:Ksql.Linq.Runtime.Schema.ISchemaRegistrar
 T:Ksql.Linq.Window.IWindowGrouping

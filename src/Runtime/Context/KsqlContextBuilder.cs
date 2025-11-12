@@ -5,7 +5,6 @@ using Ksql.Linq.Runtime.Scheduling;
 using Ksql.Linq.Runtime.Cache;
 using Ksql.Linq.Infrastructure.Ksql;
 using Ksql.Linq.Infrastructure.Kafka;
-using Ksql.Linq.Infrastructure.Messaging;
 using Ksql.Linq.Runtime.Dlq;
 using Ksql.Linq.Runtime.Fill;
 
@@ -28,22 +27,16 @@ public sealed class KsqlContextBuilder
     public KsqlContextBuilder WithTopicAdmin(ITopicAdmin admin)
     { _deps.TopicAdmin = admin; return this; }
 
-    public KsqlContextBuilder WithProducerFactory(IProducerFactory pf)
-    { _deps.ProducerFactory = pf; return this; }
-
-    public KsqlContextBuilder WithConsumerFactory(IConsumerFactory cf)
-    { _deps.ConsumerFactory = cf; return this; }
-
-    public KsqlContextBuilder WithDlqService(IDlqService dlq)
+    internal KsqlContextBuilder WithDlqService(IDlqService dlq)
     { _deps.DlqService = dlq; return this; }
 
     public KsqlContextBuilder WithRowMonitorCoordinator(IRowMonitorCoordinator coordinator)
     { _deps.RowMonitorCoordinator = coordinator; return this; }
 
-    public KsqlContextBuilder WithMarketScheduleService(IMarketScheduleService svc)
+    internal KsqlContextBuilder WithMarketScheduleService(IMarketScheduleService svc)
     { _deps.MarketScheduleService = svc; return this; }
 
-    public KsqlContextBuilder WithTableCacheManager(ITableCacheManager cache)
+    internal KsqlContextBuilder WithTableCacheManager(ITableCacheManager cache)
     { _deps.TableCacheManager = cache; return this; }
 
     public KsqlContextBuilder WithStartupFillService(IStartupFillService svc)

@@ -1,6 +1,5 @@
 using Ksql.Linq.Infrastructure.Kafka;
 using Ksql.Linq.Infrastructure.Ksql;
-using Ksql.Linq.Infrastructure.Messaging;
 using Ksql.Linq.Runtime.Cache;
 using Ksql.Linq.Runtime.Dlq;
 using Ksql.Linq.Runtime.Monitor;
@@ -19,11 +18,9 @@ public sealed class KsqlContextDependencies
     public IKsqlExecutor? KsqlExecutor { get; set; }
     public ISchemaRegistrar? SchemaRegistrar { get; set; }
     public ITopicAdmin? TopicAdmin { get; set; }
-    public IProducerFactory? ProducerFactory { get; set; }
-    public IConsumerFactory? ConsumerFactory { get; set; }
-    public IDlqService? DlqService { get; set; }
+    internal IDlqService? DlqService { get; set; }
     public IRowMonitorCoordinator? RowMonitorCoordinator { get; set; }
-    public IMarketScheduleService? MarketScheduleService { get; set; }
-    public ITableCacheManager? TableCacheManager { get; set; }
+    internal IMarketScheduleService? MarketScheduleService { get; set; }
+    internal ITableCacheManager? TableCacheManager { get; set; }
     public IStartupFillService? StartupFillService { get; set; }
 }
