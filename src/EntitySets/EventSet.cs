@@ -231,11 +231,11 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
             {
                 ctxLogger.Logger?.LogInformation("EventSet consumed {EntityType} from {Topic} offset {Offset} timestamp {Timestamp}", typeof(T).Name, GetTopicName(), meta.Offset, meta.TimestampUtc);
             }
-            var maxAttempts = _errorHandlingContext.ErrorAction == ErrorAction.Retry
-                ? _errorHandlingContext.RetryCount + 1
-                : 1;
+            var useRetry = _errorHandlingContext.ErrorAction == ErrorAction.Retry;
+            var retryAttempts = useRetry ? _errorHandlingContext.RetryCount + 1 : 1;
+            var retryInterval = _errorHandlingContext.RetryInterval;
 
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            for (var attempt = 1; attempt <= retryAttempts; attempt++)
             {
                 try
                 {
@@ -246,16 +246,16 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                 {
                     _errorHandlingContext.CurrentAttempt = attempt;
 
-                    if (attempt < maxAttempts && _errorHandlingContext.ErrorAction == ErrorAction.Retry)
+                    if (attempt < retryAttempts && useRetry)
                     {
-                        await Task.Delay(_errorHandlingContext.RetryInterval, linkedCts.Token);
+                        await Task.Delay(retryInterval, linkedCts.Token);
                         continue;
                     }
 
                     var dlq = context.DlqOptions;
                     var logger2 = (context as KsqlContext)?.Logger;
                     // When retries are exhausted (or not configured), emit a warning indicating final failure
-                    if (_errorHandlingContext.ErrorAction == ErrorAction.Retry && attempt == maxAttempts)
+                    if (useRetry && attempt == retryAttempts)
                     {
                         logger2?.LogWarning(
                             "All retry attempts exhausted for {EntityType} on topic {Topic}. Error={ErrorType}: {Message}",
@@ -328,11 +328,11 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
             }
             // Headered overload intentionally allows dummy records to pass through
 
-            var maxAttempts = _errorHandlingContext.ErrorAction == ErrorAction.Retry
-                ? _errorHandlingContext.RetryCount + 1
-                : 1;
+            var useRetry = _errorHandlingContext.ErrorAction == ErrorAction.Retry;
+            var retryAttempts = useRetry ? _errorHandlingContext.RetryCount + 1 : 1;
+            var retryInterval = _errorHandlingContext.RetryInterval;
 
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            for (var attempt = 1; attempt <= retryAttempts; attempt++)
             {
                 try
                 {
@@ -343,9 +343,9 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                 {
                     _errorHandlingContext.CurrentAttempt = attempt;
 
-                    if (attempt < maxAttempts && _errorHandlingContext.ErrorAction == ErrorAction.Retry)
+                    if (attempt < retryAttempts && useRetry)
                     {
-                        await Task.Delay(_errorHandlingContext.RetryInterval, linkedCts.Token);
+                        await Task.Delay(retryInterval, linkedCts.Token);
                         continue;
                     }
 
@@ -384,7 +384,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
     /// <summary>
     /// IEntitySet<T> implementation: retrieve metadata
     /// </summary>
-    public string GetTopicName() => (_entityModel.TopicName ?? _entityModel.EntityType.Name).ToLowerInvariant();
+    public string GetTopicName() => _entityModel.GetTopicName();
 
     public EntityModel GetEntityModel() => _entityModel;
 

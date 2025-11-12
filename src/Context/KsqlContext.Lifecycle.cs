@@ -569,7 +569,7 @@ public abstract partial class KsqlContext : IKsqlContext
     
 
     private static string GetTopicName(EntityModel model)
-        => (model.TopicName ?? model.EntityType.Name).ToLowerInvariant();
+        => model.GetTopicName();
 
     // Adapters for RowMonitorCoordinator ownership
     internal bool IsRowsRoleAdapter(EntityModel model) => IsRowsRole(model);
@@ -942,6 +942,5 @@ public abstract partial class KsqlContext : IKsqlContext
 
     
 }
-
 
 
