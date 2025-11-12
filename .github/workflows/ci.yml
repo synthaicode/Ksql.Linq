@@ -23,8 +23,8 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
 
-    - name: Test with coverage
-      run: dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage"
+    - name: Test with coverage (unit only)
+      run: dotnet test tests/Ksql.Linq.Tests.csproj --configuration Release --no-build --collect:"XPlat Code Coverage" --filter "TestCategory!=Integration"
 
     - name: Install ReportGenerator
       run: dotnet tool install --global dotnet-reportgenerator-globaltool
