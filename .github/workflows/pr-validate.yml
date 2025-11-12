@@ -48,18 +48,29 @@ jobs:
         run: |
           $ver='${{ steps.ver.outputs.pkg }}'
           $p = 'examples/Directory.Build.props'
-          $xml = Get-Content $p -Raw
-          if ($xml -match 'PackageReference Include="Ksql\.Linq"') {
-            # Use Regex.Replace with safe replacement (no PowerShell variable interpolation in $1/$3)
-            $pattern = '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)'
-            $xml = [regex]::Replace($xml, $pattern, ('$1' + $ver + '$3'))
-          } else {
-            # Fallback: add central reference if not exists
-            # Use format operator and doubled quotes to avoid PowerShell parsing issues
-            $append = ("<ItemGroup>`n  <PackageReference Include=""Ksql.Linq"" Version=""{0}"" />`n</ItemGroup>`n</Project>" -f $ver)
-            $xml = $xml.Replace('</Project>', $append)
+          [xml]$doc = Get-Content $p -Raw
+          $proj = $doc.Project
+          if (-not $proj) { throw "Invalid MSBuild props: missing <Project> root in $p" }
+          $pkgRef = $null
+          if ($proj.ItemGroup) {
+            foreach ($ig in $proj.ItemGroup) {
+              foreach ($pr in ($ig.PackageReference)) {
+                if ($pr.Include -eq 'Ksql.Linq') { $pkgRef = $pr; break }
+              }
+              if ($pkgRef) { break }
+            }
           }
-          Set-Content -Path $p -Value $xml -Encoding UTF8
+          if (-not $pkgRef) {
+            $ig = $doc.CreateElement('ItemGroup')
+            $pkgRef = $doc.CreateElement('PackageReference')
+            $pkgRef.SetAttribute('Include','Ksql.Linq') | Out-Null
+            $pkgRef.SetAttribute('Version', $ver) | Out-Null
+            $ig.AppendChild($pkgRef) | Out-Null
+            $proj.AppendChild($ig) | Out-Null
+          } else {
+            $pkgRef.SetAttribute('Version', $ver) | Out-Null
+          }
+          $doc.Save($p)
 
       - name: Build examples against local nupkg
         run: |
