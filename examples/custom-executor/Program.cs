@@ -39,6 +39,15 @@ public sealed class LoggingRetryExecutor : IKsqlExecutor
     public Task<KsqlDbResponse> ExecuteExplainAsync(string ksql, CancellationToken ct = default)
         => ExecuteStatementAsync($"EXPLAIN {ksql}", ct);
 
+    public Task<int> QueryStreamCountAsync(string sql, TimeSpan? timeout = null, CancellationToken ct = default)
+        => _inner.QueryStreamCountAsync(sql, timeout, ct);
+
+    public Task<int> QueryCountAsync(string sql, TimeSpan? timeout = null, CancellationToken ct = default)
+        => _inner.QueryCountAsync(sql, timeout, ct);
+
+    public Task<System.Collections.Generic.List<object?[]>> QueryRowsAsync(string sql, TimeSpan? timeout = null, CancellationToken ct = default)
+        => _inner.QueryRowsAsync(sql, timeout, ct);
+
     private static string Preview(string sql)
         => sql.Length <= 120 ? sql : sql.Substring(0, 120) + "...";
 }
@@ -74,4 +83,3 @@ public static class Program
         Console.WriteLine($"Response.Success={res.IsSuccess}\nBody={res.Message}");
     }
 }
-
