@@ -333,53 +333,63 @@ public abstract partial class KsqlContext
             : generator.GenerateCreateStream(schemaProvider);
         Logger.LogInformation("KSQL DDL (simple {Entity}): {Sql}", type.Name, ddl);
         // Retry DDL with exponential backoff to tolerate ksqlDB command-topic warmup
-        var attempts = 0;
-        var maxAttempts = Math.Max(0, _dslOptions.KsqlDdlRetryCount) + 1; // include first try
-        var delayMs = Math.Max(0, _dslOptions.KsqlDdlRetryInitialDelayMs);
-        while (true)
+        var policy = new Ksql.Linq.Core.Retry.RetryPolicy
         {
-            var result = await ExecuteStatementAsync(ddl);
-            if (result.IsSuccess)
-                break;
-            attempts++;
-            var retryable = IsRetryableKsqlError(result.Message);
-            if (!retryable || attempts >= maxAttempts)
+            MaxAttempts = Math.Max(0, _dslOptions.KsqlDdlRetryCount) + 1,
+            InitialDelay = TimeSpan.FromMilliseconds(Math.Max(0, _dslOptions.KsqlDdlRetryInitialDelayMs)),
+            Strategy = Ksql.Linq.Core.Retry.BackoffStrategy.Exponential,
+            IsRetryable = msgEx => IsRetryableKsqlError(msgEx.Message)
+        };
+        try
+        {
+            await policy.ExecuteAsync(async () =>
             {
-                var msg = $"DDL execution failed for {type.Name}: {result.Message}";
-                Logger.LogError(msg);
+                var result = await ExecuteStatementAsync(ddl);
+                if (result.IsSuccess)
+                    return;
+                // If non-retryable, surface as terminal failure to the policy
+                if (!IsRetryableKsqlError(result.Message))
+                    throw new InvalidOperationException($"Non-retryable DDL error: {result.Message}");
+                // Retryable: throw to trigger policy backoff
+                throw new InvalidOperationException(result.Message ?? "DDL failed");
+            }, default, (attempt, ex) =>
+            {
+                Logger.LogWarning("Retrying DDL for {Entity} (attempt {Attempt}) due to: {Reason}", type.Name, attempt, ex.Message);
                 try
                 {
-                    await Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
+                    _ = Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
                     {
-                        Name = "ddl.simple.fail",
-                        Phase = "fail",
+                        Name = "ddl.simple.retry",
+                        Phase = "retry",
                         Entity = type.Name,
                         Topic = model.GetTopicName(),
                         SqlPreview = Preview(ddl),
                         Success = false,
-                        Message = result.Message
-                    }).ConfigureAwait(false);
+                        Message = ex.Message
+                    });
                 }
                 catch { }
-                throw new InvalidOperationException(msg);
-            }
-            Logger.LogWarning("Retrying DDL for {Entity} (attempt {Attempt}/{Max}) due to: {Reason}", type.Name, attempts, maxAttempts - 1, result.Message);
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            var msg = $"DDL execution failed for {type.Name}: {ex.Message}";
+            Logger.LogError(msg);
             try
             {
                 await Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
                 {
-                    Name = "ddl.simple.retry",
-                    Phase = "retry",
+                    Name = "ddl.simple.fail",
+                    Phase = "fail",
                     Entity = type.Name,
                     Topic = model.GetTopicName(),
                     SqlPreview = Preview(ddl),
                     Success = false,
-                    Message = result.Message
+                    Message = ex.Message
                 }).ConfigureAwait(false);
             }
             catch { }
-            await _delay(TimeSpan.FromMilliseconds(delayMs), default);
-            delayMs = Math.Min(delayMs * 2, 8000);
+            throw new InvalidOperationException(msg);
         }
         // Ensure the entity is visible to ksqlDB metadata before proceeding
         await WaitForEntityDdlAsync(model, TimeSpan.FromSeconds(12));
@@ -929,7 +939,6 @@ public abstract partial class KsqlContext
         return method.Invoke(null, null)!;
     }
 }
-
 
 
 
