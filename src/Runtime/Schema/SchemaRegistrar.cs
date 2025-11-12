@@ -16,7 +16,7 @@ namespace Ksql.Linq.Runtime.Schema;
 /// <summary>
 /// Orchestrates schema registration and related readiness steps, leveraging context adapters.
 /// </summary>
-    public sealed class SchemaRegistrar : ISchemaRegistrar
+    internal sealed class SchemaRegistrar : ISchemaRegistrar
     {
         private readonly KsqlContext _context;
 
