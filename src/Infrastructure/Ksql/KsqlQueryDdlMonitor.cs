@@ -18,6 +18,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ksql.Linq.Core.Retry;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 
@@ -128,11 +129,11 @@ internal sealed class KsqlQueryDdlMonitor
 
     private async Task<KsqlDbResponse> ExecuteWithRetryAsync(Type entityType, string sql)
     {
-        var policy = new Ksql.Linq.Core.Retry.RetryPolicy
+        var policy = new RetryPolicy
         {
             MaxAttempts = Math.Max(0, _deps.Options.KsqlDdlRetryCount) + 1,
             InitialDelay = TimeSpan.FromMilliseconds(Math.Max(0, _deps.Options.KsqlDdlRetryInitialDelayMs)),
-            Strategy = Ksql.Linq.Core.Retry.BackoffStrategy.Exponential,
+            Strategy = BackoffStrategy.Exponential,
             IsRetryable = ex => IsRetryableKsqlError(ex.Message)
         };
 
@@ -208,4 +209,3 @@ internal sealed class KsqlQueryDdlMonitor
     }
 
 }
-

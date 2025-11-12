@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Events;
 
 namespace Ksql.Linq.Runtime;
@@ -1496,4 +1497,3 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
         }
     }
 }
-

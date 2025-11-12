@@ -1,6 +1,7 @@
 using System;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Configuration.Messaging;
+using Ksql.Linq.Core.Extensions;
 
 namespace Ksql.Linq.Configuration;
 
