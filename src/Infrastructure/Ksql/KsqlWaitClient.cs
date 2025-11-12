@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Ksql.Linq.Core.Retry;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 
@@ -17,18 +18,32 @@ internal static class KsqlWaitClient
         int attempts = 5,
         int delayMs = 1000)
     {
-        for (var attempt = 0; attempt < attempts; attempt++)
+        var policy = new RetryPolicy
         {
-            var response = await execute("SHOW QUERIES;").ConfigureAwait(false);
-            if (response.IsSuccess && !string.IsNullOrWhiteSpace(response.Message))
+            MaxAttempts = Math.Max(1, attempts),
+            InitialDelay = TimeSpan.FromMilliseconds(Math.Max(0, delayMs)),
+            Strategy = BackoffStrategy.Fixed,
+            IsRetryable = _ => true
+        };
+
+        try
+        {
+            return await policy.ExecuteAsync(async () =>
             {
-                var queryId = KsqlWaitService.FindQueryIdInShowQueries(response.Message, targetTopic, statement);
-                if (!string.IsNullOrEmpty(queryId))
-                    return queryId;
-            }
-            await Task.Delay(Math.Max(0, delayMs)).ConfigureAwait(false);
+                var response = await execute("SHOW QUERIES;").ConfigureAwait(false);
+                if (response.IsSuccess && !string.IsNullOrWhiteSpace(response.Message))
+                {
+                    var queryId = KsqlWaitService.FindQueryIdInShowQueries(response.Message, targetTopic, statement);
+                    if (!string.IsNullOrEmpty(queryId))
+                        return queryId;
+                }
+                throw new InvalidOperationException("Query ID not found yet");
+            }).ConfigureAwait(false);
         }
-        return null;
+        catch
+        {
+            return null;
+        }
     }
 
     public static async Task<bool> ConfirmQueryViaShowQueriesAsync(

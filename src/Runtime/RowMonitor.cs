@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Events;
 
 namespace Ksql.Linq.Runtime;
@@ -1167,7 +1168,7 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
     }
 
     private static string GetTopicName(EntityModel model)
-        => (model.TopicName ?? model.EntityType.Name).ToLowerInvariant();
+        => model.GetTopicName();
 
     private Func<TSource, bool>? CompileWherePredicate(Expression? whereExpression)
     {
@@ -1496,5 +1497,3 @@ internal sealed class RowMonitor<TSource, TRow> : IRowMonitorController, IAsyncD
         }
     }
 }
-
-

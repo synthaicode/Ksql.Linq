@@ -4,6 +4,7 @@ using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Dsl;
 using Microsoft.Extensions.Logging;
 using System;
+using Ksql.Linq.Core.Extensions;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
@@ -63,7 +64,7 @@ public class CtasRetentionCascadeTests
     {
         var ddls = await RunAsync(apply: em =>
         {
-            var name = (em.TopicName ?? em.EntityType.Name).ToLowerInvariant();
+            var name = em.GetTopicName();
             if (string.Equals(name, "bar_1s_rows", StringComparison.OrdinalIgnoreCase))
             {
                 em.AdditionalSettings["retention.ms"] = "300000"; // 5 min
@@ -87,7 +88,7 @@ public class CtasRetentionCascadeTests
     {
         var ddls = await RunAsync(apply: em =>
         {
-            var name = (em.TopicName ?? em.EntityType.Name).ToLowerInvariant();
+            var name = em.GetTopicName();
             if (string.Equals(name, "bar_1m", StringComparison.OrdinalIgnoreCase))
             {
                 em.AdditionalSettings["retention.ms"] = "900000"; // 15 min on base
