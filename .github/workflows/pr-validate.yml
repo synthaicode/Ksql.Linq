@@ -27,7 +27,11 @@ jobs:
       - name: Build library with Public API checks (RS0016/RS0017 as errors)
         run: |
           dotnet restore src/Ksql.Linq.csproj
-          dotnet build src/Ksql.Linq.csproj -c Release -p:WarningsAsErrors=RS0016;RS0017 --no-incremental --nologo
+          dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo \
+            "-p:WarningsAsErrors=RS0016;RS0017" \
+            "-p:WarningsNotAsErrors=" \
+            "-p:TreatWarningsAsErrors=false" \
+            "-p:StrictPublicApi=true"
 
       - name: Compute package version
         id: ver
@@ -66,4 +70,3 @@ jobs:
             dotnet build "$proj" -c Release --nologo
             echo "::endgroup::"
           done
-

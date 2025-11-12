@@ -30,8 +30,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <!-- Temporarily suppress RS0016/RS0017 to unblock CI while PublicAPI files are converged -->
-    <NoWarn>$(NoWarn);1591;CS1570;CS1573;CS1587;CS8603;CS8618;CS8625;RS0016;RS0017</NoWarn>
+    <!-- Base NoWarn set (does NOT include RS0016/RS0017) -->
+    <NoWarn>$(NoWarn);1591;CS1570;CS1573;CS1587;CS8603;CS8618;CS8625</NoWarn>
     <UseStreamizPackages>true</UseStreamizPackages>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
@@ -53,9 +53,14 @@
     <AdditionalFiles Include="PublicAPI.Shipped.txt" />
     <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
   </ItemGroup>
-  <!-- Keep RS0025/RS0026 as non-errors; RS0016/RS0017 are errors now -->
+  <!-- Keep RS0025/RS0026 as non-errors globally; RS0016/RS0017 enforcement is controlled per-job -->
   <PropertyGroup>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);RS0016;RS0017;RS0025;RS0026</WarningsNotAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);RS0025;RS0026</WarningsNotAsErrors>
+  </PropertyGroup>
+  <!-- When not in strict public API mode, also suppress RS0016/RS0017 to unblock CI.
+       PR validation overrides this by setting -p:StrictPublicApi=true. -->
+  <PropertyGroup Condition="'$(StrictPublicApi)' != 'true'">
+    <NoWarn>$(NoWarn);RS0016;RS0017</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="SendOnly\**\*.cs" />
