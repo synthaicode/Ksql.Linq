@@ -81,8 +81,8 @@ public static class TimeBucket
         Runtime.Period period,
         System.Collections.Generic.IReadOnlyList<string> pkFilter,
         System.DateTime bucketStartUtc,
-        System.TimeSpan? tolerance,
-        System.Threading.CancellationToken ct) where T : class
+        System.TimeSpan? tolerance = null,
+        System.Threading.CancellationToken ct = default) where T : class
     {
         var tb = Runtime.TimeBucket.Get<T>(context, period);
         return tb.ReadAsync(pkFilter, bucketStartUtc, tolerance, ct);
@@ -93,7 +93,7 @@ public static class TimeBucket
         KsqlContext context,
         Runtime.Period period,
         System.Collections.Generic.IReadOnlyList<string> pkFilter,
-        System.Threading.CancellationToken ct = default) where T : class
+        System.Threading.CancellationToken ct) where T : class
     {
         return Runtime.TimeBucket.Get<T>(context, period).ToListAsync(pkFilter, ct);
     }
