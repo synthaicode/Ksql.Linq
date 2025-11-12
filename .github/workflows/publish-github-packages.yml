@@ -54,9 +54,15 @@ jobs:
             -p:ContinuousIntegrationBuild=true \
             -o ./artifacts
 
-      - name: Publish to GitHub Packages
-        env:
-          GH_NUGET_TOKEN: ${{ secrets.SYNTHAICODE_PACKAGE }}
+      - name: Add GitHub Packages source (GITHUB_TOKEN)
         run: |
-          SRC="https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-          dotnet nuget push "./artifacts/*.nupkg" --source "$SRC" --api-key "$GH_NUGET_TOKEN" --skip-duplicate
+          dotnet nuget add source \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
+            --store-password-in-clear-text \
+            --name "github" \
+            "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+      - name: Publish to GitHub Packages
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" --source "github" --skip-duplicate
