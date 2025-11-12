@@ -51,10 +51,18 @@ jobs:
           $p = 'examples/Directory.Build.props'
           $xml = Get-Content $p -Raw
           if ($xml -match 'PackageReference Include="Ksql\.Linq"') {
-            $xml = $xml -replace '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)',("`$1" + $ver + "`$3")
+            # Use Regex.Replace with safe replacement (no PowerShell variable interpolation in $1/$3)
+            $pattern = '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)'
+            $xml = [regex]::Replace($xml, $pattern, ('$1' + $ver + '$3'))
           } else {
-            # fallback: add central reference if not exists
-            $xml = $xml -replace '</Project>', "  <ItemGroup>`n    <PackageReference Include=\"Ksql.Linq\" Version=\"$ver\" />`n  </ItemGroup>`n</Project>"
+            # Fallback: add central reference if not exists (use simple .Replace to avoid regex semantics)
+            $append = @"
+  <ItemGroup>
+    <PackageReference Include="Ksql.Linq" Version="$ver" />
+  </ItemGroup>
+</Project>
+"@
+            $xml = $xml.Replace('</Project>', $append)
           }
           Set-Content -Path $p -Value $xml -Encoding UTF8
 
