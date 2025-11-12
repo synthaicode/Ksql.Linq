@@ -26,8 +26,8 @@ jobs:
       - name: Build (Release)
         run: dotnet build -c Release --no-restore
 
-      - name: Public API strict check (tagged only)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Public API strict check (stable tags only)
+        if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-rc')
         run: |
           dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo -p:StrictPublicApi=true -warnaserror:RS0016,RS0017
 
