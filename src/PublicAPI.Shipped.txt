@@ -1,129 +1,95 @@
 #nullable enable
-// Public API baseline (shipped)
-// Minimal set aligned with wiki/examples usage. Members are intentionally
-// omitted at this stage; RS0016 is kept as warning during convergence.
-
-// Core context
 T:Ksql.Linq.KsqlContext
 T:Ksql.Linq.Core.Abstractions.IKsqlContext
-
-// Application entry
 T:Ksql.Linq.Application.KsqlContextBuilder
+M:Ksql.Linq.Application.KsqlContextBuilder.#ctor
 T:Ksql.Linq.Application.KsqlContextOptions
+M:Ksql.Linq.Application.KsqlContextOptions.#ctor
+P:Ksql.Linq.Application.KsqlContextOptions.SchemaRegistryClient
+P:Ksql.Linq.Application.KsqlContextOptions.LoggerFactory
+P:Ksql.Linq.Application.KsqlContextOptions.Configuration
+P:Ksql.Linq.Application.KsqlContextOptions.AutoRegisterSchemas
+P:Ksql.Linq.Application.KsqlContextOptions.EnableCachePreWarming
+P:Ksql.Linq.Application.KsqlContextOptions.FailOnInitializationErrors
+P:Ksql.Linq.Application.KsqlContextOptions.FailOnSchemaErrors
+P:Ksql.Linq.Application.KsqlContextOptions.SchemaRegistrationTimeout
+M:Ksql.Linq.Application.KsqlContextOptions.Validate
 T:Ksql.Linq.Application.KsqlContextOptionsExtensions
+M:Ksql.Linq.Application.KsqlContextOptionsExtensions.UseSchemaRegistry(Ksql.Linq.Application.KsqlContextOptions,System.String)
+M:Ksql.Linq.Application.KsqlContextOptionsExtensions.UseSchemaRegistry(Ksql.Linq.Application.KsqlContextOptions,Confluent.SchemaRegistry.SchemaRegistryConfig)
+M:Ksql.Linq.Application.KsqlContextOptionsExtensions.UseSchemaRegistry(Ksql.Linq.Application.KsqlContextOptions,Confluent.SchemaRegistry.ISchemaRegistryClient)
+M:Ksql.Linq.Application.KsqlContextOptionsExtensions.EnableLogging(Ksql.Linq.Application.KsqlContextOptions,Microsoft.Extensions.Logging.ILoggerFactory)
+M:Ksql.Linq.Application.KsqlContextOptionsExtensions.ConfigureValidation(Ksql.Linq.Application.KsqlContextOptions,System.Boolean,System.Boolean,System.Boolean)
+M:Ksql.Linq.Application.KsqlContextOptionsExtensions.WithTimeouts(Ksql.Linq.Application.KsqlContextOptions,System.TimeSpan)
+
 T:Ksql.Linq.KsqlDbResponse
-
-// DSL (queries)
-T:Ksql.Linq.Query.Dsl.IKsqlQueryable
-T:Ksql.Linq.Query.Dsl.KsqlQueryable`1
-T:Ksql.Linq.Query.Dsl.KsqlQueryable2`2
-T:Ksql.Linq.Query.Dsl.KsqlGroupedQueryable`2
-T:Ksql.Linq.Query.Dsl.Windows
-T:Ksql.Linq.QueryExtensions
-
-// EntitySets / helpers
-T:Ksql.Linq.EventSet`1
-T:Ksql.Linq.EventSetExtensions
-T:Ksql.Linq.EntitySetExtensions
-
-// Attributes (modeling)
-T:Ksql.Linq.Core.Attributes.KsqlTopicAttribute
-T:Ksql.Linq.Core.Attributes.KsqlTableAttribute
-T:Ksql.Linq.Core.Attributes.KsqlKeyAttribute
-T:Ksql.Linq.Core.Attributes.KsqlTimestampAttribute
-T:Ksql.Linq.Core.Attributes.KsqlDecimalAttribute
-
-// Configuration (appsettings)
-T:Ksql.Linq.Configuration.KsqlDslOptions
-T:Ksql.Linq.Configuration.KsqlServerOptions
-T:Ksql.Linq.Configuration.CommonSection
-T:Ksql.Linq.Core.Configuration.SchemaRegistrySection
-T:Ksql.Linq.Configuration.Messaging.TopicSection
-T:Ksql.Linq.Configuration.Messaging.TopicCreationSection
-T:Ksql.Linq.Configuration.Messaging.ProducerSection
-T:Ksql.Linq.Configuration.Messaging.ConsumerSection
-
-// Period/TimeBucket APIs (reads)
-T:Ksql.Linq.Runtime.Period
-T:Ksql.Linq.Runtime.Periods
-T:Ksql.Linq.Runtime.PeriodUnit
-T:Ksql.Linq.TimeBucket
-T:Ksql.Linq.Runtime.TimeBucket
-T:Ksql.Linq.Runtime.TimeBucket`1
-T:Ksql.Linq.Runtime.TimeBucketScope`1
-
-// Exceptions / events (minimal)
-T:Ksql.Linq.Window.WindowAggregationException
-T:Ksql.Linq.Events.RuntimeEvent
-T:Ksql.Linq.Events.RuntimeEventBus
-T:Ksql.Linq.Events.IRuntimeEventSink
-
-// DI interfaces (extensibility points)
-T:Ksql.Linq.Infrastructure.Kafka.ITopicAdmin
-T:Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
-T:Ksql.Linq.Infrastructure.Ksql.IKsqlExecutor
- 
-// ===== Converged baseline (from previous Unshipped) =====
-// Types (extensions, DTOs, enums, config sections, etc.)
-T:Ksql.Linq.WindowExtensions
-T:Ksql.Linq.OffsetAggregateExtensions
-T:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions
-T:Ksql.Linq.Configuration.DefaultValueBinder
-T:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy
-T:Ksql.Linq.Core.Abstractions.EntityAccessMode
-
-// Members (records, methods, properties)
 P:Ksql.Linq.KsqlDbResponse.IsSuccess
 P:Ksql.Linq.KsqlDbResponse.Message
 P:Ksql.Linq.KsqlDbResponse.ErrorCode
 P:Ksql.Linq.KsqlDbResponse.ErrorDetail
+
+T:Ksql.Linq.Configuration.CommonSection
+M:Ksql.Linq.Configuration.CommonSection.#ctor
+P:Ksql.Linq.Configuration.CommonSection.BootstrapServers
+P:Ksql.Linq.Configuration.CommonSection.ClientId
+P:Ksql.Linq.Configuration.CommonSection.ApplicationId
+P:Ksql.Linq.Configuration.CommonSection.RequestTimeoutMs
+P:Ksql.Linq.Configuration.CommonSection.MetadataMaxAgeMs
+P:Ksql.Linq.Configuration.CommonSection.SecurityProtocol
+P:Ksql.Linq.Configuration.CommonSection.SaslMechanism
+P:Ksql.Linq.Configuration.CommonSection.SaslUsername
+P:Ksql.Linq.Configuration.CommonSection.SaslPassword
+P:Ksql.Linq.Configuration.CommonSection.SslCaLocation
+P:Ksql.Linq.Configuration.CommonSection.SslCertificateLocation
+P:Ksql.Linq.Configuration.CommonSection.SslKeyLocation
+P:Ksql.Linq.Configuration.CommonSection.SslKeyPassword
+P:Ksql.Linq.Configuration.CommonSection.AdditionalProperties
+
+T:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions
+M:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.#ctor
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.GroupId
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.AutoCommit
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.AutoOffsetReset
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.EnablePartitionEof
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.SessionTimeout
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.HeartbeatInterval
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.StopOnError
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.MaxPollRecords
+P:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions.MaxPollInterval
+
+T:Ksql.Linq.Configuration.DlqOptions
+M:Ksql.Linq.Configuration.DlqOptions.#ctor
+T:Ksql.Linq.Configuration.DlqMetrics
+M:Ksql.Linq.Configuration.DlqMetrics.#ctor
+
+T:Ksql.Linq.Configuration.DefaultValueBinder
 M:Ksql.Linq.Configuration.DefaultValueBinder.ApplyDefaults(System.Object)
 
-// Enums
+T:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy
 F:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy.Skip
 F:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy.Retry
 F:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy.DLQ
+
+T:Ksql.Linq.Core.Abstractions.EntityAccessMode
 F:Ksql.Linq.Core.Abstractions.EntityAccessMode.ReadWrite
 F:Ksql.Linq.Core.Abstractions.EntityAccessMode.ReadOnly
 F:Ksql.Linq.Core.Abstractions.EntityAccessMode.WriteOnly
 
-// Messaging configuration (public surface for appsettings binding)
-P:Ksql.Linq.Configuration.Messaging.TopicSection.TopicName
-P:Ksql.Linq.Configuration.Messaging.TopicSection.Producer
-P:Ksql.Linq.Configuration.Messaging.TopicSection.Consumer
-P:Ksql.Linq.Configuration.Messaging.TopicSection.Creation
-P:Ksql.Linq.Configuration.Messaging.TopicCreationSection.NumPartitions
-P:Ksql.Linq.Configuration.Messaging.TopicCreationSection.ReplicationFactor
-P:Ksql.Linq.Configuration.Messaging.TopicCreationSection.Configs
-P:Ksql.Linq.Configuration.Messaging.TopicCreationSection.EnableAutoCreation
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.Acks
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.CompressionType
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.EnableIdempotence
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.MaxInFlightRequestsPerConnection
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.LingerMs
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.BatchSize
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.BatchNumMessages
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.DeliveryTimeoutMs
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.RetryBackoffMs
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.Retries
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.BufferMemory
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.Partitioner
-P:Ksql.Linq.Configuration.Messaging.ProducerSection.AdditionalProperties
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.GroupId
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.AutoOffsetReset
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.EnableAutoCommit
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.AutoCommitIntervalMs
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.SessionTimeoutMs
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.HeartbeatIntervalMs
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.MaxPollIntervalMs
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.MaxPollRecords
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.FetchMinBytes
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.FetchMaxWaitMs
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.FetchMaxBytes
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.PartitionAssignmentStrategy
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.IsolationLevel
-P:Ksql.Linq.Configuration.Messaging.ConsumerSection.AdditionalProperties
+T:Ksql.Linq.Core.Attributes.KsqlTopicAttribute
+M:Ksql.Linq.Core.Attributes.KsqlTopicAttribute.#ctor
+T:Ksql.Linq.Core.Attributes.KsqlTableAttribute
+M:Ksql.Linq.Core.Attributes.KsqlTableAttribute.#ctor
+T:Ksql.Linq.Core.Attributes.KsqlKeyAttribute
+M:Ksql.Linq.Core.Attributes.KsqlKeyAttribute.#ctor
+T:Ksql.Linq.Core.Attributes.KsqlTimestampAttribute
+M:Ksql.Linq.Core.Attributes.KsqlTimestampAttribute.#ctor
+T:Ksql.Linq.Core.Attributes.KsqlDecimalAttribute
+M:Ksql.Linq.Core.Attributes.KsqlDecimalAttribute.#ctor
+T:Ksql.Linq.Core.Attributes.KsqlIgnoreAttribute
+M:Ksql.Linq.Core.Attributes.KsqlIgnoreAttribute.#ctor
 
-// Offset aggregate extension methods (expression-only helpers)
+T:Ksql.Linq.QueryExtensions
+T:Ksql.Linq.WindowExtensions
+T:Ksql.Linq.OffsetAggregateExtensions
 M:Ksql.Linq.OffsetAggregateExtensions.LatestByOffset``3(System.Linq.IGrouping{``1,``0},System.Linq.Expressions.Expression{System.Func{``0,``2}})
 M:Ksql.Linq.OffsetAggregateExtensions.EarliestByOffset``3(System.Linq.IGrouping{``1,``0},System.Linq.Expressions.Expression{System.Func{``0,``2}})
