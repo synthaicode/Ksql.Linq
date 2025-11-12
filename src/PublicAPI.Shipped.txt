@@ -1,3 +1,4 @@
+#nullable enable
 // Public API baseline (shipped)
 // Minimal set aligned with wiki/examples usage. Members are intentionally
 // omitted at this stage; RS0016 is kept as warning during convergence.
@@ -61,3 +62,4 @@ T:Ksql.Linq.Events.IRuntimeEventSink
 T:Ksql.Linq.Infrastructure.Kafka.ITopicAdmin
 T:Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
 T:Ksql.Linq.Infrastructure.Ksql.IKsqlExecutor
+

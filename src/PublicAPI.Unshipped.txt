@@ -1,72 +1,7 @@
-// Generated candidate baseline (types only from source scan).
+#nullable enable
+// Public API adds pending for next release.
 
 # Types
-T:Ksql.Linq.Application.KsqlContextBuilder
-T:Ksql.Linq.Application.KsqlContextOptions
-T:Ksql.Linq.Configuration.Abstractions.KafkaSubscriptionOptions
-T:Ksql.Linq.Configuration.CommonSection
-T:Ksql.Linq.Configuration.DlqMetrics
-T:Ksql.Linq.Configuration.KsqlDslOptions
-T:Ksql.Linq.Configuration.KsqlServerOptions
-T:Ksql.Linq.Configuration.Messaging.ConsumerSection
-T:Ksql.Linq.Configuration.Messaging.ProducerSection
-T:Ksql.Linq.Configuration.Messaging.TopicCreationSection
-T:Ksql.Linq.Configuration.Messaging.TopicSection
-T:Ksql.Linq.Configuration.ResolvedEntityConfig
-T:Ksql.Linq.Configuration.ValidationMode
-T:Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy
-T:Ksql.Linq.Core.Abstractions.EntityAccessMode
-T:Ksql.Linq.Core.Abstractions.EntityModel
-T:Ksql.Linq.Core.Abstractions.ErrorAction
-T:Ksql.Linq.Core.Abstractions.ErrorContext
-T:Ksql.Linq.Core.Abstractions.ErrorHandlingPolicy
-T:Ksql.Linq.Core.Abstractions.IEntitySet
-T:Ksql.Linq.Core.Abstractions.IErrorSink
-T:Ksql.Linq.Core.Abstractions.IJoinResult
-T:Ksql.Linq.Core.Abstractions.IJoinSupport
-T:Ksql.Linq.Core.Abstractions.IKsqlContext
-T:Ksql.Linq.Core.Abstractions.IModelBuilder
-T:Ksql.Linq.Core.Abstractions.IRemovableEntitySet
-T:Ksql.Linq.Core.Abstractions.KafkaMessageContext
-T:Ksql.Linq.Core.Abstractions.ValidationResult
-T:Ksql.Linq.Core.Configuration.BasicAuthCredentialsSource
-T:Ksql.Linq.Core.Configuration.SchemaRegistrySection
-T:Ksql.Linq.Core.Dlq.IDlqClient
-T:Ksql.Linq.Core.Dlq.IRateLimiter
-T:Ksql.Linq.Core.Modeling.EntityModelBuilder
-T:Ksql.Linq.Core.Models.PropertyMeta
-T:Ksql.Linq.Events.IRuntimeEventSink
-T:Ksql.Linq.Incidents.IIncidentSink
-T:Ksql.Linq.Infrastructure.Kafka.ITopicAdmin
-T:Ksql.Linq.Infrastructure.Ksql.IKsqlExecutor
-T:Ksql.Linq.Infrastructure.Ksql.IWaitDiagnosticsSink
-T:Ksql.Linq.Infrastructure.Ksql.IWaitSettings
-T:Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
-T:Ksql.Linq.Infrastructure.Messaging.IConsumerFactory
-T:Ksql.Linq.Infrastructure.Messaging.IProducerFactory
-T:Ksql.Linq.Messaging.Consumers.ICommitManager
-T:Ksql.Linq.Messaging.DlqEnvelope
-T:Ksql.Linq.Messaging.Internal.ErrorHandlingContext
-T:Ksql.Linq.Messaging.Producers.IDlqProducer
-T:Ksql.Linq.Query.Abstractions.IKsqlBuilder
-T:Ksql.Linq.Query.Abstractions.KsqlBuilderType
-T:Ksql.Linq.Query.Abstractions.StreamTableType
-T:Ksql.Linq.Query.Ddl.DdlObjectType
-T:Ksql.Linq.Query.Dsl.IKsqlQueryable
-T:Ksql.Linq.Query.Dsl.IScheduledScope
-T:Ksql.Linq.Query.Dsl.KsqlGroupedQueryable
-T:Ksql.Linq.Query.Dsl.KsqlQueryable
-T:Ksql.Linq.Query.Dsl.KsqlQueryable2
-T:Ksql.Linq.Query.Dsl.KsqlQueryModel
-T:Ksql.Linq.Query.Dsl.KsqlQueryRoot
-T:Ksql.Linq.Query.Dsl.ProjectionMemberKind
-T:Ksql.Linq.Query.Dsl.Windows
-T:Ksql.Linq.Query.JoinableEntitySet
-T:Ksql.Linq.Query.Pipeline.IDMLQueryGenerator
-T:Ksql.Linq.Query.Pipeline.QueryExecutionMode
-T:Ksql.Linq.Runtime.Fill.IStartupFillService
-T:Ksql.Linq.Runtime.Heartbeat.IMarketScheduleProvider
-T:Ksql.Linq.Runtime.Monitor.IRowMonitorCoordinator
-T:Ksql.Linq.Runtime.PeriodUnit
-T:Ksql.Linq.Runtime.Schema.ISchemaRegistrar
-T:Ksql.Linq.Window.IWindowGrouping
+
+# Members
+

@@ -1,0 +1,89 @@
+name: Build, Test, Pack, Publish (main only)
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build -c Release --no-restore
+
+      - name: Test (unit only)
+        run: dotnet test tests/Ksql.Linq.Tests.csproj -c Release --no-build --filter "TestCategory!=Integration"
+
+      - name: Pack (when tagged)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"   # e.g., v0.9.1-rc
+          VERSION="${VERSION#v}"               # e.g., 0.9.1-rc
+          mkdir -p .artifacts/nuget
+          dotnet pack src/Ksql.Linq.csproj -c Release -p:ContinuousIntegrationBuild=true -p:Version="$VERSION" -o ./.artifacts/nuget
+
+      - name: Upload package artifact (tagged)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./.artifacts/nuget/*
+
+  publish:
+    needs: build-test
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for ancestry check)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine if tag commit is on main
+        id: onmaster
+        shell: bash
+        run: |
+          git fetch origin main --prune
+          if git branch -r --contains "$GITHUB_SHA" | grep -q "origin/main"; then
+            echo "ON_MASTER=true" >> $GITHUB_ENV
+            echo "Tag commit is on main"
+          else
+            echo "ON_MASTER=false" >> $GITHUB_ENV
+            echo "Tag commit is NOT on main; skip publish"
+          fi
+
+      - name: Download package artifact
+        if: env.ON_MASTER == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./.artifacts/nuget
+
+      - name: Push nupkg to nuget.org
+        if: env.ON_MASTER == 'true'
+        run: |
+          for pkg in ./.artifacts/nuget/*.nupkg; do
+            dotnet nuget push "$pkg" -k "${{ secrets.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
+      - name: Push snupkg to nuget.org
+        if: env.ON_MASTER == 'true'
+        run: |
+          for spkg in ./.artifacts/nuget/*.snupkg; do
+            dotnet nuget push "$spkg" -k "${{ secrets.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
+          done
