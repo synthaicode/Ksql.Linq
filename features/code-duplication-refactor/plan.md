@@ -54,8 +54,8 @@
 - [x] 既存の `"{topic}-key"|"{topic}-value"` 置換（一部主要箇所）
 - [x] Type→Topic名の横断置換（`GetKafkaTopicName()`）（主要箇所）
 - [x] RuntimeEventBus.Publish ヘルパ導入（例外安全・非同期fire&forget）
-- [ ] SafeDelayAsync 導入と適用
-- [ ] 値変換/プロパティ反映ユーティリティ導入と適用
+- [x] SafeDelayAsync 導入と適用（主要箇所）
+- [x] 値変換/プロパティ反映ユーティリティ導入と適用（主要箇所）
 - [ ] 識別子正規化ユーティリティ導入
 - [ ] ベース名算出ヘルパ導入（派生エンティティ計画系）
 - [ ] PollUntilStableAsync 導入（必要に応じて適用）

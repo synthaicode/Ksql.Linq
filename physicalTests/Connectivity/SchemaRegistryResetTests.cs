@@ -76,8 +76,8 @@ public class SchemaRegistryResetTests
 
         foreach (var table in TestSchema.AllTopicNames)
         {
-            Assert.Contains($"{table}-value", subjects);
-            Assert.Contains($"{table}-key", subjects);
+            Assert.Contains(Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(table), subjects);
+            Assert.Contains(Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(table), subjects);
         }
         Assert.Contains("source-value", subjects);
     }
@@ -138,8 +138,8 @@ public class SchemaRegistryResetTests
 
         foreach (var table in TestSchema.AllTopicNames)
         {
-            Assert.DoesNotContain($"{table.ToUpperInvariant()}-value", subjects);
-            Assert.DoesNotContain($"{table.ToUpperInvariant()}-key", subjects);
+            Assert.DoesNotContain(Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(table).ToUpperInvariant(), subjects);
+            Assert.DoesNotContain(Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(table).ToUpperInvariant(), subjects);
         }
     }
 }
@@ -202,7 +202,7 @@ public class EnvSchemaRegistryResetTests
         await PhysicalTestEnv.Health.WaitForHttpOkAsync($"{KsqlDbUrl}/info", TimeSpan.FromSeconds(120));
         using var client = new HttpClient();
         var subjects = TestSchema.AllTopicNames
-            .SelectMany(t => new[] { $"{t}-value", $"{t}-key" })
+            .SelectMany(t => new[] { Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(t), Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(t) })
             .Concat(new[] { "source-value" })
             .Distinct()
             .ToArray();

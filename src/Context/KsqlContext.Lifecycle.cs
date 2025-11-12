@@ -769,9 +769,9 @@ public abstract partial class KsqlContext : IKsqlContext
         var models = GetEntityModels();
         if (models.TryGetValue(typeof(T), out var model))
         {
-            return (model.TopicName ?? typeof(T).Name).ToLowerInvariant();
+            return model.GetTopicName();
         }
-        return typeof(T).Name.ToLowerInvariant();
+        return typeof(T).GetKafkaTopicName();
     }
 
     internal async Task<bool> IsEntityReadyAsync<T>(CancellationToken cancellationToken = default) where T : class
@@ -784,7 +784,7 @@ public abstract partial class KsqlContext : IKsqlContext
             ? "SHOW TABLES;"
             : "SHOW STREAMS;";
 
-        var name = (model.TopicName ?? typeof(T).Name).ToUpperInvariant();
+        var name = model.GetTopicName().ToUpperInvariant();
         var response = await ExecuteStatementAsync(statement);
         if (!response.IsSuccess)
             return false;
@@ -942,4 +942,3 @@ public abstract partial class KsqlContext : IKsqlContext
 
     
 }
-

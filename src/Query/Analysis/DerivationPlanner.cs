@@ -25,7 +25,7 @@ internal static class DerivationPlanner
         var basedOn = qao.BasedOn;
 
         var topicAttr = model.EntityType.GetCustomAttribute<KsqlTopicAttribute>();
-        var baseId = (topicAttr?.Name ?? model.GetTopicName()).ToLowerInvariant();
+        var baseId = ModelNaming.GetBaseId(model);
         var windows = qao.Windows
             .OrderBy(w => w.Unit switch
             {

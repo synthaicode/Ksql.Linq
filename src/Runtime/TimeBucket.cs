@@ -336,7 +336,7 @@ public sealed class TimeBucket<T> where T : class
                     return;
                 }
                 var t = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
-                var v = Convert.ChangeType(value, t, System.Globalization.CultureInfo.InvariantCulture);
+                var v = Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(value, t);
                 p.SetValue(target, v);
             }
             catch { }
@@ -365,7 +365,7 @@ public sealed class TimeBucket<T> where T : class
             : TimeSpan.FromSeconds(1));
         try
         {
-            await RuntimeEventBus.PublishAsync(new RuntimeEvent
+            await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
             {
                 Name = "timebucket.read",
                 Phase = "begin",
@@ -384,7 +384,7 @@ public sealed class TimeBucket<T> where T : class
             var list = await TryCacheSnapshotAsync(pkFilter, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             try
             {
-                await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
                 {
                     Name = "timebucket.cache",
                     Phase = "snapshot",
@@ -429,7 +429,7 @@ public sealed class TimeBucket<T> where T : class
                     catch { }
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "timebucket.read",
                             Phase = "return",
@@ -473,7 +473,7 @@ public sealed class TimeBucket<T> where T : class
                     var pulled = await FallbackQueryRowsAsync(new List<string>(pkFilter), CancellationToken.None, bucketStartUtc).ConfigureAwait(false);
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "timebucket.pull",
                             Phase = "rows",
@@ -560,7 +560,7 @@ public sealed class TimeBucket<T> where T : class
                         {
                             var names = string.Join(",", srcProps.Select(p => p.Name));
                             var typeName = item?.GetType()?.FullName ?? "<null>";
-                            await RuntimeEventBus.PublishAsync(new RuntimeEvent { Name = "timebucket.cache", Phase = "src.props", Entity = typeof(T).Name, Topic = _liveTopic, Success = true, Message = $"type={typeName} props=[{names}]" });
+                            await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent { Name = "timebucket.cache", Phase = "src.props", Entity = typeof(T).Name, Topic = _liveTopic, Success = true, Message = $"type={typeName} props=[{names}]" });
                         }
                         catch { }
                     }
@@ -597,7 +597,7 @@ public sealed class TimeBucket<T> where T : class
             }
             try
             {
-                await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
                 {
                     Name = "timebucket.cache",
                     Phase = "snapshot.local",
@@ -724,7 +724,7 @@ public sealed class TimeBucket<T> where T : class
         catch { }
         try
         {
-            await RuntimeEventBus.PublishAsync(new RuntimeEvent
+            await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new RuntimeEvent
             {
                 Name = "timebucket.read",
                 Phase = "timeout",
@@ -814,4 +814,3 @@ public sealed class TimeBucketScope<T> where T : class
         return _tb.WaitForBucketAsync(_keys, bucketStartUtc, tolerance, timeout, _ct);
     }
 }
-

@@ -95,7 +95,7 @@ namespace Ksql.Linq.Runtime.Schema;
                 var queryId = await _context.TryGetQueryIdFromShowQueriesAdapterAsync(model.GetTopicName(), ddl).ConfigureAwait(false);
                 try
                 {
-                    await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                    await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                     {
                         Name = "query.run",
                         Phase = "start",
@@ -111,7 +111,7 @@ namespace Ksql.Linq.Runtime.Schema;
                     await _context.WaitForQueryRunningAdapterAsync(model.GetTopicName(), TimeSpan.FromSeconds(60), queryId).ConfigureAwait(false);
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "query.run",
                             Phase = "done",
@@ -127,7 +127,7 @@ namespace Ksql.Linq.Runtime.Schema;
                 {
                     try
                     {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "query.run",
                             Phase = "timeout",
@@ -250,7 +250,7 @@ namespace Ksql.Linq.Runtime.Schema;
                 }
             }
             catch { }
-            try { await Task.Delay(500, ct).ConfigureAwait(false); } catch { }
+            await Ksql.Linq.Core.Async.SafeDelay.Milliseconds(500, ct).ConfigureAwait(false);
         }
         throw new TimeoutException("ksqlDB warmup timed out (SHOW TOPICS did not succeed).");
     }

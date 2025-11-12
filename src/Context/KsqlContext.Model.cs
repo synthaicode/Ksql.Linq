@@ -277,7 +277,7 @@ public abstract partial class KsqlContext
         var model = new EntityModel
         {
             EntityType = entityType,
-            TopicName = entityType.Name.ToLowerInvariant(),
+            TopicName = entityType.GetKafkaTopicName(),
             Partitions = 1,
             ReplicationFactor = 1,
             AllProperties = allProperties,

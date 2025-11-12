@@ -141,7 +141,7 @@ internal sealed class FixedTimeWindowedAvroSerDes : AbstractSerDes<Windowed<Gene
         if (n > _diagMax) return;
         try
         {
-            _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
+            Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
             {
                 Name = "serdes.windowed",
                 Phase = phase,

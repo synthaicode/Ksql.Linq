@@ -371,7 +371,7 @@ public static class Diagnostics
             if (string.IsNullOrWhiteSpace(topic)) throw new ArgumentException("Topic required", nameof(topic));
 
             var normalized = baseUrl.TrimEnd('/');
-            var subjects = new[] { $"{topic}-key", $"{topic}-value" };
+            var subjects = new[] { global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic), global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(topic) };
             using var http = new HttpClient();
 
             string? keyDigest = null;

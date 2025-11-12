@@ -794,7 +794,7 @@ public abstract partial class KsqlContext
                 return;
 
             var client = GetSchemaRegistryClient();
-            var subject = $"{topic}-key";
+            var subject = global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic);
             var schemaMetadata = await client.GetLatestSchemaAsync(subject).ConfigureAwait(false);
             var schemaString = schemaMetadata?.SchemaString;
             if (string.IsNullOrWhiteSpace(schemaString))
@@ -931,7 +931,6 @@ public abstract partial class KsqlContext
         return method.Invoke(null, null)!;
     }
 }
-
 
 
 

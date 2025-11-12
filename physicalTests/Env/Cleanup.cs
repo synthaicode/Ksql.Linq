@@ -38,8 +38,8 @@ public static class Cleanup
         var wanted = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var t in topics.Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            wanted.Add($"{t}-key");
-            wanted.Add($"{t}-value");
+            wanted.Add(Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(t));
+            wanted.Add(Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(t));
         }
 
         // Fetch existing subjects and intersect with targets

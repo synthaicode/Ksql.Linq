@@ -176,7 +176,7 @@ internal sealed class KsqlQueryDdlMonitor
         }
 
         if (type != null && _deps.EntityModels.TryGetValue(type, out var srcModel))
-            return srcModel.GetTopicName().ToUpperInvariant();
+            return global::Ksql.Linq.Core.Sql.Identifiers.Normalize(srcModel.GetTopicName());
 
         return key;
     }

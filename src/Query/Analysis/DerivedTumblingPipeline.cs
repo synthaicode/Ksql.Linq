@@ -54,7 +54,7 @@ internal static class DerivedTumblingPipeline
     {
         var executions = new List<ExecutionResult>();
         var baseAttr = baseModel.EntityType.GetCustomAttribute<KsqlTopicAttribute>();
-        var baseName = (baseAttr?.Name ?? baseModel.TopicName ?? baseModel.EntityType.Name).ToLowerInvariant();
+        var baseName = ModelNaming.GetBaseId(baseModel);
         var entities = PlanDerivedEntities(qao, baseModel);
         var models = AdaptModels(entities);
         // Ensure deterministic and dependency-safe ordering:
@@ -334,6 +334,5 @@ internal static class DerivedTumblingPipeline
     
 
 }
-
 
 
