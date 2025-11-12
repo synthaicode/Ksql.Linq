@@ -205,18 +205,14 @@ namespace Ksql.Linq.Runtime.Schema;
             }, ct, (attempt, ex) =>
             {
                 _context.Logger?.LogWarning("Retrying DDL due to: {Reason} (attempt {Attempt})", ex.Message, attempt);
-                try
+                RuntimeEvents.TryPublishFireAndForget(new RuntimeEvent
                 {
-                    _ = RuntimeEventBus.PublishAsync(new RuntimeEvent
-                    {
-                        Name = "ddl.simple.retry",
-                        Phase = "retry",
-                        SqlPreview = sql,
-                        Success = false,
-                        Message = ex.Message
-                    }, ct);
-                }
-                catch { }
+                    Name = "ddl.simple.retry",
+                    Phase = "retry",
+                    SqlPreview = sql,
+                    Success = false,
+                    Message = ex.Message
+                }, ct);
             }).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -259,4 +255,3 @@ namespace Ksql.Linq.Runtime.Schema;
         throw new TimeoutException("ksqlDB warmup timed out (SHOW TOPICS did not succeed).");
     }
 }
-

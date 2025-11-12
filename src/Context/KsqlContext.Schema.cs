@@ -231,12 +231,12 @@ public abstract partial class KsqlContext
                 var mapping = _mappingRegistry.GetMapping(type);
                 if (model.QueryModel == null && model.QueryExpression == null && model.HasKeys() && mapping.AvroKeySchema != null)
                 {
-                    var keySubject = $"{model.GetTopicName()}-key";
+                    var keySubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName());
                     await client.RegisterSchemaIfNewAsync(keySubject, mapping.AvroKeySchema);
                     var keySchema = Avro.Schema.Parse(mapping.AvroKeySchema);
                     model.KeySchemaFullName = keySchema.Fullname;
                 }
-                var valueSubject = $"{model.GetTopicName()}-value";
+                var valueSubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(model.GetTopicName());
                 var valueResult = await client.RegisterSchemaIfNewAsync(valueSubject, mapping.AvroValueSchema!);
                 var valueSchema = Avro.Schema.Parse(mapping.AvroValueSchema!);
                 if (mapping.AvroValueType == typeof(Avro.Generic.GenericRecord))
@@ -258,7 +258,7 @@ public abstract partial class KsqlContext
                         Entity = type.Name,
                         Topic = model.GetTopicName(),
                         Success = true,
-                        Message = $"subjects {model.GetTopicName()}-key,{model.GetTopicName()}-value registered"
+                        Message = $"subjects {Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName())},{Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(model.GetTopicName())} registered"
                     }).ConfigureAwait(false);
                 }
                 catch { }
@@ -355,40 +355,32 @@ public abstract partial class KsqlContext
             }, default, (attempt, ex) =>
             {
                 Logger.LogWarning("Retrying DDL for {Entity} (attempt {Attempt}) due to: {Reason}", type.Name, attempt, ex.Message);
-                try
+                Ksql.Linq.Events.RuntimeEvents.TryPublishFireAndForget(new Ksql.Linq.Events.RuntimeEvent
                 {
-                    _ = Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
-                    {
-                        Name = "ddl.simple.retry",
-                        Phase = "retry",
-                        Entity = type.Name,
-                        Topic = model.GetTopicName(),
-                        SqlPreview = Preview(ddl),
-                        Success = false,
-                        Message = ex.Message
-                    });
-                }
-                catch { }
+                    Name = "ddl.simple.retry",
+                    Phase = "retry",
+                    Entity = type.Name,
+                    Topic = model.GetTopicName(),
+                    SqlPreview = Preview(ddl),
+                    Success = false,
+                    Message = ex.Message
+                });
             }).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             var msg = $"DDL execution failed for {type.Name}: {ex.Message}";
             Logger.LogError(msg);
-            try
+            await Ksql.Linq.Events.RuntimeEvents.TryPublishAsync(new Ksql.Linq.Events.RuntimeEvent
             {
-                await Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
-                {
-                    Name = "ddl.simple.fail",
-                    Phase = "fail",
-                    Entity = type.Name,
-                    Topic = model.GetTopicName(),
-                    SqlPreview = Preview(ddl),
-                    Success = false,
-                    Message = ex.Message
-                }).ConfigureAwait(false);
-            }
-            catch { }
+                Name = "ddl.simple.fail",
+                Phase = "fail",
+                Entity = type.Name,
+                Topic = model.GetTopicName(),
+                SqlPreview = Preview(ddl),
+                Success = false,
+                Message = ex.Message
+            }).ConfigureAwait(false);
             throw new InvalidOperationException(msg);
         }
         // Ensure the entity is visible to ksqlDB metadata before proceeding
@@ -870,7 +862,7 @@ public abstract partial class KsqlContext
         }
         catch (ConfluentSchemaRegistry.SchemaRegistryException ex) when (ex.ErrorCode == 404 || ex.ErrorCode == 40401)
         {
-            Logger.LogDebug(ex, "Schema subject {Subject} not found while aligning mapping.", $"{model.GetTopicName()}-key");
+            Logger.LogDebug(ex, "Schema subject {Subject} not found while aligning mapping.", Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName()));
         }
         catch (Exception ex)
         {
@@ -939,8 +931,6 @@ public abstract partial class KsqlContext
         return method.Invoke(null, null)!;
     }
 }
-
-
 
 
 

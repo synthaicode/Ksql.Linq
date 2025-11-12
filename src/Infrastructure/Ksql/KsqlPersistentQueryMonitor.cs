@@ -266,8 +266,8 @@ internal static class KsqlPersistentQueryMonitor
 
         var subjects = new[]
         {
-            $"{targetTopic}-key",
-            $"{targetTopic}-value"
+            global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(targetTopic),
+            global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(targetTopic)
         };
 
         var deadline = DateTime.UtcNow + timeout;

@@ -1,4 +1,5 @@
 using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Extensions;
 using System;
 using System.Linq.Expressions;
 
@@ -47,7 +48,7 @@ internal class JoinResult<TOuter, TInner> : IJoinResult<TOuter, TInner>
         return new EntityModel
         {
             EntityType = typeof(TResult),
-            TopicName = $"{typeof(TResult).Name.ToLowerInvariant()}_joinresult",
+            TopicName = $"{typeof(TResult).GetKafkaTopicName()}_joinresult",
             AllProperties = typeof(TResult).GetProperties(),
             KeyProperties = Array.Empty<System.Reflection.PropertyInfo>(),
             ValidationResult = new ValidationResult { IsValid = true }

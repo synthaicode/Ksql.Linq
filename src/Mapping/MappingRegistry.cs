@@ -202,7 +202,7 @@ internal class MappingRegistry
             .ToArray();
         var keyMeta = keyProperties.Select(p => PropertyMeta.FromProperty(p)).ToArray();
 
-        return Register(resultType, keyMeta, valueProps, topicName ?? resultType.Name.ToLowerInvariant(), genericKey, genericValue, overrideNamespace);
+        return Register(resultType, keyMeta, valueProps, topicName ?? resultType.GetKafkaTopicName(), genericKey, genericValue, overrideNamespace);
     }
 
     private static List<PropertyInfo> ExtractProjectionProperties(LambdaExpression? projection, Type resultType)
@@ -302,5 +302,3 @@ internal class MappingRegistry
         return typeBuilder.CreateType()!;
     }
 }
-
-

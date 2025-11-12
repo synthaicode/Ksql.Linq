@@ -80,7 +80,7 @@ internal class KafkaProducerManager : IDisposable
         return new EntityModel
         {
             EntityType = type,
-            TopicName = type.Name.ToLowerInvariant(),
+            TopicName = type.GetKafkaTopicName(),
             KeyProperties = Array.Empty<PropertyInfo>(),
             AllProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
         };
@@ -612,4 +612,3 @@ internal class KafkaProducerManager : IDisposable
         return headers;
     }
 }
-

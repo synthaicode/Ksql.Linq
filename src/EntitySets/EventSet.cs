@@ -269,9 +269,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                     ex.Message);
                 if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
                 {
-                    try
-                    {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "dlq.enqueue",
                             Phase = "handler_error",
@@ -281,8 +279,6 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                             Message = ex.Message,
                             Exception = ex
                         }).ConfigureAwait(false);
-                    }
-                    catch { }
                     var env = DlqEnvelopeFactory.From(
                         meta, ex,
                         dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,
@@ -343,9 +339,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                 var dlq = context.DlqOptions;
                 if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
                 {
-                    try
-                    {
-                        await RuntimeEventBus.PublishAsync(new RuntimeEvent
+                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "dlq.enqueue",
                             Phase = "enumerator_error",
@@ -355,8 +349,6 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                             Message = ex.Message,
                             Exception = ex
                         }).ConfigureAwait(false);
-                    }
-                    catch { }
                     var env = DlqEnvelopeFactory.From(
                         meta, ex,
                         dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,
@@ -521,7 +513,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
         return new EntityModel
         {
             EntityType = typeof(TResult),
-            TopicName = $"{typeof(TResult).Name.ToLowerInvariant()}_mapped",
+            TopicName = $"{typeof(TResult).GetKafkaTopicName()}_mapped",
             AllProperties = typeof(TResult).GetProperties(),
             KeyProperties = Array.Empty<System.Reflection.PropertyInfo>(),
             ValidationResult = new ValidationResult { IsValid = true }
