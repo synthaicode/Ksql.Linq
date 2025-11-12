@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Ksql.Linq.Incidents;
 
-public sealed class Incident
+internal sealed class Incident
 {
     public string Name { get; init; } = string.Empty;
     public DateTime TimestampUtc { get; init; } = DateTime.UtcNow;
@@ -14,4 +14,3 @@ public sealed class Incident
     public int? ObservedCount { get; init; }
     public string? Notes { get; init; }
 }
-

@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 
 namespace Ksql.Linq.Incidents;
 
-public interface IIncidentSink
+internal interface IIncidentSink
 {
     Task PublishAsync(Incident incident, CancellationToken ct = default);
 }
 
-public static class IncidentBus
+internal static class IncidentBus
 {
     public static IIncidentSink? Sink { get; private set; }
 
@@ -17,4 +17,3 @@ public static class IncidentBus
     public static Task PublishAsync(Incident incident, CancellationToken ct = default)
         => Sink is null ? Task.CompletedTask : Sink.PublishAsync(incident, ct);
 }
-

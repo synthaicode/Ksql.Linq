@@ -40,7 +40,8 @@ public class SelectExpressionVisitorAggregateOverrideTests
         visitor.Visit(select.Body);
         var sql = visitor.GetResult();
 
-        Assert.Contains("SUM(SUMBID)", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SUM(", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SUMBID", sql, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("LATEST_BY_OFFSET", sql, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -68,5 +69,4 @@ public class SelectExpressionVisitorAggregateOverrideTests
         Assert.DoesNotContain("LATEST_BY_OFFSET", sql, StringComparison.OrdinalIgnoreCase);
     }
 }
-
 

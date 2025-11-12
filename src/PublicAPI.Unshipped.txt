@@ -2,6 +2,11 @@
 // Public API adds pending for next release.
 
 // Types
+T:Ksql.Linq.WindowExtensions
 
 // Members
+P:Ksql.Linq.KsqlDbResponse.IsSuccess
+P:Ksql.Linq.KsqlDbResponse.Message
+P:Ksql.Linq.KsqlDbResponse.ErrorCode
+P:Ksql.Linq.KsqlDbResponse.ErrorDetail
 

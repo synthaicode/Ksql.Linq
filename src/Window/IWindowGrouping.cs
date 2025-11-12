@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Ksql.Linq.Window;
 
-public interface IWindowGrouping<TKey, TElement> : IEnumerable<TElement>
+internal interface IWindowGrouping<TKey, TElement> : IEnumerable<TElement>
 {
     TKey Key { get; }
     DateTime WindowStart { get; }

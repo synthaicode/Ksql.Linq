@@ -70,7 +70,7 @@ public class DerivedEntityDdlPlannerTests
 
         Assert.True(shouldExecute);
         Assert.Null(inputOverride);
-        Assert.Equal(typeof(DerivedEntity), entityType);
+        Assert.Equal("bars_1m_live", entityType.Name);
         Assert.Equal("runtime_bars_1m_live_ksql", ns);
         Assert.Contains("GRACE PERIOD 30 SECONDS", ddl, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("runtime_bars_1m_live_ksql", model.QueryMetadata!.Namespace);

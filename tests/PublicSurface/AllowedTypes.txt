@@ -1,0 +1,41 @@
+# Explicit public API whitelist (types)
+Ksql.Linq.KsqlContext
+Ksql.Linq.Application.KsqlContextBuilder
+Ksql.Linq.Application.KsqlContextOptions
+Ksql.Linq.Application.KsqlContextOptionsExtensions
+Ksql.Linq.KsqlDbResponse
+
+# DSL entrypoints
+Ksql.Linq.QueryExtensions
+Ksql.Linq.EntitySetExtensions
+Ksql.Linq.EventSetExtensions
+Ksql.Linq.WindowExtensions
+
+# Query DSL types
+Ksql.Linq.Query.Dsl.IKsqlQueryable
+Ksql.Linq.Query.Dsl.KsqlQueryable`1
+Ksql.Linq.Query.Dsl.KsqlQueryable2`2
+Ksql.Linq.Query.Dsl.KsqlGroupedQueryable`2
+Ksql.Linq.Query.Dsl.Windows
+
+# Entity sets
+Ksql.Linq.EventSet`1
+
+# Time / Period APIs
+Ksql.Linq.TimeBucket
+Ksql.Linq.Runtime.Period
+Ksql.Linq.Runtime.Periods
+Ksql.Linq.Runtime.PeriodUnit
+
+# Exceptions / events
+Ksql.Linq.Window.WindowAggregationException
+Ksql.Linq.Events.RuntimeEvent
+Ksql.Linq.Events.RuntimeEventBus
+Ksql.Linq.Events.IRuntimeEventSink
+
+# Execution / clients
+Ksql.Linq.Infrastructure.Ksql.IKsqlExecutor
+Ksql.Linq.Infrastructure.KsqlDb.IKsqlDbClient
+
+# Messaging meta
+Ksql.Linq.Messaging.MessageMeta

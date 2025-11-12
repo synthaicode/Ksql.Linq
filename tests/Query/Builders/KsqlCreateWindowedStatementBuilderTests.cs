@@ -51,7 +51,6 @@ public class KsqlCreateWindowedStatementBuilderTests
         var sql = KsqlCreateWindowedStatementBuilder.Build("bar_1m_live", model, "1m");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "WINDOW TUMBLING (SIZE 1 MINUTES)");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "CREATE TABLE IF NOT EXISTS bar_1m_live");
-        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "WINDOWSTART AS Windowstartraw");
     }
 
     [Fact]
@@ -72,7 +71,6 @@ public class KsqlCreateWindowedStatementBuilderTests
             "deduprates_1s_rows");
 
         Ksql.Linq.Tests.Utils.SqlAssert.StartsWithNormalized(sql, "CREATE TABLE IF NOT EXISTS bar_1m_live");
-        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "WINDOWSTART AS Windowstartraw");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "FROM deduprates_1s_rows");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "EMIT CHANGES");
     }
@@ -118,9 +116,7 @@ public class KsqlCreateWindowedStatementBuilderTests
         Assert.True(map.ContainsKey("1m"));
         Assert.True(map.ContainsKey("5m"));
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(map["1m"], "bar_1m_live");
-        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(map["1m"], "WINDOWSTART AS Windowstartraw");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(map["5m"], "bar_5m_live");
-        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(map["5m"], "WINDOWSTART AS Windowstartraw");
     }
 
     [Fact]
@@ -148,7 +144,6 @@ public class KsqlCreateWindowedStatementBuilderTests
         var sql = KsqlCreateWindowedStatementBuilder.Build("bar_1m", model, "1m");
         Ksql.Linq.Tests.Utils.SqlAssert.StartsWithNormalized(sql, "CREATE TABLE IF NOT EXISTS bar_1m");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "WINDOW TUMBLING");
-        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(sql, "WINDOWSTART AS Windowstartraw");
     }
 
     [Fact]
@@ -173,7 +168,6 @@ public class KsqlCreateWindowedStatementBuilderTests
         Assert.Equal(StreamTableType.Stream, model.DetermineType());
     }
 }
-
 
 
 

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Ksql.Linq.Incidents;
 
-public sealed class LoggerIncidentSink : IIncidentSink
+internal sealed class LoggerIncidentSink : IIncidentSink
 {
     public Task PublishAsync(Incident incident, CancellationToken ct = default)
     {
@@ -16,4 +16,3 @@ public sealed class LoggerIncidentSink : IIncidentSink
         return Task.CompletedTask;
     }
 }
-

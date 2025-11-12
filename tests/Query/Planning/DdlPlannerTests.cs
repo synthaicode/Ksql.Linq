@@ -76,7 +76,8 @@ public class DdlPlannerTests
             replicas: 1,
             retentionMs: 604800000);
 
-        Assert.Contains("WINDOWSTART AS BucketStart", sql, StringComparison.OrdinalIgnoreCase);
+        // Current policy: do not inject WINDOWSTART into value columns; windowed key carries time
+        Assert.DoesNotContain("WINDOWSTART", sql, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
