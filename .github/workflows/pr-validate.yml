@@ -28,7 +28,6 @@ jobs:
         run: |
           dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo
 
-
       - name: Compute package version
         id: ver
         shell: pwsh
@@ -55,13 +54,8 @@ jobs:
             $pattern = '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)'
             $xml = [regex]::Replace($xml, $pattern, ('$1' + $ver + '$3'))
           } else {
-            # Fallback: add central reference if not exists (use simple .Replace to avoid regex semantics)
-            $append = @"
-  <ItemGroup>
-    <PackageReference Include="Ksql.Linq" Version="$ver" />
-  </ItemGroup>
-</Project>
-"@
+            # Fallback: add central reference if not exists (compose with explicit newlines)
+            $append = "<ItemGroup>`n  <PackageReference Include=\"Ksql.Linq\" Version=\"$ver\" />`n</ItemGroup>`n</Project>"
             $xml = $xml.Replace('</Project>', $append)
           }
           Set-Content -Path $p -Value $xml -Encoding UTF8

@@ -2,9 +2,6 @@ name: Public API strict check (manual)
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*.*.*'
 
 permissions:
   contents: read
@@ -26,9 +23,19 @@ jobs:
       - name: Restore
         run: dotnet restore src/Ksql.Linq.csproj
 
+      - name: Debug PublicAPI baseline
+        shell: bash
+        run: |
+          echo "== PublicAPI.Shipped.txt (head) =="
+          head -n 60 src/PublicAPI.Shipped.txt || true
+          echo "== Ensure KsqlContextBuilder is registered =="
+          if ! grep -E "^T:Ksql\\.Linq\\.Application\\.KsqlContextBuilder$" src/PublicAPI.Shipped.txt; then
+            echo "[FAIL] KsqlContextBuilder が PublicAPI.Shipped.txt にありません" >&2
+            exit 2
+          fi
+
       - name: Build (strict)
         run: dotnet build src/Ksql.Linq.csproj -c Release --no-restore -p:StrictPublicApi=true -warnaserror:RS0016,RS0017
 
       - name: Test (exclude Integration)
         run: dotnet test tests/Ksql.Linq.Tests.csproj -c Release --no-build --filter "TestCategory!=Integration"
-
