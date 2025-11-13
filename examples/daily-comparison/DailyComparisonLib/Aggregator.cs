@@ -36,7 +36,8 @@ public class Aggregator
             .SelectMany(g =>
             {
                 var limit = _limitOptions.GetLimit(g.Key, nameof(RateCandle));
-                return g.OrderByDescending(barTime).Take(limit);
+                // Materialize after ordering, then apply Take on the in-memory list
+                return g.OrderByDescending(barTime).ToList().Take(limit);
             })
             .ToList();
 
