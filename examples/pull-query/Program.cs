@@ -1,5 +1,6 @@
 using Ksql.Linq;
 using Microsoft.Extensions.Configuration;
+using Ksql.Linq.Application;
 using Microsoft.Extensions.Logging;
 
 public static class Program
@@ -32,7 +33,7 @@ public static class Program
     // Minimal context for direct PullQuery execution
     private sealed class KsqlContextMinimal : KsqlContext
     {
+        public KsqlContextMinimal(KsqlContextOptions options) : base(options) {}
         protected override void OnModelCreating(Ksql.Linq.Core.Abstractions.IModelBuilder modelBuilder) { }
     }
 }
-
