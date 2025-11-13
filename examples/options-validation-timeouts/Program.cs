@@ -28,8 +28,7 @@ public static class Program
 
     private sealed class MinimalContext : KsqlContext
     {
-        public MinimalContext(KsqlContextOptions opts) : base(opts) { }
+        public MinimalContext(KsqlContextOptions opts) : base(opts.Configuration, opts.LoggerFactory) { }
         protected override void OnModelCreating(Ksql.Linq.Core.Abstractions.IModelBuilder modelBuilder) { }
     }
 }
-
