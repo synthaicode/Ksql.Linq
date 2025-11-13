@@ -28,17 +28,21 @@ public sealed class WarmupStartupFillService : IStartupFillService
 
     public async Task RunAsync(KsqlContext context, CancellationToken ct)
     {
-        var log = context.Logger;
+        // Use console output for example logging to avoid relying on internal context logger
+        Action<string> info = s => Console.WriteLine($"[warmup] {s}");
+        Action<string> warn = s => Console.WriteLine($"[warmup][warn] {s}");
+        Action<Exception,string> warnEx = (ex, s) => Console.WriteLine($"[warmup][warn] {s}: {ex.Message}");
+        Action<string> debug = s => Console.WriteLine($"[warmup][debug] {s}");
 
         try
         {
             var show = await context.ExecuteStatementAsync("SHOW STREAMS;").ConfigureAwait(false);
-            if (!show.IsSuccess) log?.LogWarning("Startup warmup: SHOW STREAMS failed: {Msg}", show.Message);
-            else log?.LogInformation("Startup warmup: ksqlDB reachable.");
+            if (!show.IsSuccess) warn($"SHOW STREAMS failed: {show.Message}");
+            else info("ksqlDB reachable.");
         }
         catch (Exception ex)
         {
-            log?.LogWarning(ex, "Startup warmup: ksqlDB reachability check failed (continuing)");
+            warnEx(ex, "ksqlDB reachability check failed (continuing)");
         }
 
         foreach (var t in _tablesToProbe)
@@ -46,12 +50,12 @@ public sealed class WarmupStartupFillService : IStartupFillService
             ct.ThrowIfCancellationRequested();
             try
             {
-                var count = await context.PullCountAsync(t, limit: null, timeout: TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-                log?.LogDebug("Warmup pull-count on table {Table}: {Count}", t, count);
+                var count = await context.PullCountAsync(t, where: null, timeout: TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+                debug($"Pull-count on table {t}: {count}");
             }
             catch (Exception ex)
             {
-                log?.LogDebug(ex, "Warmup pull-count on table {Table} failed (continuing)", t);
+                warnEx(ex, $"Pull-count on table {t} failed (continuing)");
             }
         }
 
@@ -62,15 +66,14 @@ public sealed class WarmupStartupFillService : IStartupFillService
             {
                 var sql = $"SELECT * FROM {s} EMIT CHANGES LIMIT 1;";
                 var count = await context.QueryStreamCountAsync(sql, timeout: TimeSpan.FromSeconds(10)).ConfigureAwait(false);
-                log?.LogDebug("Warmup stream-count on stream {Stream}: {Count}", s, count);
+                debug($"Stream-count on stream {s}: {count}");
             }
             catch (Exception ex)
             {
-                log?.LogDebug(ex, "Warmup stream-count on stream {Stream} failed (continuing)", s);
+                warnEx(ex, $"Stream-count on stream {s} failed (continuing)");
             }
         }
 
-        log?.LogInformation("Startup warmup finished (read-only).");
+        info("Startup warmup finished (read-only).");
     }
 }
-
