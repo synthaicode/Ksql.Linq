@@ -71,12 +71,10 @@ jobs:
             $pkgRef.SetAttribute('Version', $ver) | Out-Null
           }
           $doc.Save($p)
-
-      - name: Build examples against local nupkg
+      - name: Build examples
         run: |
           for proj in $(find examples -name '*.csproj'); do
-            echo "::group::Building $proj"
-            dotnet restore "$proj"
-            dotnet build "$proj" -c Release --nologo
-            echo "::endgroup::"
+            echo "Building $proj"
+            dotnet restore "$proj" --source https://api.nuget.org/v3/index.json --source .artifacts/nuget
+            dotnet build "$proj" --no-restore
           done
