@@ -71,6 +71,18 @@ jobs:
             $pkgRef.SetAttribute('Version', $ver) | Out-Null
           }
           $doc.Save($p)
+      - name: Create NuGet config
+        run: |
+          cat > nuget.config <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+              <add key="local" value=".artifacts/nuget" />
+            </packageSources>
+          </configuration>
+          EOF
       - name: Build examples
         run: |
           for proj in $(find examples -name '*.csproj'); do
