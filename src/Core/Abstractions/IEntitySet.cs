@@ -23,9 +23,6 @@ public interface IEntitySet<T> : IAsyncEnumerable<T> where T : class
     // Primary (fully-specified) overloads
     Task ForEachAsync(Func<T, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken);
 
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken);
-
     Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken);
 
     // No optional-parameter overloads in the interface; see EntitySet extensions for convenience wrappers.
