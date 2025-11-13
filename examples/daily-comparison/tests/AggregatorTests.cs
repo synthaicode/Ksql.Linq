@@ -2,7 +2,7 @@ using DailyComparisonLib;
 using DailyComparisonLib.Models;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Modeling;
-using Ksql.Linq.Core.Context;
+using Ksql.Linq.Messaging;
 using Ksql.Linq.Core.Extensions;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,11 +30,25 @@ public class AggregatorTests
         public Type ElementType => _query.ElementType;
         public Expression Expression => _query.Expression;
         public IQueryProvider Provider => _query.Provider;
-        public Task AddAsync(T entity, CancellationToken cancellationToken = default) { _items.Add(entity); _query = _items.AsQueryable(); return Task.CompletedTask; }
+        public Task AddAsync(T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
+        {
+            _items.Add(entity);
+            _query = _items.AsQueryable();
+            return Task.CompletedTask;
+        }
+        public Task RemoveAsync(T entity, CancellationToken cancellationToken = default)
+        {
+            _items.Remove(entity);
+            _query = _items.AsQueryable();
+            return Task.CompletedTask;
+        }
         public void AddItem(T item) { _items.Add(item); _query = _items.AsQueryable(); }
         public Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) => Task.FromResult(_items.ToList());
-        public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout = default, CancellationToken cancellationToken = default) => Task.WhenAll(_items.Select(action));
-        public string GetTopicName() => _model.GetTopicName();
+        public Task ForEachAsync(Func<T, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
+            => Task.WhenAll(_items.Select(action));
+        public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
+            => Task.WhenAll(_items.Select(e => action(e, new Dictionary<string,string>(), new MessageMeta("topic", 0, 0, DateTimeOffset.UtcNow, null, null, false, new Dictionary<string,string>()))));
+        public string GetTopicName() => _model.TopicName ?? typeof(T).Name.ToLowerInvariant();
         public EntityModel GetEntityModel() => _model;
         public IKsqlContext GetContext() => _context;
         public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
@@ -94,7 +108,7 @@ public class AggregatorTests
     private class KafkaKsqlContextStub : KafkaKsqlContext
     {
         private readonly IKsqlContext _inner;
-        public KafkaKsqlContextStub(IKsqlContext inner) : base(new KafkaContextOptions()) { _inner = inner; }
+        public KafkaKsqlContextStub(IKsqlContext inner) : base(new Ksql.Linq.Configuration.KsqlDslOptions()) { _inner = inner; }
         protected override bool SkipSchemaRegistration => true;
         protected override IEntitySet<T> CreateEntitySet<T>(EntityModel entityModel) where T : class
         {
