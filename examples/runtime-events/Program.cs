@@ -1,12 +1,13 @@
 using Ksql.Linq;
 using Ksql.Linq.Application;
 using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Events;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 
-[Topic("rates")]
+[KsqlTopic("rates")]
 public class Rate
 {
     [KsqlKey(Order = 0)] public string Broker { get; set; } = "B1";
