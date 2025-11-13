@@ -41,15 +41,7 @@ public static class EntitySetExtensions
     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Task> action, bool autoCommit, CancellationToken cancellationToken) where T : class
         => set.ForEachAsync(action, TimeSpan.Zero, autoCommit, cancellationToken);
 
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, Task> action) where T : class
-        => set.ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
-
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout) where T : class
-        => set.ForEachAsync(action, timeout, true, CancellationToken.None);
-
-    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action) where T : class
+     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action) where T : class
         => set.ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
 
     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit) where T : class
@@ -57,4 +49,14 @@ public static class EntitySetExtensions
 
     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout) where T : class
         => set.ForEachAsync(action, timeout, true, CancellationToken.None);
+
+    // Overloads with CancellationToken for headers + meta delegate
+    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, CancellationToken cancellationToken) where T : class
+        => set.ForEachAsync(action, TimeSpan.Zero, true, cancellationToken);
+
+    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, CancellationToken cancellationToken) where T : class
+        => set.ForEachAsync(action, timeout, true, cancellationToken);
+
+    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit, CancellationToken cancellationToken) where T : class
+        => set.ForEachAsync(action, TimeSpan.Zero, autoCommit, cancellationToken);
 }

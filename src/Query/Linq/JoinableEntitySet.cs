@@ -1,4 +1,5 @@
 using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq; // bring EntitySetExtensions into scope for ForEachAsync convenience overloads
 using Ksql.Linq.Messaging;
 using System;
 using System.Collections.Generic;
@@ -50,17 +51,7 @@ public class JoinableEntitySet<T> : IEntitySet<T>, IJoinableEntitySet<T> where T
     public Task ForEachAsync(Func<T, Task> action, CancellationToken cancellationToken)
         => _baseEntitySet.ForEachAsync(action, cancellationToken);
 
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
-        => _baseEntitySet.ForEachAsync((e, h, _) => action(e, h), timeout, autoCommit, cancellationToken);
-
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action)
-        => _baseEntitySet.ForEachAsync(action);
-
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout)
-        => _baseEntitySet.ForEachAsync(action, timeout);
+    // Removed obsolete overloads with (T, Dictionary<string,string>) delegate
 
     public Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
