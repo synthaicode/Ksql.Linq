@@ -25,11 +25,7 @@ public class EntityModelBuilder<T> where T : class
         return _entityModel;
     }
 
-    [Obsolete("Changing the topic name via Fluent API is prohibited in POCO attribute-driven mode. Use the [Topic] attribute instead.", true)]
-    public EntityModelBuilder<T> HasTopicName(string topicName)
-    {
-        throw new NotSupportedException("Changing the topic name via Fluent API is prohibited in POCO attribute-driven mode. Use the [Topic] attribute instead.");
-    }
+    // Removed HasTopicName: topic name must be provided via [Topic] attribute.
 
     public override string ToString()
     {

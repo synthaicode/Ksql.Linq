@@ -1,8 +1,7 @@
 using Ksql.Linq.Query.Abstractions;
-using Ksql.Linq.Query.Analysis;
-using Ksql.Linq.Query.Hub.Analysis;
 using Ksql.Linq.Query.Builders.Common;
 using Ksql.Linq.Query.Builders.Visitors;
+using Ksql.Linq.Query.Hub.Analysis;
 using System;
 using System.Linq.Expressions;
 

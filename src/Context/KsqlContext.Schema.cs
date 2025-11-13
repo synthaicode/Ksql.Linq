@@ -1,28 +1,23 @@
 using Avro;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
-using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Core.Models;
-using Ksql.Linq.Query.Abstractions;
-using Ksql.Linq.Mapping;
 using Ksql.Linq.Infrastructure.Ksql;
-using Ksql.Linq.Query.Adapters;
+using Ksql.Linq.Mapping;
+using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Metadata;
-using Ksql.Linq.Query.Ddl;
 using Ksql.Linq.SchemaRegistryTools;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Linq.Expressions;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using ConfluentSchemaRegistry = Confluent.SchemaRegistry;
-using Ksql.Linq.Events;
 namespace Ksql.Linq;
 public abstract partial class KsqlContext
 {

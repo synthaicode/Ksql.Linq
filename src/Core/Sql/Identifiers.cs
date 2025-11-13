@@ -1,5 +1,3 @@
-using System;
-
 namespace Ksql.Linq.Core.Sql;
 
 public static class Identifiers

@@ -1,10 +1,9 @@
+using Ksql.Linq.Core.Abstractions;
+using Ksql.Linq.Core.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Ksql.Linq.Core.Abstractions;
-using Ksql.Linq.Core.Attributes;
-using Ksql.Linq.Core.Extensions;
 
 namespace Ksql.Linq.Query.Analysis;
 

@@ -1,12 +1,11 @@
+using Ksql.Linq.Events;
+using Ksql.Linq.Incidents;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Ksql.Linq.Cache.Extensions;
-using Ksql.Linq.Incidents;
-using Ksql.Linq.Events;
 
 namespace Ksql.Linq.Runtime;
 
@@ -134,7 +133,8 @@ public sealed class TimeBucket<T> where T : class
         if (list.Count > 0)
         {
             // 補正: BucketStartが未設定（MinValue）の行しか無い場合は、ksql Pullで補完
-            if (list.All(x => {
+            if (list.All(x =>
+            {
                 var p = typeof(T).GetProperty("BucketStart");
                 return p != null && ((DateTime)(p.GetValue(x) ?? DateTime.MinValue)) == DateTime.MinValue;
             }))
@@ -192,7 +192,7 @@ public sealed class TimeBucket<T> where T : class
                 throw;
             }
             list = Snapshot();
-         if (list.Count > 0) return list;
+            if (list.Count > 0) return list;
         }
         // Return the latest snapshot (possibly empty) on cancellation/timeout
         return list;
@@ -343,12 +343,7 @@ public sealed class TimeBucket<T> where T : class
         }
     }
 
-    [System.Obsolete("Use ReadAtAsync(...) on TimeBucket or WaitForBucketAsync(...) + ToListAsync(...)")]
-    public Task<List<T>> ToListAsync(IReadOnlyList<string>? pkFilter, DateTime? waitForBucketStartUtc, TimeSpan? tolerance, CancellationToken ct)
-        => ToListAsync(pkFilter, ct);
-    [System.Obsolete("Use ReadAtAsync(...) on TimeBucket or WaitForBucketAsync(...) + ToListAsync(...)")]
-    public Task<List<T>> ToListAsync(IReadOnlyList<string>? pkFilter, DateTime? waitForBucketStartUtc, CancellationToken ct)
-        => ToListAsync(pkFilter, ct);
+    // Legacy waiting overloads removed; callers should use ReadAsync(...) or WaitForBucketAsync(...)
 
     /// <summary>
     /// Wait until the specified bucketStart (± tolerance) appears, then return a fresh snapshot for the given key prefix.
@@ -391,7 +386,7 @@ public sealed class TimeBucket<T> where T : class
                     Entity = typeof(T).Name,
                     Topic = _liveTopic,
                     Success = true,
-                    Message = $"size={list?.Count ?? 0} attempt={attempts+1}"
+                    Message = $"size={list?.Count ?? 0} attempt={attempts + 1}"
                 }).ConfigureAwait(false);
             }
             catch { }

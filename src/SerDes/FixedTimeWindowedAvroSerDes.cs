@@ -1,14 +1,13 @@
-using System;
-using System.Buffers.Binary;
 using Avro.Generic;
 using Confluent.Kafka;
-using Microsoft.Extensions.Logging;
+using Ksql.Linq.Events;
 using Streamiz.Kafka.Net.SchemaRegistry.SerDes.Avro;
 using Streamiz.Kafka.Net.SerDes;
 using Streamiz.Kafka.Net.State;
 using Streamiz.Kafka.Net.Stream;
+using System;
+using System.Buffers.Binary;
 using System.Threading;
-using Ksql.Linq.Events;
 
 namespace Ksql.Linq.SerDes;
 

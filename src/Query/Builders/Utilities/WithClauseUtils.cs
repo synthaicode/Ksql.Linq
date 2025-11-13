@@ -1,7 +1,6 @@
-using System;
-using System.Collections.Generic;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Dsl;
+using System.Collections.Generic;
 
 namespace Ksql.Linq.Query.Builders.Utilities;
 

@@ -1,5 +1,4 @@
 using System;
-using Ksql.Linq.Runtime;
 
 namespace Ksql.Linq;
 
@@ -9,24 +8,6 @@ namespace Ksql.Linq;
 /// </summary>
 public static class TimeBucket
 {
-    // New overload: allow using KsqlContext directly
-    [Obsolete("Use TimeBucket.ReadAsync<T>() or Runtime.TimeBucket.Get<T>() as needed.")]
-    public static Runtime.TimeBucket<T> Get<T>(KsqlContext context, Runtime.Period period) where T : class
-    {
-        if (period.Unit == Ksql.Linq.Runtime.PeriodUnit.Seconds)
-            throw new ArgumentOutOfRangeException(nameof(period), "Period must be minutes or greater.");
-        return Runtime.TimeBucket.Get<T>(context, period);
-    }
-
-    // New overload: writer using KsqlContext directly
-    [Obsolete("Use TimeBucket.WriteAsync<T>() or Runtime.TimeBucket.Set<T>() as needed.")]
-    public static Runtime.TimeBucketWriter<T> Set<T>(KsqlContext context, Runtime.Period period) where T : class
-    {
-        if (period.Unit == Ksql.Linq.Runtime.PeriodUnit.Seconds)
-            throw new ArgumentOutOfRangeException(nameof(period), "Period must be minutes or greater.");
-        return Runtime.TimeBucket.Set<T>(context, period);
-    }
-
     // Ensure `<base>_1s_rows_last` exists for migration flows.
     public static System.Threading.Tasks.Task EnsureRowsLastAsync<T>(KsqlContext context) where T : class
         => context.EnsureRowsLastTableAsync<T>();
@@ -67,14 +48,7 @@ public static class TimeBucket
         return await tb.ToListAsync(pkFilter, ct).ConfigureAwait(false);
     }
 
-    // New overload: use existing CancellationToken for waiting; no separate timeout parameter.
-    // Removed: waiting overloads on ToListAsync to keep timeframe concerns within TimeBucket methods.
-    [System.Obsolete("Use TimeBucket.Get(...).ReadAtAsync(...) or WaitForBucketAsync(...) + ToListAsync(...)")]
-    public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ToListAsync<T>(KsqlContext c, Runtime.Period p, System.Collections.Generic.IReadOnlyList<string>? f, System.DateTime? w, System.TimeSpan? tol, System.Threading.CancellationToken ct) where T:class
-        => Runtime.TimeBucket.Get<T>(c, p).ToListAsync(f, ct);
-    [System.Obsolete("Use TimeBucket.Get(...).ReadAtAsync(...) or WaitForBucketAsync(...) + ToListAsync(...)")]
-    public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ToListAsync<T>(KsqlContext c, Runtime.Period p, System.Collections.Generic.IReadOnlyList<string>? f, System.DateTime? w, System.Threading.CancellationToken ct) where T:class
-        => Runtime.TimeBucket.Get<T>(c, p).ToListAsync(f, ct);
+    // Waiting overloads on ToListAsync were removed; callers should use ReadAsync/WaitForBucketAsync.
 
     public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ReadAsync<T>(
         KsqlContext context,

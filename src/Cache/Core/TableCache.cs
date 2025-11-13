@@ -1,5 +1,5 @@
-using Ksql.Linq.Mapping;
 using Ksql.Linq.Events;
+using Ksql.Linq.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -58,7 +58,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
             var sampleValues = new List<string>(capacity: 3);
             try
             {
-                foreach (var kv in _enumerateLazy.Value() )
+                foreach (var kv in _enumerateLazy.Value())
                 {
                     // Key is expected to be a string (stringified by the Streamiz side)
                     var key = kv.Key;

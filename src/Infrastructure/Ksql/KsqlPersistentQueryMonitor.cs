@@ -1,7 +1,4 @@
 using Confluent.Kafka;
-using ConfluentSchemaRegistry = Confluent.SchemaRegistry;
-using Ksql.Linq.Core.Abstractions;
-using Ksql.Linq.Core.Models;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Events;
 using Ksql.Linq.Infrastructure.Admin;
@@ -12,6 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfluentSchemaRegistry = Confluent.SchemaRegistry;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 

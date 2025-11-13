@@ -1,7 +1,7 @@
+using Ksql.Linq.Window;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
-using Ksql.Linq.Window;
 
 namespace Ksql.Linq
 {

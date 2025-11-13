@@ -1,24 +1,23 @@
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
-using Ksql.Linq.Core.Models;
+using Ksql.Linq.Core.Extensions;
+using Ksql.Linq.Events;
 using Ksql.Linq.Mapping;
 using Ksql.Linq.Messaging;
 using Ksql.Linq.Query.Dsl;
-using Ksql.Linq.Window;
 using Ksql.Linq.Query.Metadata;
+using Ksql.Linq.Window;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Ksql.Linq.Core.Extensions;
-using Ksql.Linq.Events;
 
 namespace Ksql.Linq.Runtime;
 

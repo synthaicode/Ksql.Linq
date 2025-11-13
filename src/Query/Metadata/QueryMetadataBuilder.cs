@@ -1,8 +1,8 @@
+using Ksql.Linq.Query.Analysis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Ksql.Linq.Query.Analysis;
 
 namespace Ksql.Linq.Query.Metadata;
 

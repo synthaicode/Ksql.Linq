@@ -1,11 +1,8 @@
-using System;
-using System.Buffers.Binary;
-using System.Text;
 using Avro.Generic;
 using Confluent.Kafka;
-using Confluent.Kafka.SyncOverAsync;
-using Confluent.SchemaRegistry.Serdes;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Buffers.Binary;
 
 namespace Ksql.Linq.Messaging.Consumers;
 

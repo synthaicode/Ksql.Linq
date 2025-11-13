@@ -1,6 +1,6 @@
+using Ksql.Linq.Window;
 using System;
 using System.Linq;
-using Ksql.Linq.Window;
 
 namespace Ksql.Linq
 {

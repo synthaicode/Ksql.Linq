@@ -1,9 +1,8 @@
-using Ksql.Linq.Query.Metadata;
-using Ksql.Linq.Query.Builders.Utilities;
-using Ksql.Linq.Query.Planning;
-using Ksql.Linq;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
+using Ksql.Linq.Query.Builders.Utilities;
+using Ksql.Linq.Query.Metadata;
+using Ksql.Linq.Query.Planning;
 using System;
 using System.Collections.Generic;
 using System.Linq;

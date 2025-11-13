@@ -1,27 +1,21 @@
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
-using Ksql.Linq.Query.Adapters;
-using Ksql.Linq.Query.Builders;
-using Ksql.Linq.Query.Builders.Common;
-using Ksql.Linq.Query.Builders.Core;
-using Ksql.Linq.Query.Dsl;
-using Ksql.Linq.Query.Abstractions;
-using Ksql.Linq.Mapping;
-using Ksql.Linq;
 using Ksql.Linq.Core.Extensions;
+using Ksql.Linq.Mapping;
+using Ksql.Linq.Query.Adapters;
+using Ksql.Linq.Query.Builders.Common;
+using Ksql.Linq.Query.Dsl;
+using Ksql.Linq.Query.Metadata;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Ksql.Linq.Query.Metadata;
 
 namespace Ksql.Linq.Query.Analysis;
 
@@ -211,7 +205,7 @@ internal static class DerivedTumblingPipeline
                     }
                 }
                 catch { }
-            SkipRegister: ;
+            SkipRegister:;
             }
             registry[dt] = m;
         }
@@ -219,7 +213,7 @@ internal static class DerivedTumblingPipeline
         return executions;
     }
 
-    
+
 
     private static void LogDdlResponse(EntityModel model, string ddl, KsqlDbResponse response, string? queryId)
     {
@@ -238,10 +232,10 @@ internal static class DerivedTumblingPipeline
             sb.AppendLine($"UTC {DateTime.UtcNow:O}");
             sb.AppendLine($"Entity: {model.EntityType.FullName}");
             sb.AppendLine($"Topic: {model.TopicName}");
-        var metadata = model.GetOrCreateMetadata();
-        var role = EnsureRoleOrDefault(model, ref metadata, Role.Live);
-        sb.AppendLine($"Role: {role}");
-        var timeframe = EnsureTimeframeOrDefault(model, ref metadata, "1s");
+            var metadata = model.GetOrCreateMetadata();
+            var role = EnsureRoleOrDefault(model, ref metadata, Role.Live);
+            sb.AppendLine($"Role: {role}");
+            var timeframe = EnsureTimeframeOrDefault(model, ref metadata, "1s");
             if (!string.IsNullOrWhiteSpace(timeframe))
                 sb.AppendLine($"Timeframe: {timeframe}");
             sb.AppendLine($"QueryId: {queryId ?? "(none)"}");
@@ -331,7 +325,7 @@ internal static class DerivedTumblingPipeline
     }
     // Note: HubAggregationRewriter (expression-tree) was removed in favor of safe SELECT-clause adjustment above.
 
-    
+
 
 }
 

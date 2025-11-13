@@ -1,6 +1,6 @@
+using Ksql.Linq.Core.Abstractions;
 using System;
 using System.Collections.Generic;
-using Ksql.Linq.Core.Abstractions;
 
 namespace Ksql.Linq.Query.Metadata;
 

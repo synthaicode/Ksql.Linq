@@ -1,9 +1,9 @@
+using Ksql.Linq.Core.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Ksql.Linq.Core.Attributes;
 
 namespace Ksql.Linq.Query.Pipeline;
 

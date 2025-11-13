@@ -1,5 +1,4 @@
 using Ksql.Linq.Core.Abstractions;
-using Ksql.Linq; // bring EntitySetExtensions into scope for ForEachAsync convenience overloads
 using Ksql.Linq.Messaging;
 using System;
 using System.Collections.Generic;

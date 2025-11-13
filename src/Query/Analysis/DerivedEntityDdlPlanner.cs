@@ -3,14 +3,14 @@ using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Core;
 using Ksql.Linq.Query.Builders.Utilities;
+using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Hub.Adapters;
 using Ksql.Linq.Query.Hub.Analysis;
-using Ksql.Linq.Query.Dsl;
+using Ksql.Linq.Query.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Ksql.Linq.Query.Metadata;
 
 namespace Ksql.Linq.Query.Analysis;
 

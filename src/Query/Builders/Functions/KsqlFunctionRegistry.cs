@@ -34,11 +34,13 @@ internal static class KsqlFunctionRegistry
         ["Left"] = new(
             "SUBSTRING({0}, 1, {1})",
             2,
-            "SUBSTRING({0}, 1, {1})") { AllowedInGroupBy = true },
+            "SUBSTRING({0}, 1, {1})")
+        { AllowedInGroupBy = true },
         ["Right"] = new(
             "SUBSTRING({0}, CASE WHEN LEN({0}) - {1} + 1 < 1 THEN 1 ELSE LEN({0}) - {1} + 1 END, {1})",
             2,
-            "SUBSTRING({0}, CASE WHEN LEN({0}) - {1} + 1 < 1 THEN 1 ELSE LEN({0}) - {1} + 1 END, {1})") { AllowedInGroupBy = true },
+            "SUBSTRING({0}, CASE WHEN LEN({0}) - {1} + 1 < 1 THEN 1 ELSE LEN({0}) - {1} + 1 END, {1})")
+        { AllowedInGroupBy = true },
 
         // Numeric functions (fully supported)
         ["Abs"] = new("ABS", 1) { AllowedInOrderBy = true },

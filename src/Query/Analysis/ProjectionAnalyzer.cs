@@ -1,6 +1,6 @@
+using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Linq.Expressions;
-using Ksql.Linq.Query.Builders.Visitors;
 
 namespace Ksql.Linq.Query.Analysis;
 

@@ -1,5 +1,3 @@
-using Ksql.Linq.Core.Abstractions;
-
 namespace Ksql.Linq.Infrastructure.Ksql;
 
 internal sealed record PersistentQueryExecution(

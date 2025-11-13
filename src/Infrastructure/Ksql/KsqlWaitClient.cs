@@ -1,6 +1,6 @@
+using Ksql.Linq.Core.Retry;
 using System;
 using System.Threading.Tasks;
-using Ksql.Linq.Core.Retry;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 

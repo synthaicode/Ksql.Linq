@@ -1,8 +1,7 @@
-using Ksql.Linq.Query.Builders;
+using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Builders.Utilities;
 using Ksql.Linq.Query.Dsl;
-using Ksql.Linq.Query.Abstractions;
 using System;
 using System.Linq;
 

@@ -7,7 +7,6 @@ using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Metadata;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -231,19 +230,19 @@ public abstract partial class KsqlContext
                 existing.EnableCache = model.EnableCache;
                 existing.BarTimeSelector = model.BarTimeSelector;
             }
-        else
-        {
-            _entityModels[type] = model;
-        }
+            else
+            {
+                _entityModels[type] = model;
+            }
 
-        var metadata = model.GetOrCreateMetadata();
-        var ns = PromoteNamespace(model, ref metadata);
-        var isTable = model.StreamTableType == StreamTableType.Table;
-        _mappingRegistry.RegisterEntityModel(
-            model,
-            genericKey: isTable,
-            genericValue: isTable,
-                overrideNamespace: ns);
+            var metadata = model.GetOrCreateMetadata();
+            var ns = PromoteNamespace(model, ref metadata);
+            var isTable = model.StreamTableType == StreamTableType.Table;
+            _mappingRegistry.RegisterEntityModel(
+                model,
+                genericKey: isTable,
+                genericValue: isTable,
+                    overrideNamespace: ns);
         }
     }
 
@@ -318,32 +317,32 @@ public abstract partial class KsqlContext
             var config = _dslOptions.Entities.FirstOrDefault(e =>
                 string.Equals(e.Entity, entityType.Name, StringComparison.OrdinalIgnoreCase));
 
-        var metadata = model.GetOrCreateMetadata();
-        if (config != null)
-        {
-            if (!string.IsNullOrEmpty(config.SourceTopic))
-                model.TopicName = config.SourceTopic;
-
-            if (model.StreamTableType == StreamTableType.Table)
-                model.EnableCache = config.EnableCache;
-
-            if (!string.IsNullOrWhiteSpace(config.StoreName))
+            var metadata = model.GetOrCreateMetadata();
+            if (config != null)
             {
-                metadata = metadata with { StoreName = config.StoreName };
-                QueryMetadataWriter.Apply(model, metadata);
-            }
+                if (!string.IsNullOrEmpty(config.SourceTopic))
+                    model.TopicName = config.SourceTopic;
 
-            if (!string.IsNullOrWhiteSpace(config.BaseDirectory))
-            {
-                metadata = metadata with { BaseDirectory = config.BaseDirectory };
-                QueryMetadataWriter.Apply(model, metadata);
+                if (model.StreamTableType == StreamTableType.Table)
+                    model.EnableCache = config.EnableCache;
+
+                if (!string.IsNullOrWhiteSpace(config.StoreName))
+                {
+                    metadata = metadata with { StoreName = config.StoreName };
+                    QueryMetadataWriter.Apply(model, metadata);
+                }
+
+                if (!string.IsNullOrWhiteSpace(config.BaseDirectory))
+                {
+                    metadata = metadata with { BaseDirectory = config.BaseDirectory };
+                    QueryMetadataWriter.Apply(model, metadata);
+                }
             }
-        }
-        else
-        {
-            PromoteStoreName(model, ref metadata);
-            PromoteBaseDirectory(model, ref metadata);
-        }
+            else
+            {
+                PromoteStoreName(model, ref metadata);
+                PromoteBaseDirectory(model, ref metadata);
+            }
         }
 
         var validation = new ValidationResult { IsValid = true };

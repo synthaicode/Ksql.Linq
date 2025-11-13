@@ -1,6 +1,5 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Ksql.Linq.Core.Abstractions;
 
 namespace Ksql.Linq.Runtime.Schema;
 

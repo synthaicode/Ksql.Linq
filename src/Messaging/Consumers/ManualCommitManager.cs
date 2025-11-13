@@ -59,7 +59,7 @@ internal class ManualCommitManager : ICommitManager, EventSet<object>.ICommitReg
         }
         _meta.Add(entity, new MetaBox(meta));
         _logger?.LogDebug("ManualCommit track: topic={Topic} p={Partition} off={Offset}", meta.Topic, meta.Partition, meta.Offset);
-        try { Console.WriteLine($"[ManualCommit][track] topic={meta.Topic} p={meta.Partition} off={meta.Offset}"); } catch {}
+        try { Console.WriteLine($"[ManualCommit][track] topic={meta.Topic} p={meta.Partition} off={meta.Offset}"); } catch { }
         var key = (meta.Topic, meta.Partition);
         lock (_lock)
         {

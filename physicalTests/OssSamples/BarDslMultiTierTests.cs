@@ -222,7 +222,7 @@ public class BarDslMultiTierTests
     // TimeBucket ベースの待機（pull query 非依存）
     private static async Task<int> WaitBucketCountAsync(KsqlContext ctx, Period period, int min, TimeSpan timeout, string broker, string symbol)
     {
-        var bucket = TimeBucket.Get<Bar>(ctx, period);
+        var bucket = Ksql.Linq.Runtime.TimeBucket.Get<Bar>(ctx, period);
         var deadline = DateTime.UtcNow + timeout;
         int last = 0;
         while (DateTime.UtcNow < deadline)
@@ -245,7 +245,7 @@ public class BarDslMultiTierTests
     // 指定した BucketStart(±tolerance 秒) の行が現れるまで待機
     private static async Task<bool> WaitBucketRowAsync(KsqlContext ctx, Period period, string broker, string symbol, DateTime bucketStartUtc, TimeSpan timeout, double toleranceSeconds = 0)
     {
-        var bucket = TimeBucket.Get<Bar>(ctx, period);
+        var bucket = Ksql.Linq.Runtime.TimeBucket.Get<Bar>(ctx, period);
         var deadline = DateTime.UtcNow + timeout;
         List<Bar>? last = null;
         static DateTime NormalizeMsUtc(DateTime dt)
@@ -454,9 +454,9 @@ public class BarDslMultiTierTests
 
 
         // Phase B — 厳密OHLC: 1m/5m/15m を TimeBucket で検証（pull を使用しない）
-        var bucket1m  = TimeBucket.Get<Bar>(ctx, Period.Minutes(1));
-        var bucket5m  = TimeBucket.Get<Bar>(ctx, Period.Minutes(5));
-        var bucket15m = TimeBucket.Get<Bar>(ctx, Period.Minutes(15));
+        var bucket1m  = Ksql.Linq.Runtime.TimeBucket.Get<Bar>(ctx, Period.Minutes(1));
+        var bucket5m  = Ksql.Linq.Runtime.TimeBucket.Get<Bar>(ctx, Period.Minutes(5));
+        var bucket15m = Ksql.Linq.Runtime.TimeBucket.Get<Bar>(ctx, Period.Minutes(15));
 
         // 観測系（診断機能）は削除：テストは入力→期待出力のみで評価する
 
@@ -630,8 +630,6 @@ public class BarDslMultiTierTests
         // 明示的なクリーンアップ不要（IAsyncDisposable）
     }
 }
-
-
 
 
 
