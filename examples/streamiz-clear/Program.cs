@@ -1,4 +1,5 @@
 using Ksql.Linq;
+using Ksql.Linq.Application;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +25,7 @@ public static class Program
 
     private sealed class MinimalContext : KsqlContext
     {
+        public MinimalContext(KsqlContextOptions options) : base(options.Configuration, options.LoggerFactory) { }
         protected override void OnModelCreating(Ksql.Linq.Core.Abstractions.IModelBuilder modelBuilder) { }
     }
 }
-

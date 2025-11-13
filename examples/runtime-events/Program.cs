@@ -1,4 +1,5 @@
 using Ksql.Linq;
+using Ksql.Linq.Application;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Events;
 using Microsoft.Extensions.Configuration;
@@ -16,6 +17,7 @@ public class Rate
 
 public sealed class RuntimeEventsContext : KsqlContext
 {
+    public RuntimeEventsContext(KsqlContextOptions options) : base(options.Configuration, options.LoggerFactory) { }
     protected override void OnModelCreating(IModelBuilder modelBuilder)
     {
         // 最小: ソース定義（rows/hubや上位足は設計に依存）
@@ -113,4 +115,3 @@ public static class Program
         private readonly Action _dispose; public ActionDisposable(Action d) => _dispose = d; public void Dispose() => _dispose();
     }
 }
-
