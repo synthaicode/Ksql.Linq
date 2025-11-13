@@ -2,16 +2,16 @@ using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Dlq;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Core.Retry;
-using Microsoft.Extensions.Logging;
+using Ksql.Linq.Events;
 using Ksql.Linq.Messaging;
 using Ksql.Linq.Messaging.Internal;
 using Ksql.Linq.Query.Abstractions;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Ksql.Linq.Events;
 
 namespace Ksql.Linq;
 
@@ -269,16 +269,16 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                     ex.Message);
                 if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
                 {
-                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
-                        {
-                            Name = "dlq.enqueue",
-                            Phase = "handler_error",
-                            Entity = typeof(T).Name,
-                            Topic = context.GetDlqTopicName(),
-                            Success = false,
-                            Message = ex.Message,
-                            Exception = ex
-                        }).ConfigureAwait(false);
+                    await RuntimeEvents.TryPublishAsync(new RuntimeEvent
+                    {
+                        Name = "dlq.enqueue",
+                        Phase = "handler_error",
+                        Entity = typeof(T).Name,
+                        Topic = context.GetDlqTopicName(),
+                        Success = false,
+                        Message = ex.Message,
+                        Exception = ex
+                    }).ConfigureAwait(false);
                     var env = DlqEnvelopeFactory.From(
                         meta, ex,
                         dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,
@@ -302,17 +302,7 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
     public Task ForEachAsync(Func<T, Task> action, CancellationToken cancellationToken)
         => ForEachAsync(action, TimeSpan.Zero, true, cancellationToken);
 
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public virtual Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
-        => ForEachAsync((e, h, _) => action(e, h), timeout, autoCommit, cancellationToken);
-
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action)
-        => ForEachAsync((e, h, _) => action(e, h), TimeSpan.Zero, true, CancellationToken.None);
-
-    [Obsolete("Use ForEachAsync(Func<T, Dictionary<string,string>, MessageMeta, Task>)")]
-    public Task ForEachAsync(Func<T, Dictionary<string, string>, Task> action, TimeSpan timeout)
-        => ForEachAsync((e, h, _) => action(e, h), timeout, true, CancellationToken.None);
+    // Removed legacy header-only handler overloads. Use the MessageMeta overload to access headers and metadata.
 
     public virtual async Task ForEachAsync(Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, bool autoCommit, CancellationToken cancellationToken)
     {
@@ -357,16 +347,16 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
                 var dlq = context.DlqOptions;
                 if (_dlqProducer != null && dlq.EnableForHandlerError && DlqGuard.ShouldSend(dlq, context.DlqLimiter, ex.GetType()))
                 {
-                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
-                        {
-                            Name = "dlq.enqueue",
-                            Phase = "enumerator_error",
-                            Entity = typeof(T).Name,
-                            Topic = context.GetDlqTopicName(),
-                            Success = false,
-                            Message = ex.Message,
-                            Exception = ex
-                        }).ConfigureAwait(false);
+                    await RuntimeEvents.TryPublishAsync(new RuntimeEvent
+                    {
+                        Name = "dlq.enqueue",
+                        Phase = "enumerator_error",
+                        Entity = typeof(T).Name,
+                        Topic = context.GetDlqTopicName(),
+                        Success = false,
+                        Message = ex.Message,
+                        Exception = ex
+                    }).ConfigureAwait(false);
                     var env = DlqEnvelopeFactory.From(
                         meta, ex,
                         dlq.ApplicationId, dlq.ConsumerGroup, dlq.Host,

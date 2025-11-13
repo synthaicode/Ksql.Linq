@@ -1,9 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Ksql.Linq.Query.Builders.Common;
 using Ksql.Linq.Query.Builders.Functions;
 using Ksql.Linq.Query.Dsl;
+using System;
+using System.Collections.Generic;
 
 namespace Ksql.Linq.Query.Hub.Analysis;
 

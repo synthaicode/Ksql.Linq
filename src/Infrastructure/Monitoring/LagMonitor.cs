@@ -1,8 +1,8 @@
+using Confluent.Kafka;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Confluent.Kafka;
 
 namespace Ksql.Linq.Infrastructure.Monitoring;
 

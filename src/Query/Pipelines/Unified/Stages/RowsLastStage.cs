@@ -1,10 +1,10 @@
-using System;
-using System.Threading.Tasks;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Infrastructure.Ksql;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Metadata;
+using System;
+using System.Threading.Tasks;
 
 namespace Ksql.Linq.Query.Pipelines.Unified.Stages;
 

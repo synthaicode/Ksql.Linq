@@ -1,8 +1,8 @@
+using Ksql.Linq.Query.Builders.Common;
+using Ksql.Linq.Query.Dsl;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
-using Ksql.Linq.Query.Dsl;
-using Ksql.Linq.Query.Builders.Common;
 
 namespace Ksql.Linq.Query.Pipeline;
 
@@ -24,7 +24,7 @@ internal class MethodCallCollectorVisitor : ExpressionVisitor
             case "TimeFrame":
                 ParseTimeFrame(node);
                 break;
-            // WhenEmpty removed; continuity is configured via Tumbling(..., continuation: true)
+                // WhenEmpty removed; continuity is configured via Tumbling(..., continuation: true)
         }
         return base.VisitMethodCall(node);
     }

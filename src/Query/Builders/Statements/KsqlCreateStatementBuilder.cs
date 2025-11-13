@@ -1,18 +1,17 @@
 using Ksql.Linq.Core.Attributes;
-using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Clauses;
 using Ksql.Linq.Query.Builders.Common;
 using Ksql.Linq.Query.Builders.Utilities;
+using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Hub.Analysis;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Reflection;
 
 namespace Ksql.Linq.Query.Builders.Statements;
 

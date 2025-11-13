@@ -1,10 +1,10 @@
 using Ksql.Linq.Query.Abstractions;
+using Ksql.Linq.Query.Builders.Common;
+using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using Ksql.Linq.Query.Builders.Common;
-using Ksql.Linq.Query.Builders.Visitors;
 
 namespace Ksql.Linq.Query.Dsl;
 

@@ -1,36 +1,33 @@
-using Confluent.Kafka;
 using Ksql.Linq.Cache.Core;
 using Ksql.Linq.Cache.Extensions;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Dlq;
 using Ksql.Linq.Core.Extensions;
-using Ksql.Linq.Core.Attributes;
-using Ksql.Linq.Infrastructure.Admin;
-using Ksql.Linq.Infrastructure.KsqlDb;
-using Ksql.Linq.Infrastructure.Ksql;
-using Ksql.Linq.Infrastructure.Kafka;
-using Ksql.Linq.Mapping;
-using Ksql.Linq.Runtime;
 using Ksql.Linq.Events;
+using Ksql.Linq.Infrastructure.Admin;
+using Ksql.Linq.Infrastructure.Kafka;
+using Ksql.Linq.Infrastructure.Ksql;
+using Ksql.Linq.Infrastructure.KsqlDb;
+using Ksql.Linq.Mapping;
 using Ksql.Linq.Messaging.Consumers;
 using Ksql.Linq.Messaging.Producers;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Metadata;
+using Ksql.Linq.Runtime;
+using Ksql.Linq.Runtime.Context;
 using Ksql.Linq.Runtime.Heartbeat;
 using Ksql.Linq.Runtime.Monitor;
-using Ksql.Linq.Runtime.Context;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Linq;
-using System.Reflection;
 using System.Net.Http;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -393,7 +390,7 @@ public abstract partial class KsqlContext : IKsqlContext
         return sql.Length <= max ? sql : sql.Substring(0, max) + "...";
     }
 
-    
+
 
     private static string TryQualifySimpleJoin(string ksql)
     {
@@ -460,7 +457,7 @@ public abstract partial class KsqlContext : IKsqlContext
         return baseSet;
     }
 
-    
+
 
     // Ensure `<base>_1s_rows_last` exists for the base entity T.
     // Intended for migration flows that will rely on rows_last presence for idempotency.
@@ -479,7 +476,7 @@ public abstract partial class KsqlContext : IKsqlContext
 
     internal KafkaProducerManager GetProducerManager() => _producerManager;
 
-    
+
 
     // Session check helper for runtime components (e.g., rows hub/continuation)
     internal bool IsInSession(IReadOnlyList<string> keyParts, DateTime timestampUtc)
@@ -581,7 +578,7 @@ public abstract partial class KsqlContext : IKsqlContext
         return GetTopicName(execution.Model);
     }
 
-    
+
 
     private static string GetTopicName(EntityModel model)
         => model.GetTopicName();
@@ -849,7 +846,7 @@ public abstract partial class KsqlContext : IKsqlContext
 
 
     protected virtual void Dispose(bool disposing)
-        {
+    {
         if (!_disposed && disposing)
         {
             try { _hubBridgeCts?.Cancel(); } catch { }
@@ -890,7 +887,7 @@ public abstract partial class KsqlContext : IKsqlContext
             }
             (_ksqlDbClient as IDisposable)?.Dispose();
         }
-        }
+    }
 
     public void Dispose()
     {
@@ -906,54 +903,54 @@ public abstract partial class KsqlContext : IKsqlContext
     }
 
     protected virtual async ValueTask DisposeAsyncCore()
+    {
+        try { _hubBridgeCts?.Cancel(); } catch { }
+        var bridgeTasks = _hubBridgeControllers.Values.Select(b => b.StopAsync()).ToArray();
+        if (bridgeTasks.Length > 0)
         {
-            try { _hubBridgeCts?.Cancel(); } catch { }
-            var bridgeTasks = _hubBridgeControllers.Values.Select(b => b.StopAsync()).ToArray();
-            if (bridgeTasks.Length > 0)
+            try
             {
-                try
-                {
-                    await Task.WhenAll(bridgeTasks).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                }
+                await Task.WhenAll(bridgeTasks).ConfigureAwait(false);
             }
-            _hubBridgeControllers.Clear();
-            _hubBridgeCts?.Dispose();
-            _hubBridgeCts = null;
-
-            foreach (var entitySet in _entitySets.Values)
+            catch (OperationCanceledException)
             {
-                if (entitySet is IAsyncDisposable asyncDisposable)
-                {
-                    await asyncDisposable.DisposeAsync();
-                }
-                else if (entitySet is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
             }
-            _entitySets.Clear();
+        }
+        _hubBridgeControllers.Clear();
+        _hubBridgeCts?.Dispose();
+        _hubBridgeCts = null;
 
-            _producerManager?.Dispose();
-            _consumerManager?.Dispose();
-            _adminService?.Dispose();
-            _cacheRegistry?.Dispose();
-
-            if (_schemaRegistryClient.IsValueCreated)
+        foreach (var entitySet in _entitySets.Values)
+        {
+            if (entitySet is IAsyncDisposable asyncDisposable)
             {
-                _schemaRegistryClient.Value?.Dispose();
+                await asyncDisposable.DisposeAsync();
             }
+            else if (entitySet is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
+        _entitySets.Clear();
+
+        _producerManager?.Dispose();
+        _consumerManager?.Dispose();
+        _adminService?.Dispose();
+        _cacheRegistry?.Dispose();
+
+        if (_schemaRegistryClient.IsValueCreated)
+        {
+            _schemaRegistryClient.Value?.Dispose();
+        }
             (_ksqlDbClient as IDisposable)?.Dispose();
 
-            await Task.CompletedTask;
-        }
+        await Task.CompletedTask;
+    }
 
     public override string ToString()
     {
         return $"KafkaContextCore: {_entityModels.Count} entities, {_entitySets.Count} sets [schema auto-registration ready]";
     }
 
-    
+
 }

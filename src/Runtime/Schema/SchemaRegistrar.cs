@@ -1,29 +1,27 @@
-using System.Threading;
-using System.Threading.Tasks;
-using System;
-using System.Linq;
-using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
+using Ksql.Linq.Events;
 using Ksql.Linq.Query.Abstractions;
-using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Ddl;
 using Microsoft.Extensions.Logging;
-using Ksql.Linq.Events;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ksql.Linq.Runtime.Schema;
 
 /// <summary>
 /// Orchestrates schema registration and related readiness steps, leveraging context adapters.
 /// </summary>
-    internal sealed class SchemaRegistrar : ISchemaRegistrar
-    {
-        private readonly KsqlContext _context;
+internal sealed class SchemaRegistrar : ISchemaRegistrar
+{
+    private readonly KsqlContext _context;
 
-        public SchemaRegistrar(KsqlContext context)
-        {
-            _context = context;
-        }
+    public SchemaRegistrar(KsqlContext context)
+    {
+        _context = context;
+    }
 
     public async Task RegisterAndMaterializeAsync(CancellationToken ct = default)
     {
@@ -84,65 +82,65 @@ namespace Ksql.Linq.Runtime.Schema;
                             return srcModel.GetTopicName().ToUpperInvariant();
                         return key;
                     };
-                var ddl = KsqlCreateStatementBuilder.Build(
-                        model.GetTopicName(),
-                        model.QueryModel!,
-                        model.KeySchemaFullName,
-                        model.ValueSchemaFullName,
-                        resolver);
-                _context.Logger?.LogInformation("KSQL DDL (query {Entity}): {Sql}", type.Name, ddl);
-                var _ = await ExecuteWithRetryAsync(ddl, ct).ConfigureAwait(false);
-                var queryId = await _context.TryGetQueryIdFromShowQueriesAdapterAsync(model.GetTopicName(), ddl).ConfigureAwait(false);
-                try
-                {
-                    await RuntimeEvents.TryPublishAsync(new RuntimeEvent
-                    {
-                        Name = "query.run",
-                        Phase = "start",
-                        Entity = type.Name,
-                        Topic = model.GetTopicName(),
-                        QueryId = queryId,
-                        SqlPreview = ddl
-                    }, ct).ConfigureAwait(false);
-                }
-                catch { }
-                try
-                {
-                    await _context.WaitForQueryRunningAdapterAsync(model.GetTopicName(), TimeSpan.FromSeconds(60), queryId).ConfigureAwait(false);
+                    var ddl = KsqlCreateStatementBuilder.Build(
+                            model.GetTopicName(),
+                            model.QueryModel!,
+                            model.KeySchemaFullName,
+                            model.ValueSchemaFullName,
+                            resolver);
+                    _context.Logger?.LogInformation("KSQL DDL (query {Entity}): {Sql}", type.Name, ddl);
+                    var _ = await ExecuteWithRetryAsync(ddl, ct).ConfigureAwait(false);
+                    var queryId = await _context.TryGetQueryIdFromShowQueriesAdapterAsync(model.GetTopicName(), ddl).ConfigureAwait(false);
                     try
                     {
                         await RuntimeEvents.TryPublishAsync(new RuntimeEvent
                         {
                             Name = "query.run",
-                            Phase = "done",
+                            Phase = "start",
                             Entity = type.Name,
                             Topic = model.GetTopicName(),
                             QueryId = queryId,
-                            Success = true
+                            SqlPreview = ddl
                         }, ct).ConfigureAwait(false);
                     }
                     catch { }
-                }
-                catch (Exception ex)
-                {
                     try
                     {
-                        await RuntimeEvents.TryPublishAsync(new RuntimeEvent
+                        await _context.WaitForQueryRunningAdapterAsync(model.GetTopicName(), TimeSpan.FromSeconds(60), queryId).ConfigureAwait(false);
+                        try
                         {
-                            Name = "query.run",
-                            Phase = "timeout",
-                            Entity = type.Name,
-                            Topic = model.GetTopicName(),
-                            QueryId = queryId,
-                            Success = false,
-                            Message = ex.Message,
-                            Exception = ex
-                        }, ct).ConfigureAwait(false);
+                            await RuntimeEvents.TryPublishAsync(new RuntimeEvent
+                            {
+                                Name = "query.run",
+                                Phase = "done",
+                                Entity = type.Name,
+                                Topic = model.GetTopicName(),
+                                QueryId = queryId,
+                                Success = true
+                            }, ct).ConfigureAwait(false);
+                        }
+                        catch { }
                     }
-                    catch { }
-                    throw;
-                }
-                await _context.AssertTopicPartitionsAdapterAsync(model).ConfigureAwait(false);
+                    catch (Exception ex)
+                    {
+                        try
+                        {
+                            await RuntimeEvents.TryPublishAsync(new RuntimeEvent
+                            {
+                                Name = "query.run",
+                                Phase = "timeout",
+                                Entity = type.Name,
+                                Topic = model.GetTopicName(),
+                                QueryId = queryId,
+                                Success = false,
+                                Message = ex.Message,
+                                Exception = ex
+                            }, ct).ConfigureAwait(false);
+                        }
+                        catch { }
+                        throw;
+                    }
+                    await _context.AssertTopicPartitionsAdapterAsync(model).ConfigureAwait(false);
                 }
                 else
                 {

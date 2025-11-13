@@ -7,9 +7,9 @@ using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Models;
 using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -775,9 +775,9 @@ internal class KeyValueTypeMapping
                 for (int i = 0; i < KeyProperties.Length; i++)
                 {
                     var meta = KeyProperties[i];
-                var propName = meta.SourceName ?? meta.PropertyInfo?.Name ?? meta.Name;
-                var pi = poco.GetType().GetProperty(propName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.IgnoreCase)
-                         ?? meta.PropertyInfo;
+                    var propName = meta.SourceName ?? meta.PropertyInfo?.Name ?? meta.Name;
+                    var pi = poco.GetType().GetProperty(propName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.IgnoreCase)
+                             ?? meta.PropertyInfo;
                     var val = pi != null ? pi.GetValue(poco) : null;
                     var scale = DecimalPrecisionConfig.ResolveScale(meta.Scale, meta.PropertyInfo);
                     var fieldName = meta.SourceName ?? (meta.PropertyInfo ?? pi)?.Name ?? meta.Name;

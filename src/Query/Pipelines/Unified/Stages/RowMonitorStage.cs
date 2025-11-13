@@ -1,9 +1,9 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Ksql.Linq.Infrastructure.Ksql;
 using Ksql.Linq.Query.Analysis;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Ksql.Linq.Query.Pipelines.Unified.Stages;
 

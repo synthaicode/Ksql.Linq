@@ -1,6 +1,6 @@
+using Ksql.Linq.Query.Builders.Common;
 using System;
 using System.Linq;
-using Ksql.Linq.Query.Builders.Common;
 
 namespace Ksql.Linq.Query.Pipeline;
 

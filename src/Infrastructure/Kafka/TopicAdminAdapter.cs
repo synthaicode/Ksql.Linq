@@ -1,6 +1,6 @@
+using Ksql.Linq.Infrastructure.Admin;
 using System.Threading;
 using System.Threading.Tasks;
-using Ksql.Linq.Infrastructure.Admin;
 
 namespace Ksql.Linq.Infrastructure.Kafka;
 

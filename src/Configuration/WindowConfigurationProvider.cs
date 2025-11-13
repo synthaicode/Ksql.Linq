@@ -1,6 +1,5 @@
-using System;
-using System.Configuration;
 using Microsoft.Extensions.Configuration;
+using System;
 
 namespace Ksql.Linq.Configuration;
 

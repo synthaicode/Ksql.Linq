@@ -1,16 +1,14 @@
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
-using Ksql.Linq.Core.Models;
+using Ksql.Linq.Core.Retry;
 using Ksql.Linq.Events;
 using Ksql.Linq.Infrastructure.KsqlDb;
 using Ksql.Linq.Mapping;
-using Ksql.Linq.Query.Adapters;
+using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Ddl;
-using Ksql.Linq.Query.Dsl;
-using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Pipeline;
 using Microsoft.Extensions.Logging;
 using System;
@@ -18,7 +16,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Ksql.Linq.Core.Retry;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 

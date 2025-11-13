@@ -1,9 +1,8 @@
 using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Query.Abstractions;
-using Ksql.Linq.Query.Builders;
 using Ksql.Linq.Query.Builders.Clauses;
-using Ksql.Linq.Query.Builders.Visitors;
 using Ksql.Linq.Query.Builders.Common;
+using Ksql.Linq.Query.Builders.Visitors;
 using System;
 using System.Collections.Generic;
 using System.Linq;

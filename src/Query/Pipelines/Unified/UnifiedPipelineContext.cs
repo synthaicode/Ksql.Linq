@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Infrastructure.Ksql;
 using Ksql.Linq.Query.Analysis;
+using System;
+using System.Collections.Generic;
 
 namespace Ksql.Linq.Query.Pipelines.Unified;
 

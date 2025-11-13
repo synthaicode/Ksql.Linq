@@ -1,6 +1,6 @@
+using Ksql.Linq.Core.Attributes;
 using System;
 using System.Collections.Concurrent;
-using Ksql.Linq.Core.Attributes;
 
 namespace Ksql.Linq.Runtime;
 

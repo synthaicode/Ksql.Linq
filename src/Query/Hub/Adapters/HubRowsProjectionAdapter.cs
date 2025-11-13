@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Ksql.Linq.Query.Dsl;
 
 namespace Ksql.Linq.Query.Hub.Adapters;
 

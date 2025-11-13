@@ -1,5 +1,4 @@
 using Ksql.Linq.Core.Attributes;
-using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Builders.Clauses;
 using Ksql.Linq.Query.Builders.Common;
 using Ksql.Linq.Query.Builders.Functions;

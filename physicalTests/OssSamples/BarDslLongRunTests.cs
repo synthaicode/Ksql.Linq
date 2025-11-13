@@ -302,7 +302,7 @@ public class BarDslLongRunTests
 
         // production finished above
         // Prefer TimeBucket, but fall back to direct ksql pull if cache is slow
-        var oneMinute = TimeBucket.Get<Bar>(ctx, Period.Minutes(1));
+        var oneMinute = Ksql.Linq.Runtime.TimeBucket.Get<Bar>(ctx, Period.Minutes(1));
         List<Bar> list1m = new();
         var deadline = DateTime.UtcNow.AddSeconds(120);
 
@@ -381,6 +381,5 @@ public class BarDslLongRunTests
         Assert.True(c0 >= o0 - 0.0001, "Close should be near configured close pattern");
     }
 }
-
 
 

@@ -1,11 +1,10 @@
 
-using System;
 using Confluent.Kafka;
-using Ksql.Linq.SerDes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Streamiz.Kafka.Net.Errors;
 using Streamiz.Kafka.Net.SerDes;
+using System;
 
 namespace Ksql.Linq.SerDes;
 

@@ -1,10 +1,13 @@
 using Avro;
+using Avro.Generic;
 using Confluent.Kafka;
+using Confluent.SchemaRegistry;
 using Ksql.Linq.Cache.Core;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Core.Models;
+using Ksql.Linq.Events;
 using Ksql.Linq.Mapping;
 using Ksql.Linq.Query.Metadata;
 using Ksql.Linq.SerDes;
@@ -14,21 +17,16 @@ using Streamiz.Kafka.Net;
 using Streamiz.Kafka.Net.Crosscutting;
 using Streamiz.Kafka.Net.Processors;
 using Streamiz.Kafka.Net.SchemaRegistry.SerDes.Avro;
-using Confluent.SchemaRegistry;
 using Streamiz.Kafka.Net.SerDes;
 using Streamiz.Kafka.Net.State;
 using Streamiz.Kafka.Net.Stream;
 using Streamiz.Kafka.Net.Table;
-using KafkaStreamState = Streamiz.Kafka.Net.KafkaStream.State;
-using Avro.Generic;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Ksql.Linq.Events;
 
 namespace Ksql.Linq.Cache.Extensions;
 
@@ -110,7 +108,7 @@ internal static class KsqlContextCacheExtensions
                 try { diag?.LogDebug("TableCache register(auto): entity={Entity} topic={Topic} store={Store}", model.EntityType.Name, topic, storeName); } catch { }
                 // Auto-registration: register under the POCO entity type so TimeBucket<T> resolves TableCache<T> by DTO
                 var regType = model.EntityType;
-                RegisterCacheForModel(context,registry, mapping, model, storeName, topic, appIdBase, bootstrap, schemaUrl, loggerFactory, regType);
+                RegisterCacheForModel(context, registry, mapping, model, storeName, topic, appIdBase, bootstrap, schemaUrl, loggerFactory, regType);
             }
 
             context.AttachTableCacheRegistry(registry);
@@ -509,7 +507,7 @@ internal static class KsqlContextCacheExtensions
                             samples++;
                             var keyS = kvp.Key?.ToString() ?? "<null>";
                             var valS = kvp.Value?.ToString() ?? "<null>";
-                            if (Diag) { try { System.Console.WriteLine($"[rocks.probe] store={storeName} key={keyS.Replace('\u0000','|')} value={valS}"); } catch { } }
+                            if (Diag) { try { System.Console.WriteLine($"[rocks.probe] store={storeName} key={keyS.Replace('\u0000', '|')} value={valS}"); } catch { } }
                         }
                     }
                     if (Diag)
@@ -993,7 +991,7 @@ internal static class KsqlContextCacheExtensions
                 dict[k] = v!;
                 if (Diag && dict.Count <= 3)
                 {
-                    try { System.Console.WriteLine($"[mem.put] store={storeName} key={k.Replace('\u0000','|')} valueType={typeof(TValue).Name}"); } catch { }
+                    try { System.Console.WriteLine($"[mem.put] store={storeName} key={k.Replace('\u0000', '|')} valueType={typeof(TValue).Name}"); } catch { }
                 }
             }
             catch { }

@@ -1,8 +1,8 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace Ksql.Linq.Window;
 
@@ -231,7 +231,8 @@ internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposabl
             {
                 _logger?.LogError(ex, "Failed to emit window for key {Key} at {BucketStartUtc}", grouping.Key, grouping.WindowStart);
                 throw;
-            }        }
+            }
+        }
 
         return emitted;
     }

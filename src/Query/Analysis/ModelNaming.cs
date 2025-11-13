@@ -1,7 +1,7 @@
-using System.Reflection;
 using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Extensions;
+using System.Reflection;
 
 namespace Ksql.Linq.Query.Analysis;
 

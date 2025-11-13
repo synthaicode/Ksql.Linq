@@ -403,7 +403,7 @@ internal class KafkaProducerManager : IDisposable
                 await producer.SendAsync(keyObj, valueObj, context, cancellationToken).ConfigureAwait(false);
                 break;
             }
-                        catch (Exception ex)
+            catch (Exception ex)
             {
                 // One-shot: align mapping with SR and retry
                 if (!retried && IsSchemaMismatch(ex))
@@ -424,14 +424,15 @@ internal class KafkaProducerManager : IDisposable
                         retried = true;
                         continue;
                     }
-        }
+                }
                 _logger?.LogError(ex,
                     "Produce failed. Topic={Topic}, Entity={Entity}, Method=SendAsync, Error={ErrorType}: {Message}",
                     producer.TopicName, typeof(TPOCO).Name, ex.GetType().Name, ex.Message);
                 throw;
             }
         }
-    }private static void EnsureAllFieldsAssigned(GenericRecord record, RecordSchema schema)
+    }
+    private static void EnsureAllFieldsAssigned(GenericRecord record, RecordSchema schema)
     {
         if (record == null || schema == null) return;
         for (int i = 0; i < schema.Fields.Count; i++)
@@ -472,7 +473,7 @@ internal class KafkaProducerManager : IDisposable
         return false;
     }
 
-    
+
 
     private bool IsSchemaMismatch(Exception ex)
     {

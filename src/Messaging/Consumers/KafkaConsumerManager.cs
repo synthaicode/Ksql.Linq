@@ -1,7 +1,7 @@
+using Avro.Generic;
 using Confluent.Kafka;
 using Confluent.Kafka.SyncOverAsync;
 using Confluent.SchemaRegistry.Serdes;
-using Avro.Generic;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Configuration.Abstractions;
 using Ksql.Linq.Configuration.Messaging;
@@ -17,7 +17,6 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -332,7 +331,7 @@ internal class KafkaConsumerManager : IDisposable
         _logger?.LogInformation("ConsumerConfig topic={Topic} group={Group} autoCommit={AutoCommit} autoOffsetReset={Offset}", topicName, groupId, enableAutoCommit, topicConfig.Consumer.AutoOffsetReset);
 
 
-        try { Console.WriteLine($"[ConsumerConfig] topic={topicName} group={groupId} enableAutoCommit={enableAutoCommit} autoOffsetReset={topicConfig.Consumer.AutoOffsetReset}"); } catch {}
+        try { Console.WriteLine($"[ConsumerConfig] topic={topicName} group={groupId} enableAutoCommit={enableAutoCommit} autoOffsetReset={topicConfig.Consumer.AutoOffsetReset}"); } catch { }
 
         if (!hasConfig && subscriptionOptions != null)
         {

@@ -2,7 +2,6 @@ using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Query.Builders.Common;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 

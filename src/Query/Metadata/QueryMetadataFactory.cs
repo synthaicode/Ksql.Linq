@@ -1,7 +1,7 @@
+using Ksql.Linq.Query.Builders.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ksql.Linq.Query.Builders.Utilities;
 
 namespace Ksql.Linq.Query.Metadata;
 

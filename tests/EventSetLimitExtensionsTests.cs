@@ -50,7 +50,6 @@ public class EventSetLimitExtensionsTests
         public Task<List<RateCandle>> ToListAsync(CancellationToken cancellationToken = default) => Task.FromResult(_items.ToList());
         public Task ForEachAsync(Func<RateCandle, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default) => Task.WhenAll(_items.Select(action));
 
-        [Obsolete("Use ForEachAsync(Func<RateCandle, Dictionary<string,string>, MessageMeta, Task>)")]
         public Task ForEachAsync(Func<RateCandle, Dictionary<string, string>, Task> action, TimeSpan timeout = default, bool autoCommit = true, CancellationToken cancellationToken = default)
             => Task.WhenAll(_items.Select(i => action(i, new Dictionary<string, string>())));
 

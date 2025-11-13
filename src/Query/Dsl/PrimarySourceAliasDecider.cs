@@ -1,6 +1,5 @@
 using System;
 using System.Linq.Expressions;
-using Ksql.Linq.Query.Dsl;
 
 namespace Ksql.Linq.Query.Dsl;
 

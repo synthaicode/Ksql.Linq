@@ -1,6 +1,6 @@
 using Ksql.Linq.Core.Abstractions;
-using System;
 using Ksql.Linq.Messaging;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,8 +41,8 @@ public static class EntitySetExtensions
     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Task> action, bool autoCommit, CancellationToken cancellationToken) where T : class
         => set.ForEachAsync(action, TimeSpan.Zero, autoCommit, cancellationToken);
 
-     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action) where T : class
-        => set.ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
+    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action) where T : class
+       => set.ForEachAsync(action, TimeSpan.Zero, true, CancellationToken.None);
 
     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit) where T : class
         => set.ForEachAsync(action, TimeSpan.Zero, autoCommit, CancellationToken.None);
