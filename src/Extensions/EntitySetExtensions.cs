@@ -57,4 +57,14 @@ public static class EntitySetExtensions
 
     public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout) where T : class
         => set.ForEachAsync(action, timeout, true, CancellationToken.None);
+
+    // Overloads with CancellationToken for headers + meta delegate
+    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, CancellationToken cancellationToken) where T : class
+        => set.ForEachAsync(action, TimeSpan.Zero, true, cancellationToken);
+
+    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, TimeSpan timeout, CancellationToken cancellationToken) where T : class
+        => set.ForEachAsync(action, timeout, true, cancellationToken);
+
+    public static Task ForEachAsync<T>(this IEntitySet<T> set, Func<T, Dictionary<string, string>, MessageMeta, Task> action, bool autoCommit, CancellationToken cancellationToken) where T : class
+        => set.ForEachAsync(action, TimeSpan.Zero, autoCommit, cancellationToken);
 }
