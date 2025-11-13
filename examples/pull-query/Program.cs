@@ -33,7 +33,7 @@ public static class Program
     // Minimal context for direct PullQuery execution
     private sealed class KsqlContextMinimal : KsqlContext
     {
-        public KsqlContextMinimal(KsqlContextOptions options) : base(options) {}
+        public KsqlContextMinimal(KsqlContextOptions options) : base(options.Configuration, options.LoggerFactory) {}
         protected override void OnModelCreating(Ksql.Linq.Core.Abstractions.IModelBuilder modelBuilder) { }
     }
 }
