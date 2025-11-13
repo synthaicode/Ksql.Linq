@@ -87,6 +87,6 @@ jobs:
         run: |
           for proj in $(find examples -name '*.csproj'); do
             echo "Building $proj"
-            dotnet restore "$proj" --source https://api.nuget.org/v3/index.json --source .artifacts/nuget
+            dotnet restore "$proj" --source https://api.nuget.org/v3/index.json --source "${{ github.workspace }}/.artifacts/nuget"
             dotnet build "$proj" --no-restore
           done
