@@ -18,6 +18,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine if tag commit is on main
+        id: onmaster
+        shell: bash
+        run: |
+          git fetch origin main --prune
+          if git branch -r --contains "$GITHUB_SHA" | grep -q "origin/main"; then
+            echo "ON_MASTER=true" >> $GITHUB_ENV
+            echo "Tag commit is on main"
+          else
+            echo "ON_MASTER=false" >> $GITHUB_ENV
+            echo "Tag commit is NOT on main; skip publish"
+          fi
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -53,6 +66,7 @@ jobs:
         run: dotnet pack src/Ksql.Linq.csproj -c Release --no-build -p:PackageVersion=${{ env.VERSION }} -o ./artifacts
 
       - name: Push to nuget.org
+        if: env.ON_MASTER == 'true'
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
