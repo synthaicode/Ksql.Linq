@@ -1,6 +1,8 @@
 # Ksql.Linq リリース/公開フロー（RC → 安定版）
 
 このドキュメントは、GitHub Packages へのプレ公開（RC）と、nuget.org への安定版公開の一連の手順をまとめたものです。最短・確実に通すための事前チェックと、各CIの役割、タグ運用、典型的な失敗パターンを含みます。
+役割分担や全体フローの概要は `docs/workflows/release-workflow.md` を参照してください。
+
 
 ---
 
@@ -109,16 +111,27 @@ RCパッケージの利用確認（任意）
 
 ---
 
-## ローカル検証コマンド（控え）
-- ビルド: `dotnet build -c Release`
-- 厳格PublicAPI（安定版前）: `dotnet build src/Ksql.Linq.csproj -c Release -p:StrictPublicApi=true -warnaserror:RS0016,RS0017`
-- パック確認: `dotnet pack src/Ksql.Linq.csproj -c Release --no-build -p:PackageVersion=0.9.1-rcX`
+> メモ:
+> 上記のローカル検証コマンドは、CI 失敗時や原因切り分けのための参考用です。
+> 通常のリリース判定では、公開済みパッケージを利用して examples をビルド／実行できることを確認します。
+
+## 公開パッケージを使った examples 検証
+
+担当: 鳴瀬（主）、葉月（利用者視点）
+- 対象パッケージを GitHub Packages または nuget.org に公開済みであることを確認する。
+- `NuGet.config` などで公開先フィードを参照するよう設定する。
+- examples 配下のプロジェクトを、公開パッケージを参照する形でビルドする:
+
+  ```bash
+  # 例: 全 examples を対象に restore + build
+  dotnet restore examples/**/**/*.csproj
+  dotnet build   examples/**/**/*.csproj --no-restore
 
 ---
 
 ## 成功チェックリスト
 - [ ] RC: GitHub Packages へ push 成功／クリーン環境で restore/ビルドOK
-- [ ] 安定: ローカル厳格チェックRS0016/17=0
+- [ ] 公開済みパッケージを参照する examples プロジェクトが restore / build に成功し、代表的なサンプルの実行結果が期待どおりである
 - [ ] 安定: Actions の「Public API strict check」「Push to nuget.org」が緑
 - [ ] nuget.org のパッケージページに新バージョンが表示
 
