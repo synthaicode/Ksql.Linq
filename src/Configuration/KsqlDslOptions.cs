@@ -7,6 +7,10 @@ using System.ComponentModel;
 namespace Ksql.Linq.Configuration;
 public class KsqlDslOptions
 {
+    public KsqlDslOptions()
+    {
+        // Default constructor
+    }
     /// <summary>
     /// Validation mode (root level setting)
     /// </summary>

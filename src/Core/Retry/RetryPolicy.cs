@@ -4,15 +4,16 @@ using System.Threading.Tasks;
 
 namespace Ksql.Linq.Core.Retry;
 
-public enum BackoffStrategy
+internal enum BackoffStrategy
 {
     Fixed,
     Linear,
     Exponential
 }
 
-public class RetryPolicy
+internal class RetryPolicy
 {
+    public RetryPolicy() { }
     public int MaxAttempts { get; init; } = 3;
     public TimeSpan InitialDelay { get; init; } = TimeSpan.FromSeconds(1);
     public TimeSpan MaxDelay { get; init; } = TimeSpan.FromSeconds(8);

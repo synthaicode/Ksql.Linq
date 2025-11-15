@@ -8,7 +8,7 @@ namespace Ksql.Linq.Core.Extensions;
 /// ILoggerFactory generalized extension methods (Option 2 complete version)
 /// Rationale: remove KafkaContext dependency and keep proper layering in Core
 /// </summary>
-public static class LoggerFactoryExtensions
+internal static class LoggerFactoryExtensions
 {
     /// <summary>
     /// Create a type-safe logger from ILoggerFactory; returns NullLogger if null

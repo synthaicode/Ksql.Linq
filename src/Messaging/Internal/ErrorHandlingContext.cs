@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 namespace Ksql.Linq.Messaging.Internal;
 public class ErrorHandlingContext
 {
+    public ErrorHandlingContext()
+    {
+    }
     /// <summary>
     /// Action to take when an error occurs
     /// </summary>

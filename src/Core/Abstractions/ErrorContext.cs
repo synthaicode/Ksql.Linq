@@ -4,6 +4,9 @@ namespace Ksql.Linq.Core.Abstractions;
 
 public class ErrorContext
 {
+    public ErrorContext()
+    {
+    }
     public Exception Exception { get; set; } = default!;
     public object? OriginalMessage { get; set; }
     public int AttemptCount { get; set; }

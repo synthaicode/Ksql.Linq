@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Pipeline;
 
-public interface IDMLQueryGenerator
+internal interface IDMLQueryGenerator
 {
     string GenerateSelectAll(string objectName, bool isPullQuery = true, bool isTableQuery = false);
     string GenerateSelectWithCondition(string objectName, Expression whereExpression, bool isPullQuery = true, bool isTableQuery = false);

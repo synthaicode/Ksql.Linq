@@ -6,7 +6,7 @@ namespace Ksql.Linq.Configuration;
 /// <summary>
 /// Resolves <see cref="WindowConfiguration"/> entries from configuration.
 /// </summary>
-public sealed class WindowConfigurationProvider
+internal sealed class WindowConfigurationProvider
 {
     private readonly IConfiguration _configuration;
     private readonly WindowConfiguration _defaultConfiguration;

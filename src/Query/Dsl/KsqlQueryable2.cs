@@ -6,7 +6,7 @@ namespace Ksql.Linq.Query.Dsl;
 
 public class KsqlQueryable2<T1, T2> : IKsqlQueryable
 {
-    private readonly KsqlQueryModel _model;
+    protected readonly KsqlQueryModel _model;
     private QueryBuildStage _stage = QueryBuildStage.Join;
 
     public KsqlQueryable2()

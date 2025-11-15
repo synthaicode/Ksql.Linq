@@ -10,6 +10,7 @@ namespace Ksql.Linq.Configuration;
 /// </summary>
 public sealed class DlqOptions
 {
+    public DlqOptions() { }
     // Feature control
     public bool Enabled { get; set; } = true;
     public bool EnableForDeserializationError { get; set; } = true;
@@ -100,6 +101,7 @@ public sealed class DlqOptions
 /// </summary>
 public class DlqMetrics
 {
+    public DlqMetrics() { }
     public string TopicName { get; set; } = string.Empty;
     public string OriginalTopic { get; set; } = string.Empty;
     public string ErrorType { get; set; } = string.Empty;

@@ -3,6 +3,9 @@ using System;
 namespace Ksql.Linq.Configuration.Abstractions;
 public class KafkaSubscriptionOptions
 {
+    public KafkaSubscriptionOptions()
+    {
+    }
     /// <summary>
     /// Consumer group ID
     /// </summary>

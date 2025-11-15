@@ -39,19 +39,19 @@
     <StreamizCoreVersion Condition="'$(StreamizCoreVersion)' == ''">1.7.1</StreamizCoreVersion>
     <StreamizSerdesAvroVersion Condition="'$(StreamizSerdesAvroVersion)' == ''">1.7.1</StreamizSerdesAvroVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Ksql.Linq.Tests</_Parameter1>
+	<!-- Public API Analyzer setup -->
+    <ItemGroup>
+	    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all">
+		    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	    </PackageReference>
+    </ItemGroup>
+	<ItemGroup>
+	    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+        <_Parameter1>Ksql.Linq.Tests</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Ksql.Linq.Cache.Tests</_Parameter1>
     </AssemblyAttribute>
-  </ItemGroup>
-  <!-- Public API Analyzer setup -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
   <!-- Ensure PublicAPI files are only provided as AdditionalFiles (not also as None/Content) -->
   <ItemGroup>
@@ -68,7 +68,7 @@
        PR validation overrides this by setting -p:StrictPublicApi=true. -->
   <PropertyGroup Condition="'$(StrictPublicApi)' != 'true'">
     <!-- Suppress RS0016/RS0017/RS0026 warnings in non-strict CI builds for cleaner logs -->
-    <NoWarn>$(NoWarn);RS0016;RS0017;RS0026</NoWarn>
+    <NoWarn>$(NoWarn);RS0026</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="SendOnly\**\*.cs" />

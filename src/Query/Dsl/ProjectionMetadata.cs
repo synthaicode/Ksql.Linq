@@ -4,11 +4,11 @@ using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Dsl;
 
-public sealed record ProjectionMetadata(
+internal sealed record ProjectionMetadata(
     IReadOnlyList<ProjectionMember> Members,
     bool IsHubInput);
 
-public sealed record ProjectionMember(
+internal sealed record ProjectionMember(
     string Alias,
     Expression Expression,
     string ExpressionText,
@@ -19,7 +19,7 @@ public sealed record ProjectionMember(
     Type ResultType,
     bool IsNullable);
 
-public enum ProjectionMemberKind
+internal enum ProjectionMemberKind
 {
     Aggregate,
     Key,

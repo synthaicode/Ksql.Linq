@@ -5,6 +5,7 @@ using System.ComponentModel;
 namespace Ksql.Linq.Configuration;
 public class CommonSection
 {
+    public CommonSection() { }
     /// <summary>
     /// Kafka broker addresses (comma separated)
     /// </summary>

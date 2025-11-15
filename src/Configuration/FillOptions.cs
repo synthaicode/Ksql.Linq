@@ -4,6 +4,9 @@ namespace Ksql.Linq.Configuration;
 
 public sealed class FillOptions
 {
+    public FillOptions()
+    {
+    }
     /// <summary>
     /// Enable application-side startup backfill.
     /// </summary>

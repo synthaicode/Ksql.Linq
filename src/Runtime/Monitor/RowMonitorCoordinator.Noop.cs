@@ -5,6 +5,7 @@ namespace Ksql.Linq.Runtime.Monitor;
 
 public sealed class RowMonitorCoordinatorNoop : IRowMonitorCoordinator
 {
+    public RowMonitorCoordinatorNoop() { }
     public Task StartAsync(CancellationToken ct) => Task.CompletedTask;
     public Task StopAsync() => Task.CompletedTask;
     public Task StartForResults(System.Collections.Generic.IReadOnlyList<object> results, CancellationToken ct) => Task.CompletedTask;

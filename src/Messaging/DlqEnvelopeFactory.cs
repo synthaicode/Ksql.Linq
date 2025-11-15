@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Ksql.Linq.Messaging;
 
-public static class DlqEnvelopeFactory
+internal static class DlqEnvelopeFactory
 {
     private static int? TryGetSchemaId(byte[]? payload)
         => (payload is { Length: >= 5 } && payload[0] == 0)

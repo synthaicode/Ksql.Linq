@@ -8,6 +8,9 @@ namespace Ksql.Linq.Configuration.Messaging;
 /// </summary>
 public class ConsumerSection
 {
+    public ConsumerSection()
+    {
+    }   
     [DefaultValue("default-group")]
     public string GroupId { get; init; } = string.Empty;
 

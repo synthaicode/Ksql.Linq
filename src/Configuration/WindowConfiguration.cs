@@ -10,10 +10,24 @@ public sealed class WindowConfiguration
 {
     private static readonly TimeSpan DefaultGracePeriod = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan DefaultSweepInterval = TimeSpan.FromSeconds(1);
-
+    public WindowConfiguration()
+    {
+    }
+    /// <summary>
+    /// Gets the window size for aggregation.
+    /// </summary>
     public TimeSpan WindowSize { get; init; }
+    /// <summary>
+    /// Gets the grace period for late events.
+    /// </summary>
     public TimeSpan GracePeriod { get; init; } = DefaultGracePeriod;
+    /// <summary>
+    /// Gets the sweep interval for window maintenance.
+    /// </summary>
     public TimeSpan SweepInterval { get; init; } = DefaultSweepInterval;
+    /// <summary>
+    /// Gets the idle eviction threshold.
+    /// </summary>
     public TimeSpan IdleEviction { get; init; } = TimeSpan.FromMinutes(5);
 
     public static WindowConfiguration FromMinutes(int minutes, int graceSeconds = 3)
