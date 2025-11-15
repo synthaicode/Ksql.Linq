@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Ksql.Linq.Runtime.Heartbeat;
 
-public interface IMarketScheduleProvider
+internal interface IMarketScheduleProvider
 {
     Task InitializeAsync(Type scheduleType, IEnumerable rows, CancellationToken ct);
     Task RefreshAsync(Type scheduleType, IEnumerable rows, CancellationToken ct);

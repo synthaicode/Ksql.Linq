@@ -5,6 +5,7 @@ namespace Ksql.Linq.Messaging;
 
 public class DlqEnvelope
 {
+    public DlqEnvelope() { }
     [KsqlKey] public string Topic { get; set; } = string.Empty;
     [KsqlKey] public int Partition { get; set; }
     [KsqlKey] public long Offset { get; set; }

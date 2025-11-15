@@ -9,6 +9,7 @@ namespace Ksql.Linq.Core.Abstractions;
 
 public class EntityModel
 {
+    public EntityModel() { }
     public Type EntityType { get; set; } = null!;
 
     public string? TopicName { get; set; }

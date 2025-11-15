@@ -8,6 +8,7 @@ namespace Ksql.Linq.Configuration.Messaging;
 /// </summary>
 public class TopicSection
 {
+    public TopicSection() { }
     public string? TopicName { get; init; }
 
     [DefaultValue(typeof(ProducerSection))]
@@ -25,6 +26,7 @@ public class TopicSection
 /// </summary>
 public class TopicCreationSection
 {
+    public  TopicCreationSection() { }
     [DefaultValue(1)]
     public int NumPartitions { get; init; }
 

@@ -10,6 +10,7 @@ namespace Ksql.Linq.Query.Dsl;
 /// </summary>
 public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
 {
+    public KsqlQueryable() { }
     private readonly KsqlQueryModel _model = new()
     {
         SourceTypes = new[] { typeof(T1) },

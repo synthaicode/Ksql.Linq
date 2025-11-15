@@ -1,3 +1,3 @@
 namespace Ksql.Linq.Query.Builders.Schema;
 
-public record KsqlColumn(string Name, string KsqlType, bool IsKey = false);
+internal record KsqlColumn(string Name, string KsqlType, bool IsKey = false);

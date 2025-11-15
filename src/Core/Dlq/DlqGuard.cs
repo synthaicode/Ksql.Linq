@@ -3,7 +3,7 @@ using System;
 
 namespace Ksql.Linq.Core.Dlq;
 
-public static class DlqGuard
+internal static class DlqGuard
 {
     public static bool ShouldSend(DlqOptions o, IRateLimiter limiter, Type exType)
     {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Ksql.Linq.Core.Configuration;
 
@@ -7,6 +8,7 @@ namespace Ksql.Linq.Core.Configuration;
 /// </summary>
 public class SchemaRegistrySection
 {
+    public SchemaRegistrySection() { }
     /// <summary>
     /// A comma-separated list of URLs for schema registry instances
     /// </summary>

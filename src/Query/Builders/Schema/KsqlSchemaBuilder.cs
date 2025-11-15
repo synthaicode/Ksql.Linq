@@ -11,7 +11,7 @@ namespace Ksql.Linq.Query.Builders.Schema;
 /// <summary>
 /// Build KSQL column schema definitions from a select projection.
 /// </summary>
-public static class KsqlSchemaBuilder
+internal static class KsqlSchemaBuilder
 {
     public static List<KsqlColumn> BuildSchema(LambdaExpression selectExpression)
     {

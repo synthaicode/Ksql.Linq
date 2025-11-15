@@ -2,7 +2,7 @@ using System;
 
 namespace Ksql.Linq.Infrastructure.Ksql;
 
-public interface IWaitSettings
+internal interface IWaitSettings
 {
     int RequiredConsecutive { get; }
     TimeSpan StabilityWindow { get; }

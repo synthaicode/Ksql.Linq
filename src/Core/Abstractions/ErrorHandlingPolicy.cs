@@ -4,6 +4,9 @@ namespace Ksql.Linq.Core.Abstractions;
 
 public class ErrorHandlingPolicy
 {
+    public ErrorHandlingPolicy()
+    {
+    }   
     public ErrorAction Action { get; set; } = ErrorAction.Skip;
     public int RetryCount { get; set; } = 3;
     public TimeSpan RetryInterval { get; set; } = TimeSpan.FromSeconds(1);

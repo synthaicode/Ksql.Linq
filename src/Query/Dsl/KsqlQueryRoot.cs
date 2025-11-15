@@ -9,7 +9,10 @@ namespace Ksql.Linq.Query.Dsl;
 public class KsqlQueryRoot
 {
     private bool _fromCalled;
-
+    public KsqlQueryRoot()
+    {
+        _fromCalled = false;
+    }
     public KsqlQueryable<T> From<T>()
     {
         if (_fromCalled)

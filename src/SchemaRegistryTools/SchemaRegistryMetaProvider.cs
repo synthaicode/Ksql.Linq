@@ -13,7 +13,7 @@ namespace Ksql.Linq.SchemaRegistryTools;
 /// Utility methods to fetch Avro schemas from Schema Registry and
 /// convert them into PropertyMeta arrays for Mapping registration.
 /// </summary>
-public static class SchemaRegistryMetaProvider
+internal class SchemaRegistryMetaProvider
 {
     /// <summary>
     /// Fetch key and value schemas for the given entity type and

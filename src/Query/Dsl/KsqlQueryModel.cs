@@ -10,8 +10,15 @@ namespace Ksql.Linq.Query.Dsl;
 
 public class KsqlQueryModel
 {
+    public KsqlQueryModel()
+    {
+    }
     public Type[] SourceTypes { get; init; } = Array.Empty<Type>();
     public LambdaExpression? JoinCondition { get; set; }
+
+    /// <summary>
+    /// Condition expression for the WHERE clause.  
+    /// </summary>
     public LambdaExpression? WhereCondition { get; set; }
     public LambdaExpression? SelectProjection { get; set; }
     public LambdaExpression? GroupByExpression { get; set; }
@@ -23,18 +30,26 @@ public class KsqlQueryModel
     public string? BasedOnClose { get; set; }
     public bool BasedOnOpenInclusive { get; set; } = true;
     public bool BasedOnCloseInclusive { get; set; } = false;
-    public List<string> Windows { get; } = new();
-    public DayOfWeek WeekAnchor { get; set; } = DayOfWeek.Monday;
+    /// <summary>
+    /// Get Window definitions (e.g., "1m","5m","1h","1d","1wk","1mo").
+    /// </summary>
+    public List<string> Windows
+    {
+        get { return _windows; }
+    }
+    private readonly List<string> _windows = new();
+    public DayOfWeek WeekAnchor { get; init; } = DayOfWeek.Monday;
+
     public string? TimeKey { get; set; }
     public string? BucketColumnName { get; set; }
-    public int? WithinSeconds { get; set; }
+    public int? WithinSeconds { get; internal set; }
     public bool ForbidDefaultWithin { get; set; }
     public int? BaseUnitSeconds { get; set; }
     public int? GraceSeconds { get; set; }
     public bool Continuation { get; set; } = false;
     public bool PrimarySourceRequiresAlias { get; set; }
     public System.Collections.Generic.Dictionary<string, object?> Extras { get; } = new();
-    public ProjectionMetadata? SelectProjectionMetadata { get; set; }
+    internal ProjectionMetadata? SelectProjectionMetadata { get; set; }
 
     public KsqlQueryModel Clone()
     {

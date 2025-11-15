@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Ksql.Linq.Core.Conversion;
 
-public static class ValueConverter
+internal static class ValueConverter
 {
     public static bool TryChangeType(object? value, Type targetType, out object? result)
     {

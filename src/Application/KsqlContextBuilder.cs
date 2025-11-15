@@ -6,7 +6,9 @@ namespace Ksql.Linq.Application;
 public class KsqlContextBuilder
 {
     private readonly KsqlContextOptions _options = new();
-
+    public KsqlContextBuilder()
+    {
+    }
     public static KsqlContextBuilder Create()
     {
         return new KsqlContextBuilder();
