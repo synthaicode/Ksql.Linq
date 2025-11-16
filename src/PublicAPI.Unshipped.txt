@@ -915,6 +915,8 @@ Ksql.Linq.Query.Pipeline.QueryExecutionMode.PullQuery = 1 -> Ksql.Linq.Query.Pip
 Ksql.Linq.Query.Pipeline.QueryExecutionMode.PushQuery = 2 -> Ksql.Linq.Query.Pipeline.QueryExecutionMode
 Ksql.Linq.Query.Pipeline.QueryExecutionMode.Unspecified = 0 -> Ksql.Linq.Query.Pipeline.QueryExecutionMode
 Ksql.Linq.QueryExtensions
+Ksql.Linq.Runtime.Fill.IStartupFillService
+Ksql.Linq.Runtime.Fill.IStartupFillService.RunAsync(Ksql.Linq.KsqlContext! context, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
 Ksql.Linq.Runtime.Fill.NoopStartupFillService
 Ksql.Linq.Runtime.Fill.NoopStartupFillService.NoopStartupFillService() -> void
 Ksql.Linq.Runtime.Fill.NoopStartupFillService.RunAsync(Ksql.Linq.KsqlContext! context, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
