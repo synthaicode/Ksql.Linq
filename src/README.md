@@ -1,4 +1,29 @@
-# Ksql.Linq – Minimal Quick Start
+
+# Ksql.Linq
+## Overview
+
+Ksql.Linq is a C# library that unifies Kafka/ksqlDB and Avro/Schema Registry usage. It lets you control Kafka Streams and ksqlDB in a LINQ style and offers the following capabilities.
+
+- Operate Kafka and ksqlDB through a LINQ-based DSL.
+- Design type-safe schemas with Avro and Schema Registry.
+- Detect Streams/Tables and Pull/Push modes automatically.
+- Support operations with DLQ, retry, and commit helpers.
+- **Self-healing persistent queries:** automatically stabilizes CTAS/CSAS queries
+  by retrying, pre-creating internal topics, and recovering from transient errors.
+- **Market-schedule–aware OHLC bars (support feature):**
+   Generate OHLC bars (e.g., 1s/1m/5m/15m/1h) strictly aligned to exchange trading sessions.
+   The engine skips closed hours and holidays, handles DST correctly, and offers gap policies
+   (skip, carry-forward close, or emit sentinel). Pre-/post-market can be toggled per schedule.
+---
+
+## Documentation
+
+For full documentation, advanced usage, and design notes, see the project wiki:
+
+➡ **Ksql.Linq Wiki**  
+https://github.com/synthaicode/Ksql.Linq/wiki
+
+## Minimal Quick Start
 
 > NOTE: In this repo's docker-compose test environment, use  
 > `127.0.0.1:39092` (Kafka) / `18081` (Schema Registry) / `18088` (ksqlDB).  
@@ -8,14 +33,14 @@ This document is a minimal quick start guide for **Ksql.Linq** NuGet consumers.
 
 ---
 
-## Prerequisites
+### Prerequisites
 
 - .NET 8 SDK
 - Kafka / Schema Registry / ksqlDB running
 
 ---
 
-## Minimal `appsettings.json`
+### Minimal `appsettings.json`
 
 ```json
 {
@@ -27,14 +52,12 @@ This document is a minimal quick start guide for **Ksql.Linq** NuGet consumers.
     "SchemaRegistry": {
       "Url": "http://127.0.0.1:18081"
     },
-    "KsqlDbUrl": "http://127.0.0.1:18088",
-    "DlqTopicName": "dead_letter_queue",
-    "DeserializationErrorPolicy": "DLQ"
+    "KsqlDbUrl": "http://127.0.0.1:18088"
   }
 }
 ```
 
-## Minimal code (produce / consume)
+### Minimal code (produce / consume)
 ``` CSharp
 using Ksql.Linq;
 using Ksql.Linq.Core.Attributes;
