@@ -50,9 +50,12 @@ jobs:
         run: |
           echo "== PublicAPI.Shipped.txt (head) =="
           head -n 60 src/PublicAPI.Shipped.txt || true
-          echo "== Ensure KsqlContextBuilder is registered =="
-          if ! grep -E "^T:Ksql\\.Linq\\.Application\\.KsqlContextBuilder$" src/PublicAPI.Shipped.txt; then
-            echo "[FAIL] KsqlContextBuilder が PublicAPI.Shipped.txt にありません" >&2
+          echo "== PublicAPI.Unshipped.txt (head) =="
+          head -n 60 src/PublicAPI.Unshipped.txt || true
+          echo "== Ensure KsqlContextBuilder is registered in Shipped or Unshipped =="
+          if ! grep -E '^T:Ksql\.Linq\.Application\.KsqlContextBuilder$' src/PublicAPI.Shipped.txt && \
+             ! grep -E '^Ksql\.Linq\.Application\.KsqlContextBuilder$' src/PublicAPI.Unshipped.txt; then
+            echo "[FAIL] KsqlContextBuilder is missing from PublicAPI.Shipped.txt and PublicAPI.Unshipped.txt" >&2
             exit 2
           fi
 
