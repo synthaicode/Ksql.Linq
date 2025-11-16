@@ -96,7 +96,6 @@ Ksql.Linq.Core.Modeling.EntityBuilderToQueryExtensions
 Ksql.Linq.Core.Modeling.EntityModelBuilder`1
 Ksql.Linq.Core.Models.PropertyMeta
 Ksql.Linq.Infrastructure.Ksql.IWaitDiagnosticsSink
-Ksql.Linq.Infrastructure.Ksql.IWaitSettings
 Ksql.Linq.Infrastructure.Ksql.KsqlExecutor
 Ksql.Linq.Messaging.Consumers.ICommitManager
 Ksql.Linq.Messaging.DlqEnvelope
