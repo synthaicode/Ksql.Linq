@@ -5,13 +5,13 @@ using Ksql.Linq.Cli.Services;
 namespace Ksql.Linq.Cli.Commands;
 
 /// <summary>
-/// Command to generate KSQL scripts from a compiled assembly.
+/// Command to generate Avro schema files (.avsc) from a compiled assembly.
 /// </summary>
-public static class ScriptCommand
+public static class AvroCommand
 {
     public static Command Create()
     {
-        var command = new Command("script", "Generate KSQL script from compiled assembly");
+        var command = new Command("avro", "Generate Avro schema files (.avsc) from compiled assembly");
 
         // Options
         var projectOption = new Option<string>(
@@ -25,17 +25,16 @@ public static class ScriptCommand
             aliases: new[] { "--context", "-c" },
             description: "Name of the KsqlContext class (required if multiple factories exist)");
 
-        var outputOption = new Option<string?>(
+        var outputOption = new Option<string>(
             aliases: new[] { "--output", "-o" },
-            description: "Output file path for the generated KSQL script");
+            description: "Output directory for Avro schema files")
+        {
+            IsRequired = true
+        };
 
         var configOption = new Option<string?>(
             aliases: new[] { "--config" },
             description: "Path to appsettings.json (passed to factory)");
-
-        var noHeaderOption = new Option<bool>(
-            aliases: new[] { "--no-header" },
-            description: "Exclude header comment from output");
 
         var verboseOption = new Option<bool>(
             aliases: new[] { "--verbose", "-v" },
@@ -45,19 +44,17 @@ public static class ScriptCommand
         command.AddOption(contextOption);
         command.AddOption(outputOption);
         command.AddOption(configOption);
-        command.AddOption(noHeaderOption);
         command.AddOption(verboseOption);
 
         command.SetHandler(async (InvocationContext context) =>
         {
             var project = context.ParseResult.GetValueForOption(projectOption)!;
             var contextName = context.ParseResult.GetValueForOption(contextOption);
-            var output = context.ParseResult.GetValueForOption(outputOption);
+            var output = context.ParseResult.GetValueForOption(outputOption)!;
             var config = context.ParseResult.GetValueForOption(configOption);
-            var noHeader = context.ParseResult.GetValueForOption(noHeaderOption);
             var verbose = context.ParseResult.GetValueForOption(verboseOption);
 
-            var exitCode = await Execute(project, contextName, output, config, noHeader, verbose);
+            var exitCode = await Execute(project, contextName, output, config, verbose);
             context.ExitCode = exitCode;
         });
 
@@ -67,9 +64,8 @@ public static class ScriptCommand
     private static async Task<int> Execute(
         string projectPath,
         string? contextName,
-        string? outputPath,
+        string outputDir,
         string? configPath,
-        bool noHeader,
         bool verbose)
     {
         try
@@ -104,17 +100,8 @@ public static class ScriptCommand
                 Console.WriteLine($"Assembly: {loadResult.AssemblyName} v{loadResult.AssemblyVersion}");
             }
 
-            // Build script
-            var builder = new ScriptBuilder();
-            var options = new ScriptBuilder.ScriptOptions
-            {
-                IncludeHeader = !noHeader,
-                AssemblyName = loadResult.AssemblyName,
-                AssemblyVersion = loadResult.AssemblyVersion,
-                ContextTypeName = loadResult.ContextTypeName
-            };
-
-            string script;
+            // Generate schemas
+            Dictionary<string, string> schemas;
             using (loadResult.Context)
             {
                 var entityCount = loadResult.Context.GetEntityModels().Count;
@@ -123,27 +110,31 @@ public static class ScriptCommand
                     Console.WriteLine($"Found {entityCount} entity model(s)");
                 }
 
-                script = builder.Build(loadResult.Context, options);
-            }
+                var schemaGenerator = new AvroSchemaGenerator();
+                schemas = schemaGenerator.Generate(loadResult.Context);
 
-            // Output script
-            if (!string.IsNullOrEmpty(outputPath))
-            {
-                // Ensure directory exists
-                var dir = Path.GetDirectoryName(outputPath);
-                if (!string.IsNullOrEmpty(dir))
+                if (verbose)
                 {
-                    Directory.CreateDirectory(dir);
+                    Console.WriteLine($"Generated {schemas.Count} Avro schema(s)");
                 }
+            }
 
-                await File.WriteAllTextAsync(outputPath, script);
-                Console.WriteLine($"Script written to: {outputPath}");
-            }
-            else
+            // Output schemas
+            Directory.CreateDirectory(outputDir);
+
+            foreach (var (name, schemaJson) in schemas)
             {
-                // Write to stdout
-                Console.WriteLine(script);
+                var schemaPath = Path.Combine(outputDir, $"{name}.avsc");
+                await File.WriteAllTextAsync(schemaPath, schemaJson);
+
+                if (verbose)
+                {
+                    Console.WriteLine($"Schema written to: {schemaPath}");
+                }
             }
+
+            Console.WriteLine($"Avro schemas written to: {outputDir}");
+            Console.WriteLine($"Total schemas: {schemas.Count}");
 
             return 0;
         }
