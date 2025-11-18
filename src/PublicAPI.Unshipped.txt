@@ -419,6 +419,8 @@ Ksql.Linq.Core.Abstractions.ErrorHandlingPolicy.RetryCount.get -> int
 Ksql.Linq.Core.Abstractions.ErrorHandlingPolicy.RetryCount.set -> void
 Ksql.Linq.Core.Abstractions.ErrorHandlingPolicy.RetryInterval.get -> System.TimeSpan
 Ksql.Linq.Core.Abstractions.ErrorHandlingPolicy.RetryInterval.set -> void
+Ksql.Linq.Core.Abstractions.IDesignTimeKsqlContextFactory<TContext>
+Ksql.Linq.Core.Abstractions.IDesignTimeKsqlContextFactory<TContext>.CreateContext(string![]! args) -> TContext
 Ksql.Linq.Core.Abstractions.IEntitySet<T>
 Ksql.Linq.Core.Abstractions.IEntitySet<T>.AddAsync(T! entity, System.Collections.Generic.Dictionary<string!, string!>? headers = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Ksql.Linq.Core.Abstractions.IEntitySet<T>.ForEachAsync(System.Func<T!, System.Collections.Generic.Dictionary<string!, string!>!, Ksql.Linq.Messaging.MessageMeta, System.Threading.Tasks.Task!>! action, System.TimeSpan timeout, bool autoCommit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
