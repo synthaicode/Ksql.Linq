@@ -41,12 +41,17 @@ public static class ScriptCommand
             aliases: new[] { "--verbose", "-v" },
             description: "Show detailed output");
 
+        var schemaDirOption = new Option<string?>(
+            aliases: new[] { "--schema-dir", "-s" },
+            description: "Output directory for Avro schema files (.avsc)");
+
         command.AddOption(projectOption);
         command.AddOption(contextOption);
         command.AddOption(outputOption);
         command.AddOption(configOption);
         command.AddOption(noHeaderOption);
         command.AddOption(verboseOption);
+        command.AddOption(schemaDirOption);
 
         command.SetHandler(async (InvocationContext context) =>
         {
@@ -56,8 +61,9 @@ public static class ScriptCommand
             var config = context.ParseResult.GetValueForOption(configOption);
             var noHeader = context.ParseResult.GetValueForOption(noHeaderOption);
             var verbose = context.ParseResult.GetValueForOption(verboseOption);
+            var schemaDir = context.ParseResult.GetValueForOption(schemaDirOption);
 
-            var exitCode = await Execute(project, contextName, output, config, noHeader, verbose);
+            var exitCode = await Execute(project, contextName, output, config, noHeader, verbose, schemaDir);
             context.ExitCode = exitCode;
         });
 
@@ -70,7 +76,8 @@ public static class ScriptCommand
         string? outputPath,
         string? configPath,
         bool noHeader,
-        bool verbose)
+        bool verbose,
+        string? schemaDir)
     {
         try
         {
@@ -115,6 +122,8 @@ public static class ScriptCommand
             };
 
             string script;
+            Dictionary<string, string>? schemas = null;
+
             using (loadResult.Context)
             {
                 var entityCount = loadResult.Context.GetEntityModels().Count;
@@ -124,6 +133,18 @@ public static class ScriptCommand
                 }
 
                 script = builder.Build(loadResult.Context, options);
+
+                // Generate Avro schemas if requested
+                if (!string.IsNullOrEmpty(schemaDir))
+                {
+                    var schemaGenerator = new AvroSchemaGenerator();
+                    schemas = schemaGenerator.Generate(loadResult.Context);
+
+                    if (verbose)
+                    {
+                        Console.WriteLine($"Generated {schemas.Count} Avro schema(s)");
+                    }
+                }
             }
 
             // Output script
@@ -143,6 +164,25 @@ public static class ScriptCommand
             {
                 // Write to stdout
                 Console.WriteLine(script);
+            }
+
+            // Output Avro schemas
+            if (schemas != null && !string.IsNullOrEmpty(schemaDir))
+            {
+                Directory.CreateDirectory(schemaDir);
+
+                foreach (var (name, schemaJson) in schemas)
+                {
+                    var schemaPath = Path.Combine(schemaDir, $"{name}.avsc");
+                    await File.WriteAllTextAsync(schemaPath, schemaJson);
+
+                    if (verbose)
+                    {
+                        Console.WriteLine($"Schema written to: {schemaPath}");
+                    }
+                }
+
+                Console.WriteLine($"Avro schemas written to: {schemaDir}");
             }
 
             return 0;
