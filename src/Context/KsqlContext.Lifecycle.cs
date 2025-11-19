@@ -215,6 +215,10 @@ public abstract partial class KsqlContext : IKsqlContext
         _loggerFactory = loggerFactory;
         _logger = _loggerFactory.CreateLoggerOrNull<KsqlContext>();
 
+        // Initialize commit manager early so that EventSet instances created during
+        // model configuration or property binding always receive a non-null manager.
+        _commitManager = new ManualCommitManager(_loggerFactory?.CreateLogger<Messaging.Consumers.ManualCommitManager>());
+
         if (!IsDesignTime)
         {
             _schemaRegistryClient = new Lazy<ConfluentSchemaRegistry.ISchemaRegistryClient>(CreateSchemaRegistryClient);
@@ -248,8 +252,6 @@ public abstract partial class KsqlContext : IKsqlContext
                  Microsoft.Extensions.Options.Options.Create(_dslOptions),
                  _loggerFactory);
             _dlqProducer = new Ksql.Linq.Messaging.Producers.DlqProducer(_producerManager, _dslOptions.DlqTopicName);
-
-            _commitManager = new ManualCommitManager(_loggerFactory?.CreateLogger<Messaging.Consumers.ManualCommitManager>());
 
             _dlqLimiter = new SimpleRateLimiter(_dslOptions.DlqOptions.MaxPerSecond);
 
