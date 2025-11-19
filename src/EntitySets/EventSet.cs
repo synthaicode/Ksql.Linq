@@ -6,6 +6,7 @@ using Ksql.Linq.Events;
 using Ksql.Linq.Messaging;
 using Ksql.Linq.Messaging.Internal;
 using Ksql.Linq.Query.Abstractions;
+using Ksql.Linq.Transactions;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -156,6 +157,31 @@ public abstract class EventSet<T> : IEntitySet<T> where T : class
         }
 
         await SendEntityAsync(entity, headers, cancellationToken);
+    }
+
+    /// <summary>
+    /// IEntitySet<T> implementation: producer operations within a transaction
+    /// </summary>
+    public virtual async Task AddAsync(T entity, IKsqlTransaction transaction, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
+    {
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+        if (transaction == null)
+            throw new ArgumentNullException(nameof(transaction));
+
+        if (_context is KsqlContext ctxLogger)
+        {
+            ctxLogger.Logger?.LogInformation("EventSet.AddAsync (transactional) enqueue {EntityType} -> {Topic}", typeof(T).Name, GetTopicName());
+        }
+
+        if (transaction is KsqlTransaction ksqlTx)
+        {
+            await ksqlTx.AddAsync(this, entity, headers, cancellationToken);
+        }
+        else
+        {
+            throw new InvalidOperationException("Transaction must be a KsqlTransaction");
+        }
     }
 
     public virtual Task RemoveAsync(T entity, CancellationToken cancellationToken = default)

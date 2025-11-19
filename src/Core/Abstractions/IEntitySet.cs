@@ -1,4 +1,5 @@
 using Ksql.Linq.Messaging;
+using Ksql.Linq.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -14,6 +15,7 @@ public interface IEntitySet<T> : IAsyncEnumerable<T> where T : class
 {
     // Producer operations
     Task AddAsync(T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
+    Task AddAsync(T entity, IKsqlTransaction transaction, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default);
     Task RemoveAsync(T entity, CancellationToken cancellationToken = default);
 
     // Consumer operations
