@@ -72,10 +72,10 @@ public class KsqlTransaction : IKsqlTransaction
         _logger?.LogDebug("Transaction begun: {TransactionalId}", options.TransactionalId);
     }
 
-    public async Task ProduceAsync<T>(string topicName, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class
+    public async Task AddAsync<T>(string topicName, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class
     {
         if (_committed || _aborted)
-            throw new InvalidOperationException("Cannot produce to a completed transaction");
+            throw new InvalidOperationException("Cannot add to a completed transaction");
 
         if (entity == null)
             throw new ArgumentNullException(nameof(entity));
@@ -126,7 +126,7 @@ public class KsqlTransaction : IKsqlTransaction
             }
         }
 
-        _logger?.LogDebug("Producing to topic {Topic} within transaction {TransactionalId}", topic, _options.TransactionalId);
+        _logger?.LogDebug("Adding to topic {Topic} within transaction {TransactionalId}", topic, _options.TransactionalId);
         await _transactionalProducer.ProduceAsync(topic, message, cancellationToken);
     }
 

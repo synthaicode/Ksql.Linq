@@ -26,14 +26,14 @@ public interface IKsqlTransaction : IAsyncDisposable
     bool IsAborted { get; }
 
     /// <summary>
-    /// Produces a message within the transaction.
+    /// Adds an entity to a topic within the transaction.
     /// </summary>
     /// <typeparam name="T">Entity type</typeparam>
     /// <param name="topicName">Target topic name</param>
-    /// <param name="entity">Entity to produce</param>
+    /// <param name="entity">Entity to add</param>
     /// <param name="headers">Optional message headers</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task ProduceAsync<T>(string topicName, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class;
+    Task AddAsync<T>(string topicName, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class;
 
     /// <summary>
     /// Tracks a consumed offset for exactly-once semantics.

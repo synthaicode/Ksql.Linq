@@ -172,32 +172,32 @@ public class TransactionContext
     }
 
     /// <summary>
-    /// Produces an entity to a topic within the transaction.
+    /// Adds an entity to a topic within the transaction.
     /// </summary>
     /// <typeparam name="TTarget">Target entity type</typeparam>
     /// <param name="topicName">Target topic name</param>
-    /// <param name="entity">Entity to produce</param>
+    /// <param name="entity">Entity to add</param>
     /// <param name="headers">Optional message headers</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public Task ProduceAsync<TTarget>(
+    public Task AddAsync<TTarget>(
         string topicName,
         TTarget entity,
         Dictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default) where TTarget : class
     {
-        return _transaction.ProduceAsync(topicName, entity, headers, cancellationToken);
+        return _transaction.AddAsync(topicName, entity, headers, cancellationToken);
     }
 
     /// <summary>
-    /// Produces an entity to an entity set within the transaction.
+    /// Adds an entity to an entity set within the transaction.
     /// </summary>
-    public Task ProduceAsync<TTarget>(
+    public Task AddAsync<TTarget>(
         IEntitySet<TTarget> targetSet,
         TTarget entity,
         Dictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default) where TTarget : class
     {
-        return _transaction.ProduceAsync(targetSet.GetTopicName(), entity, headers, cancellationToken);
+        return _transaction.AddAsync(targetSet.GetTopicName(), entity, headers, cancellationToken);
     }
 
     /// <summary>
