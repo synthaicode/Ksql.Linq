@@ -1,3 +1,4 @@
+using Ksql.Linq.Core.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -26,22 +27,14 @@ public interface IKsqlTransaction : IAsyncDisposable
     bool IsAborted { get; }
 
     /// <summary>
-    /// Adds an entity to a topic within the transaction.
+    /// Adds an entity to an entity set within the transaction.
     /// </summary>
     /// <typeparam name="T">Entity type</typeparam>
-    /// <param name="topicName">Target topic name</param>
+    /// <param name="entitySet">Target entity set</param>
     /// <param name="entity">Entity to add</param>
     /// <param name="headers">Optional message headers</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task AddAsync<T>(string topicName, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class;
-
-    /// <summary>
-    /// Tracks a consumed offset for exactly-once semantics.
-    /// </summary>
-    /// <param name="topic">Topic name</param>
-    /// <param name="partition">Partition number</param>
-    /// <param name="offset">Offset value</param>
-    void TrackConsumedOffset(string topic, int partition, long offset);
+    Task AddAsync<T>(IEntitySet<T> entitySet, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class;
 
     /// <summary>
     /// Commits the transaction.

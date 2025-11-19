@@ -4,6 +4,7 @@ using Confluent.Kafka;
 using Confluent.Kafka.SyncOverAsync;
 using Confluent.SchemaRegistry.Serdes;
 using Ksql.Linq.Configuration;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Mapping;
 using Microsoft.Extensions.Logging;
@@ -72,16 +73,19 @@ public class KsqlTransaction : IKsqlTransaction
         _logger?.LogDebug("Transaction begun: {TransactionalId}", options.TransactionalId);
     }
 
-    public async Task AddAsync<T>(string topicName, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class
+    public async Task AddAsync<T>(IEntitySet<T> entitySet, T entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where T : class
     {
         if (_committed || _aborted)
             throw new InvalidOperationException("Cannot add to a completed transaction");
+
+        if (entitySet == null)
+            throw new ArgumentNullException(nameof(entitySet));
 
         if (entity == null)
             throw new ArgumentNullException(nameof(entity));
 
         var mapping = _mappingRegistry.GetMapping(typeof(T));
-        var topic = topicName ?? typeof(T).GetKafkaTopicName();
+        var topic = entitySet.GetTopicName();
 
         // Create key and value objects
         object? keyObj = mapping.AvroKeyType switch
