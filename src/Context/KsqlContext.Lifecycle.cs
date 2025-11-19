@@ -85,8 +85,16 @@ public abstract partial class KsqlContext : IKsqlContext
 
     /// <summary>
     /// Hook to decide whether schema registration should be skipped for tests
+    /// or design-time usage.
     /// </summary>
     protected virtual bool SkipSchemaRegistration => false;
+
+    /// <summary>
+    /// Indicates whether this context is used for design-time operations only.
+    /// Design-time contexts avoid initializing Kafka/ksqlDB connections and
+    /// only configure the model (EntityModels and resolved configurations).
+    /// </summary>
+    protected virtual bool IsDesignTime => false;
 
     public const string DefaultSectionName = "KsqlDsl";
 
@@ -198,39 +206,50 @@ public abstract partial class KsqlContext : IKsqlContext
         _startupFillService = svc;
     }
 
+
     private void InitializeCore(ILoggerFactory? loggerFactory)
     {
         // Configure only per-property decimal overrides; global precision/scale options removed from docs
         DecimalPrecisionConfig.Configure(_dslOptions.Decimals);
 
-        _schemaRegistryClient = new Lazy<ConfluentSchemaRegistry.ISchemaRegistryClient>(CreateSchemaRegistryClient);
-        _ksqlDbClient = new KsqlDbClient(GetDefaultKsqlDbUrl(), loggerFactory?.CreateLogger<KsqlDbClient>());
-
         _loggerFactory = loggerFactory;
         _logger = _loggerFactory.CreateLoggerOrNull<KsqlContext>();
 
-        // Ensure default executor/registrar are wired when not provided via dependencies
-        _ksqlExecutor ??= new Ksql.Linq.Infrastructure.Ksql.KsqlExecutor(
-            _ksqlDbClient,
-            _loggerFactory?.CreateLogger<Ksql.Linq.Infrastructure.Ksql.KsqlExecutor>());
+        if (!IsDesignTime)
+        {
+            _schemaRegistryClient = new Lazy<ConfluentSchemaRegistry.ISchemaRegistryClient>(CreateSchemaRegistryClient);
+            _ksqlDbClient = new KsqlDbClient(GetDefaultKsqlDbUrl(), loggerFactory?.CreateLogger<KsqlDbClient>());
 
+            // Ensure default executor/registrar are wired when not provided via dependencies
+            _ksqlExecutor ??= new Ksql.Linq.Infrastructure.Ksql.KsqlExecutor(
+                _ksqlDbClient,
+                _loggerFactory?.CreateLogger<Ksql.Linq.Infrastructure.Ksql.KsqlExecutor>());
 
-        _adminService = new KafkaAdminService(
-        Microsoft.Extensions.Options.Options.Create(_dslOptions),
-        _loggerFactory);
-        RebuildQueryDdlMonitor();
+            _adminService = new KafkaAdminService(
+                Microsoft.Extensions.Options.Options.Create(_dslOptions),
+                _loggerFactory);
+            RebuildQueryDdlMonitor();
+        }
+
         InitializeEntityModels();
         try
         {
+            ConfigureModel();
+            ResolveEntityConfigurations();
+
+            if (IsDesignTime)
+            {
+                // For design-time contexts we stop here: the model is ready,
+                // but no connections to Kafka/ksqlDB/Schema Registry are made.
+                return;
+            }
+
             _producerManager = new KafkaProducerManager(_mappingRegistry,
                  Microsoft.Extensions.Options.Options.Create(_dslOptions),
                  _loggerFactory);
             _dlqProducer = new Ksql.Linq.Messaging.Producers.DlqProducer(_producerManager, _dslOptions.DlqTopicName);
 
             _commitManager = new ManualCommitManager(_loggerFactory?.CreateLogger<Messaging.Consumers.ManualCommitManager>());
-
-            ConfigureModel();
-            ResolveEntityConfigurations();
 
             _dlqLimiter = new SimpleRateLimiter(_dslOptions.DlqOptions.MaxPerSecond);
 
@@ -881,7 +900,7 @@ public abstract partial class KsqlContext : IKsqlContext
             _adminService?.Dispose();
             _cacheRegistry?.Dispose();
 
-            if (_schemaRegistryClient.IsValueCreated)
+            if (_schemaRegistryClient != null && _schemaRegistryClient.IsValueCreated)
             {
                 _schemaRegistryClient.Value?.Dispose();
             }
@@ -938,11 +957,11 @@ public abstract partial class KsqlContext : IKsqlContext
         _adminService?.Dispose();
         _cacheRegistry?.Dispose();
 
-        if (_schemaRegistryClient.IsValueCreated)
+        if (_schemaRegistryClient != null && _schemaRegistryClient.IsValueCreated)
         {
             _schemaRegistryClient.Value?.Dispose();
         }
-            (_ksqlDbClient as IDisposable)?.Dispose();
+        (_ksqlDbClient as IDisposable)?.Dispose();
 
         await Task.CompletedTask;
     }

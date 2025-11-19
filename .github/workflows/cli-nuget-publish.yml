@@ -1,0 +1,42 @@
+name: Publish Ksql.Linq.Cli Tool (nuget.org)
+
+on:
+  push:
+    tags:
+      - 'cli-v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  pack-and-publish-cli:
+    # Avoid running for RC-like tags; those are handled by the GitHub Packages workflow
+    if: ${{ !contains(github.ref, '-rc') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore CLI project
+        run: dotnet restore src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj
+
+      - name: Pack CLI tool
+        run: dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o ./artifacts/cli
+
+      - name: Publish CLI tool to nuget.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push "./artifacts/cli/Ksql.Linq.Cli.*.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
+

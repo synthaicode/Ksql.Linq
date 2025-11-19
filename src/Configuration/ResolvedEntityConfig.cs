@@ -14,6 +14,12 @@ public class ResolvedEntityConfig
     public bool EnableCache { get; set; }
     public string? StoreName { get; set; }
     /// <summary>
+    /// Derived value schema subject for this entity. This is not user-configurable;
+    /// it is computed from the effective topic name using SchemaSubjects.ValueFor(...).
+    /// Design-time tooling can use this to correlate KSQL statements with Schema Registry.
+    /// </summary>
+    public string? ValueSchemaSubject { get; set; }
+    /// <summary>
     /// Container for additional configuration values that may be introduced
     /// in future extensions. Keys follow the same naming as configuration
     /// properties.

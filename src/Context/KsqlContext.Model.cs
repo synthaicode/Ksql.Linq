@@ -114,6 +114,9 @@ public abstract partial class KsqlContext
 
         foreach (var (type, model) in _entityModels)
         {
+            // Apply topic-level settings (partitions/replicas/retention) based on KsqlDslOptions.Topics
+            TopicSettingsResolver.Apply(_dslOptions, model);
+
             var config = _dslOptions.Entities.FirstOrDefault(e => string.Equals(e.Entity, type.Name, StringComparison.OrdinalIgnoreCase));
 
             var defaultTopic = model.TopicName ?? type.GetKafkaTopicName();
@@ -170,7 +173,8 @@ public abstract partial class KsqlContext
                 SourceTopic = sourceTopic,
                 GroupId = groupId,
                 EnableCache = enableCache,
-                StoreName = storeName
+                StoreName = storeName,
+                ValueSchemaSubject = SchemaRegistryTools.SchemaSubjects.ValueFor(sourceTopic)
             };
 
             foreach (var kv in model.AdditionalSettings)

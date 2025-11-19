@@ -75,6 +75,8 @@
     <Compile Remove="ReceiveOnly\**\*.cs" />
     <!-- Exclude Samples from main package; moved to separate assembly -->
     <Compile Remove="Entities\Samples\**\*.cs" />
+    <!-- Exclude CLI host from main library; built as separate tool -->
+    <Compile Remove="Ksql.Linq.Cli\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="KsqlLinq-icon-128.png" Pack="true" PackagePath="" />

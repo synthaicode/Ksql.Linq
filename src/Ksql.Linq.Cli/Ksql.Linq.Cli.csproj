@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Ksql.Linq.Cli</RootNamespace>
+    <AssemblyName>ksql-linq</AssemblyName>
+
+    <!-- .NET Tool Configuration -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dotnet-ksql</ToolCommandName>
+    <PackageId>Ksql.Linq.Cli</PackageId>
+    <Description>Design-time KSQL script and Avro schema generation tool for Ksql.Linq</Description>
+    <Authors>Ksql.Linq Contributors</Authors>
+    <PackageTags>ksql;kafka;cli;design-time</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\\Ksql.Linq.csproj" />
+  </ItemGroup>
+
+</Project>
+
