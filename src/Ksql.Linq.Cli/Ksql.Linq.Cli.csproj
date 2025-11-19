@@ -7,14 +7,25 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Ksql.Linq.Cli</RootNamespace>
     <AssemblyName>ksql-linq</AssemblyName>
+    <Version>0.9.5</Version>
 
     <!-- .NET Tool Configuration -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-ksql</ToolCommandName>
     <PackageId>Ksql.Linq.Cli</PackageId>
     <Description>Design-time KSQL script and Avro schema generation tool for Ksql.Linq</Description>
-    <Authors>Ksql.Linq Contributors</Authors>
-    <PackageTags>ksql;kafka;cli;design-time</PackageTags>
+    <Authors>SynthAICode</Authors>
+    <Company>SynthAICode</Company>
+    <PackageTags>kafka;ksqldb;linq;stream-processing;avro;schema-registry;streamiz;dotnet;csharp;cli;design-time</PackageTags>
+    <PackageProjectUrl>https://github.com/synthaicode/Ksql.Linq</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/synthaicode/Ksql.Linq</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>KsqlLinq-icon-128.png</PackageIcon>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,5 +38,9 @@
     <ProjectReference Include="..\\Ksql.Linq.csproj" />
   </ItemGroup>
 
-</Project>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="..\\KsqlLinq-icon-128.png" Pack="true" PackagePath="" />
+  </ItemGroup>
 
+</Project>
