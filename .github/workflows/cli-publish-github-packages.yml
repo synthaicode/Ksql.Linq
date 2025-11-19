@@ -32,18 +32,11 @@ jobs:
       - name: Pack CLI tool
         run: dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o ./artifacts/cli
 
-      - name: Add GitHub Packages source
-        run: |
-          dotnet nuget add source \
-            --username "${{ github.actor }}" \
-            --password "${{ secrets.GITHUB_TOKEN }}" \
-            --store-password-in-clear-text \
-            --name "github" \
-            "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-
       - name: Publish CLI tool to GitHub Packages
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dotnet nuget push "./artifacts/cli/Ksql.Linq.Cli.*.nupkg" \
-            --source "github" \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --api-key "$NUGET_AUTH_TOKEN" \
             --skip-duplicate
-
