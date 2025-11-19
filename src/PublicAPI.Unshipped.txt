@@ -332,6 +332,7 @@ Ksql.Linq.Query.Script.KsqlScript
 Ksql.Linq.Query.Script.KsqlScript.KsqlScript(System.Collections.Generic.IReadOnlyList<string!>! statements) -> void
 Ksql.Linq.Query.Script.KsqlScript.Statements.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Ksql.Linq.Query.Script.KsqlScript.ToSql() -> string!
+override Ksql.Linq.Query.Script.KsqlScript.ToString() -> string!
 Ksql.Linq.Query.Script.IAvroSchemaExporter
 Ksql.Linq.Query.Script.IAvroSchemaExporter.ExportValueSchemas(Ksql.Linq.KsqlContext! context) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 Ksql.Linq.Query.Script.DefaultAvroSchemaExporter
@@ -1079,5 +1080,6 @@ virtual Ksql.Linq.KsqlContext.Dispose(bool disposing) -> void
 virtual Ksql.Linq.KsqlContext.DisposeAsyncCore() -> System.Threading.Tasks.ValueTask
 virtual Ksql.Linq.KsqlContext.OnModelCreating(Ksql.Linq.Core.Abstractions.IModelBuilder! modelBuilder) -> void
 virtual Ksql.Linq.KsqlContext.SkipSchemaRegistration.get -> bool
+virtual Ksql.Linq.KsqlContext.IsDesignTime.get -> bool
 virtual Ksql.Linq.KsqlContext.StartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 virtual Ksql.Linq.KsqlContext.StopAsync() -> System.Threading.Tasks.Task!
