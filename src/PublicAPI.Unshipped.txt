@@ -2,6 +2,8 @@
 abstract Ksql.Linq.EventSet<T>.GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerator<T!>!
 abstract Ksql.Linq.EventSet<T>.SendEntityAsync(T! entity, System.Collections.Generic.Dictionary<string!, string!>? headers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 const Ksql.Linq.KsqlContext.DefaultSectionName = "KsqlDsl" -> string!
+Ksql.Linq.IDesignTimeKsqlContextFactory
+Ksql.Linq.IDesignTimeKsqlContextFactory.CreateDesignTimeContext() -> Ksql.Linq.KsqlContext!
 Ksql.Linq.Application.KsqlContextBuilder
 Ksql.Linq.Application.KsqlContextBuilder.Build() -> Ksql.Linq.Application.KsqlContextOptions!
 Ksql.Linq.Application.KsqlContextBuilder.BuildContext<T>() -> T!
@@ -319,6 +321,22 @@ Ksql.Linq.Configuration.ResolvedEntityConfig.SourceTopic.get -> string!
 Ksql.Linq.Configuration.ResolvedEntityConfig.SourceTopic.set -> void
 Ksql.Linq.Configuration.ResolvedEntityConfig.StoreName.get -> string?
 Ksql.Linq.Configuration.ResolvedEntityConfig.StoreName.set -> void
+Ksql.Linq.Configuration.ResolvedEntityConfig.ValueSchemaSubject.get -> string?
+Ksql.Linq.Configuration.ResolvedEntityConfig.ValueSchemaSubject.set -> void
+Ksql.Linq.IKsqlScriptBuilder
+Ksql.Linq.IKsqlScriptBuilder.Build(Ksql.Linq.KsqlContext! context) -> Ksql.Linq.Query.Script.KsqlScript!
+Ksql.Linq.Query.Script.DefaultKsqlScriptBuilder
+Ksql.Linq.Query.Script.DefaultKsqlScriptBuilder.DefaultKsqlScriptBuilder() -> void
+Ksql.Linq.Query.Script.DefaultKsqlScriptBuilder.Build(Ksql.Linq.KsqlContext! context) -> Ksql.Linq.Query.Script.KsqlScript!
+Ksql.Linq.Query.Script.KsqlScript
+Ksql.Linq.Query.Script.KsqlScript.KsqlScript(System.Collections.Generic.IReadOnlyList<string!>! statements) -> void
+Ksql.Linq.Query.Script.KsqlScript.Statements.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Ksql.Linq.Query.Script.KsqlScript.ToSql() -> string!
+Ksql.Linq.Query.Script.IAvroSchemaExporter
+Ksql.Linq.Query.Script.IAvroSchemaExporter.ExportValueSchemas(Ksql.Linq.KsqlContext! context) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Ksql.Linq.Query.Script.DefaultAvroSchemaExporter
+Ksql.Linq.Query.Script.DefaultAvroSchemaExporter.DefaultAvroSchemaExporter() -> void
+Ksql.Linq.Query.Script.DefaultAvroSchemaExporter.ExportValueSchemas(Ksql.Linq.KsqlContext! context) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 Ksql.Linq.Configuration.ValidationMode
 Ksql.Linq.Configuration.ValidationMode.Relaxed = 1 -> Ksql.Linq.Configuration.ValidationMode
 Ksql.Linq.Configuration.ValidationMode.Strict = 0 -> Ksql.Linq.Configuration.ValidationMode

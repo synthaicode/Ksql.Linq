@@ -43,4 +43,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Ksql.Linq.Cli.Tests\**\*.cs" />
+  </ItemGroup>
 </Project>

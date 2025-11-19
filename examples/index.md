@@ -62,6 +62,8 @@ dotnet run --project examples/basic-produce-consume
 - `options-validation-timeouts`: Configure validation behavior and schema registration timeouts.
 - `ksql-response-inspect`: Execute KSQL and inspect `KsqlDbResponse`.
 - `custom-executor`: Implement and use a custom `IKsqlExecutor` (direct call demo).
+- `designtime-ksql-script`: Define a `KsqlContext` and design-time factory (`IDesignTimeKsqlContextFactory`) for offline KSQL script generation.
+- `designtime-ksql-tumbling`: Define a Tumbling-window aggregation via ToQuery for design-time KSQL script generation.
 
 ---
 
