@@ -59,22 +59,62 @@ public abstract partial class KsqlContext
     }
     internal Task<string?> TryGetQueryIdFromShowQueriesAdapterAsync(string targetTopic, string? statement, int attempts = 5, int delayMs = 1000)
         => KsqlWaitClient.TryGetQueryIdFromShowQueriesAsync(sql => ExecuteStatementAsync(sql), targetTopic, statement, attempts, delayMs);
-    internal Task WaitForQueryRunningAdapterAsync(string targetEntityName, TimeSpan timeout, string? queryId = null)
-        => KsqlWaitClient.WaitForQueryRunningAsync(sql => ExecuteStatementAsync(sql), targetEntityName, queryId, timeout);
+      internal Task WaitForQueryRunningAdapterAsync(string targetEntityName, TimeSpan timeout, string? queryId = null)
+          => KsqlWaitClient.WaitForQueryRunningAsync(
+              sql => ExecuteStatementAsync(sql),
+              targetEntityName,
+              queryId,
+              timeout,
+              GetQueryRunningConsecutiveCountAdapter(),
+              TimeSpan.FromMilliseconds(GetQueryRunningPollIntervalMsAdapter()),
+              GetQueryRunningStabilityWindowAdapter());
     internal Task AssertTopicPartitionsAdapterAsync(EntityModel model)
         => AssertTopicPartitionsAsync(model);
     private Task AssertTopicPartitionsAsync(EntityModel model)
         => KsqlPersistentQueryMonitor.AssertTopicPartitionsAsync(
             sql => ExecuteStatementAsync(sql),
             model);
-    internal Task WaitForDerivedQueriesRunningAdapterAsync(TimeSpan timeout)
-        => WaitForDerivedQueriesRunningAsync(timeout);
-    internal TimeSpan GetQueryRunningTimeoutAdapter()
-        => GetQueryRunningTimeout();
-    internal int GetKsqlDdlRetryCountAdapter()
-        => Math.Max(0, _dslOptions.KsqlDdlRetryCount);
-    internal int GetKsqlDdlRetryInitialDelayMsAdapter()
-        => Math.Max(0, _dslOptions.KsqlDdlRetryInitialDelayMs);
+      internal Task WaitForDerivedQueriesRunningAdapterAsync(TimeSpan timeout)
+          => WaitForDerivedQueriesRunningAsync(timeout);
+      internal TimeSpan GetQueryRunningTimeoutAdapter()
+      {
+          // Prefer KsqlDslOptions, fall back to environment variable for compatibility
+          if (_dslOptions.KsqlQueryRunningTimeoutSeconds > 0)
+              return TimeSpan.FromSeconds(_dslOptions.KsqlQueryRunningTimeoutSeconds);
+          return GetQueryRunningTimeout();
+      }
+      internal int GetKsqlDdlRetryCountAdapter()
+          => Math.Max(0, _dslOptions.KsqlDdlRetryCount);
+      internal int GetKsqlDdlRetryInitialDelayMsAdapter()
+          => Math.Max(0, _dslOptions.KsqlDdlRetryInitialDelayMs);
+      internal int GetQueryRunningConsecutiveCountAdapter()
+          => _dslOptions.KsqlQueryRunningConsecutiveCount > 0 ? _dslOptions.KsqlQueryRunningConsecutiveCount : 5;
+      internal int GetQueryRunningPollIntervalMsAdapter()
+          => _dslOptions.KsqlQueryRunningPollIntervalMs > 0 ? _dslOptions.KsqlQueryRunningPollIntervalMs : 2000;
+      internal TimeSpan GetQueryRunningStabilityWindowAdapter()
+      {
+          var seconds = _dslOptions.KsqlQueryRunningStabilityWindowSeconds;
+          if (seconds < 0) seconds = 0;
+          return TimeSpan.FromSeconds(seconds);
+      }
+      internal TimeSpan GetSimpleEntityWarmupAdapter()
+      {
+          var seconds = _dslOptions.KsqlSimpleEntityWarmupSeconds;
+          if (seconds <= 0) seconds = 15;
+          return TimeSpan.FromSeconds(seconds);
+      }
+      internal TimeSpan GetQueryEntityWarmupAdapter()
+      {
+          var seconds = _dslOptions.KsqlQueryEntityWarmupSeconds;
+          if (seconds <= 0) seconds = 10;
+          return TimeSpan.FromSeconds(seconds);
+      }
+      internal TimeSpan GetEntityDdlVisibilityTimeoutAdapter()
+      {
+          var seconds = _dslOptions.KsqlEntityDdlVisibilityTimeoutSeconds;
+          if (seconds <= 0) seconds = 12;
+          return TimeSpan.FromSeconds(seconds);
+      }
 
     // Adapters for stabilization/termination using a public-friendly tuple shape
     internal Task StabilizePersistentQueriesAdapterAsync(

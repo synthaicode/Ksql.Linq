@@ -39,8 +39,8 @@ internal sealed class SchemaRegistrar : ISchemaRegistrar
                 // Apply topic structure settings from options and ensure topic exists
                 _context.ApplyTopicCreationSettingsAdapter(model);
                 await _context.CreateDbTopicAdapterAsync(model.GetTopicName(), model.Partitions, model.ReplicationFactor).ConfigureAwait(false);
-                // Warmup ksqlDB before issuing DDL
-                await WarmupKsqlWithTopicsOrFail(TimeSpan.FromSeconds(15), ct).ConfigureAwait(false);
+                // Warmup ksqlDB before issuing DDL (simple entities)
+                await WarmupKsqlWithTopicsOrFail(_context.GetSimpleEntityWarmupAdapter(), ct).ConfigureAwait(false);
 
                 // Generate DDL and execute with retry
                 var generator = new Ksql.Linq.Query.Pipeline.DDLQueryGenerator();
@@ -53,12 +53,12 @@ internal sealed class SchemaRegistrar : ISchemaRegistrar
                 if (!res.IsSuccess)
                     throw new InvalidOperationException($"DDL execution failed for {type.Name}: {res.Message}");
                 // Ensure metadata visibility then align mapping
-                await _context.WaitForEntityDdlAdapterAsync(model, TimeSpan.FromSeconds(12)).ConfigureAwait(false);
+                await _context.WaitForEntityDdlAdapterAsync(model, _context.GetEntityDdlVisibilityTimeoutAdapter()).ConfigureAwait(false);
                 await _context.AlignDerivedMappingWithSchemaAdapterAsync(model).ConfigureAwait(false);
             }
 
             // Phase 3: DDL for query-defined entities（Registrar 本体に集約）
-            await WarmupKsqlWithTopicsOrFail(TimeSpan.FromSeconds(10), ct).ConfigureAwait(false);
+            await WarmupKsqlWithTopicsOrFail(_context.GetQueryEntityWarmupAdapter(), ct).ConfigureAwait(false);
             var allQ = _context.GetEntityModels().ToArray();
             foreach (var (type, model) in allQ.Where(e => e.Value.QueryModel != null))
             {

@@ -95,12 +95,27 @@ internal static class KsqlWaitClient
         string? queryId,
         TimeSpan timeout)
     {
+        var required = GetRequiredConsecutiveSuccess();
+        var stability = GetStabilityWindow();
+        var interval = GetPollInterval();
+        await WaitForQueryRunningAsync(execute, targetEntityName, queryId, timeout, required, interval, stability)
+            .ConfigureAwait(false);
+    }
+
+    public static async Task WaitForQueryRunningAsync(
+        Func<string, Task<KsqlDbResponse>> execute,
+        string targetEntityName,
+        string? queryId,
+        TimeSpan timeout,
+        int requiredConsecutive,
+        TimeSpan pollInterval,
+        TimeSpan stability)
+    {
         var deadline = DateTime.UtcNow + timeout;
         var targetUpper = KsqlWaitService.NormalizeIdentifier(targetEntityName);
         var qidNorm = KsqlWaitService.NormalizeIdentifier(queryId);
         var consecutive = 0;
-        var required = GetRequiredConsecutiveSuccess();
-        var stability = GetStabilityWindow();
+        var required = requiredConsecutive > 0 ? requiredConsecutive : GetRequiredConsecutiveSuccess();
         while (DateTime.UtcNow < deadline)
         {
             var resp = await execute("SHOW QUERIES;").ConfigureAwait(false);
@@ -135,7 +150,8 @@ internal static class KsqlWaitClient
                     consecutive = 0;
                 }
             }
-            await Task.Delay(2000).ConfigureAwait(false);
+            var delay = pollInterval > TimeSpan.Zero ? pollInterval : TimeSpan.FromMilliseconds(2000);
+            await Task.Delay(delay).ConfigureAwait(false);
         }
         throw new TimeoutException($"CTAS/CSAS query for {targetEntityName} did not reach RUNNING within {timeout.TotalSeconds}s");
     }
@@ -203,5 +219,12 @@ internal static class KsqlWaitClient
         var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_STABILITY_WINDOW_SECONDS");
         if (int.TryParse(env, out var seconds) && seconds >= 0) return TimeSpan.FromSeconds(seconds);
         return TimeSpan.FromSeconds(15);
+    }
+
+    private static TimeSpan GetPollInterval()
+    {
+        var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_POLL_INTERVAL_MS");
+        if (int.TryParse(env, out var ms) && ms > 0) return TimeSpan.FromMilliseconds(ms);
+        return TimeSpan.FromMilliseconds(2000);
     }
 }
