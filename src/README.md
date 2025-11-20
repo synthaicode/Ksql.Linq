@@ -14,6 +14,23 @@ Ksql.Linq is a C# library that unifies Kafka/ksqlDB and Avro/Schema Registry usa
    The engine skips closed hours and holidays, handles DST correctly, and offers gap policies
    (skip, carry-forward close, or emit sentinel). Pre-/post-market can be toggled per schedule.
 
+### New in 0.9.6 – Runtime tuning via appsettings
+
+Several operational parameters are now controllable via `KsqlDsl` options in `appsettings.json`:
+
+- **DDL retry behavior**
+  - `KsqlDdlRetryCount` / `KsqlDdlRetryInitialDelayMs`: control how many times and how often CREATE/CSAS/CTAS is retried when ksqlDB is not ready.
+- **Persistent query RUNNING detection**
+  - `KsqlQueryRunningConsecutiveCount`: required number of consecutive RUNNING observations in `SHOW QUERIES`.
+  - `KsqlQueryRunningPollIntervalMs`: interval between `SHOW QUERIES` checks.
+  - `KsqlQueryRunningStabilityWindowSeconds`: extra stability window after RUNNING is reached.
+  - `KsqlQueryRunningTimeoutSeconds`: overall timeout for waiting a query to reach RUNNING.
+- **Warmup and metadata visibility**
+  - `KsqlSimpleEntityWarmupSeconds` / `KsqlQueryEntityWarmupSeconds`: warmup windows before issuing DDL for simple/query-defined entities.
+  - `KsqlEntityDdlVisibilityTimeoutSeconds`: how long to wait for ksqlDB metadata (SHOW TABLES/STREAMS) to reflect new entities.
+For more details , see the wiki:
+https://github.com/synthaicode/Ksql.Linq/wiki/Runtime-Tuning-Plan-v0-9-6
+
 ### New in 0.9.5 – Design-time KSQL & CLI
 
 - **Design-time KSQL generation:** create full KSQL scripts (CREATE STREAM/TABLE, CSAS/CTAS, SELECT …) from your `KsqlContext` without running Kafka/ksqlDB.
@@ -21,6 +38,7 @@ Ksql.Linq is a C# library that unifies Kafka/ksqlDB and Avro/Schema Registry usa
 - **Design-time factory:** implement `IDesignTimeKsqlContextFactory` to create a special `KsqlContext` that skips runtime connections and focuses on the model.
 - **Ksql.Linq.Cli .NET tool:** use `dotnet ksql script` and `dotnet ksql avro` against a compiled DLL or project to generate SQL scripts and `.avsc` files. Published on NuGet as `Ksql.Linq.Cli` (https://www.nuget.org/packages/Ksql.Linq.Cli).
 - **Traceable scripts:** generated KSQL includes comments with the Ksql.Linq version, target assembly name/version, generation timestamp, Schema Registry subject, and CLR namespace.
+
 ---
 
 ## Documentation

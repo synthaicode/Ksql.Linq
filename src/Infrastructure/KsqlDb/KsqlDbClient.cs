@@ -123,7 +123,9 @@ internal class KsqlDbClient : IKsqlDbClient, IDisposable
                 ["ksql.streams.auto.offset.reset"] = "earliest"
             }
         };
-        using var cts = timeout.HasValue ? new CancellationTokenSource(timeout.Value) : new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var cts = timeout.HasValue
+            ? new CancellationTokenSource(timeout.Value)
+            : new CancellationTokenSource(TimeSpan.FromSeconds(60));
         // Stream the response without buffering the whole content
         using var response = await _http.SendJsonStreamAsync("/query-stream", payload, HttpCompletionOption.ResponseHeadersRead, cts.Token);
         response.EnsureSuccessStatusCode();

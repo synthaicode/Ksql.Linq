@@ -129,4 +129,59 @@ public class KsqlDslOptions
     /// </summary>
     [DefaultValue(true)]
     public bool AdjustReplicationFactorToBrokerCount { get; init; } = true;
+
+    /// <summary>
+    /// Number of consecutive RUNNING observations required in SHOW QUERIES before a query is
+    /// considered stable. Used when waiting for persistent queries after CTAS/CSAS.
+    /// </summary>
+    [DefaultValue(5)]
+    public int KsqlQueryRunningConsecutiveCount { get; init; } = 5;
+
+    /// <summary>
+    /// Poll interval in milliseconds between SHOW QUERIES checks when waiting for a query to
+    /// reach RUNNING state.
+    /// </summary>
+    [DefaultValue(2000)]
+    public int KsqlQueryRunningPollIntervalMs { get; init; } = 2000;
+
+    /// <summary>
+    /// Additional stability window in seconds after the required consecutive RUNNING observations
+    /// before confirming the query as stable.
+    /// </summary>
+    [DefaultValue(15)]
+    public int KsqlQueryRunningStabilityWindowSeconds { get; init; } = 15;
+
+    /// <summary>
+    /// Overall timeout in seconds for waiting until a persistent query reports RUNNING.
+    /// Falls back to 180 seconds when unset.
+    /// </summary>
+    [DefaultValue(180)]
+    public int KsqlQueryRunningTimeoutSeconds { get; init; } = 180;
+
+    /// <summary>
+    /// Warmup window in seconds for simple entity DDL (non-query entities) before issuing CREATE
+    /// statements to ksqlDB.
+    /// </summary>
+    [DefaultValue(15)]
+    public int KsqlSimpleEntityWarmupSeconds { get; init; } = 15;
+
+    /// <summary>
+    /// Warmup window in seconds for query-defined entity DDL (CSAS/CTAS) before issuing CREATE
+    /// statements to ksqlDB.
+    /// </summary>
+    [DefaultValue(10)]
+    public int KsqlQueryEntityWarmupSeconds { get; init; } = 10;
+
+    /// <summary>
+    /// Visibility timeout in seconds when waiting for ksqlDB metadata (SHOW TABLES/STREAMS)
+    /// to reflect newly created entities.
+    /// </summary>
+    [DefaultValue(12)]
+    public int KsqlEntityDdlVisibilityTimeoutSeconds { get; init; } = 12;
+
+    /// <summary>
+    /// Default HTTP timeout in seconds for ksqlDB REST calls when no explicit timeout is provided.
+    /// </summary>
+    [DefaultValue(60)]
+    public int KsqlHttpTimeoutSeconds { get; init; } = 60;
 }
