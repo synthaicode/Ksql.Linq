@@ -10,37 +10,37 @@ public class CommonSection
     /// Kafka broker addresses (comma separated)
     /// </summary>
     [DefaultValue("localhost:9092")]
-    public string BootstrapServers { get; init; } = string.Empty;
+    public string BootstrapServers { get; init; } = "localhost:9092";
 
     /// <summary>
     /// Client ID
     /// </summary>
     [DefaultValue("ksql-dsl-client")]
-    public string ClientId { get; init; } = string.Empty;
+    public string ClientId { get; init; } = "ksql-dsl-client";
 
     /// <summary>
     /// Kafka Streams application identifier
     /// </summary>
     [DefaultValue("ksql-dsl-app")]
-    public string ApplicationId { get; init; } = string.Empty;
+    public string ApplicationId { get; init; } = "ksql-dsl-app";
 
     /// <summary>
     /// Request timeout (ms)
     /// </summary>
     [DefaultValue(30000)]
-    public int RequestTimeoutMs { get; init; }
+    public int RequestTimeoutMs { get; init; } = 30000;
 
     /// <summary>
     /// Metadata max age (ms)
     /// </summary>
     [DefaultValue(300000)]
-    public int MetadataMaxAgeMs { get; init; }
+    public int MetadataMaxAgeMs { get; init; } = 300000;
 
     /// <summary>
     /// Security protocol
     /// </summary>
     [DefaultValue(SecurityProtocol.Plaintext)]
-    public SecurityProtocol SecurityProtocol { get; init; }
+    public SecurityProtocol SecurityProtocol { get; init; } = SecurityProtocol.Plaintext;
 
     /// <summary>
     /// SASL mechanism

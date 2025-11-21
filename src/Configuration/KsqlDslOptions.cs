@@ -14,7 +14,7 @@ public class KsqlDslOptions
     /// <summary>
     /// Validation mode (root level setting)
     /// </summary>
-    public ValidationMode ValidationMode { get; init; }
+    public ValidationMode ValidationMode { get; init; } = ValidationMode.Strict;
 
     /// <summary>
     /// Common settings (BootstrapServers, ClientId, etc.)
@@ -54,7 +54,7 @@ public class KsqlDslOptions
     /// <summary>
     /// Policy when deserialization fails
     /// </summary>
-    public DeserializationErrorPolicy DeserializationErrorPolicy { get; init; }
+    public DeserializationErrorPolicy DeserializationErrorPolicy { get; init; } = DeserializationErrorPolicy.Skip;
 
     /// <summary>
     /// Whether reading from the Final topic is enabled by default
@@ -64,12 +64,12 @@ public class KsqlDslOptions
     /// <summary>
     /// Global decimal precision applied when mapping decimal properties.
     /// </summary>
-    public int DecimalPrecision { get; init; }
+    public int DecimalPrecision { get; init; } = 18;
 
     /// <summary>
     /// Global decimal scale applied when mapping decimal properties.
     /// </summary>
-    public int DecimalScale { get; init; }
+    public int DecimalScale { get; init; } = 2;
 
     /// <summary>
     /// Optional per-property decimal overrides keyed by entity and property name.
