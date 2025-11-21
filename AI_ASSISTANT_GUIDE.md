@@ -1,6 +1,8 @@
-# Ksql.Linq - AI-Assisted Design Guide
+# Ksql.Linq - AI Assistant Guide
 
-> **Purpose**: This document helps AI agents understand and effectively use Ksql.Linq to design and implement Kafka/ksqlDB stream processing solutions.
+> **This document is primarily designed for AI assistants**
+> to support high-quality design consultations for Ksql.Linq.
+> Human developers may refer to [Design Patterns](#design-patterns), [Decision Trees](#decision-trees), and [Best Practices](#best-practices) sections for quick reference.
 
 **Quick Navigation**:
 [For Developers](#-for-developers-how-to-use-this-guide-with-your-ai-assistant) |
@@ -14,16 +16,16 @@
 
 ## 👨‍💻 For Developers: How to Use This Guide with Your AI Assistant
 
-This README is designed to be read by **AI coding assistants** (like Claude, Cursor, GitHub Copilot, ChatGPT, etc.) to provide better design support for Ksql.Linq projects.
+This guide is designed to be read by **AI coding assistants** (like Claude, Cursor, GitHub Copilot, ChatGPT, etc.) to provide expert design support for your Ksql.Linq projects.
 
 ### Where is This File?
 
 This file is included in the **Ksql.Linq** NuGet package. You can access it via:
 
-- **GitHub**: https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md
-- **NuGet Cache** (Windows): `%userprofile%\.nuget\packages\ksql.linq\<version>\README.AI.md`
-- **NuGet Cache** (macOS/Linux): `~/.nuget/packages/ksql.linq/<version>/README.AI.md`
-- **Visual Studio/Rider**: Right-click package → "Open Folder in File Explorer"
+- **GitHub**: https://github.com/synthaicode/Ksql.Linq/blob/main/AI_ASSISTANT_GUIDE.md
+- **NuGet Cache** (Windows): `%userprofile%\.nuget\packages\ksql.linq\<version>\AI_ASSISTANT_GUIDE.md`
+- **NuGet Cache** (macOS/Linux): `~/.nuget/packages/ksql.linq/<version>/AI_ASSISTANT_GUIDE.md`
+- **Visual Studio/Rider**: Right-click package → "Open Folder in File Explorer" → look for `AI_ASSISTANT_GUIDE.md`
 
 ### Quick Start: Share This Document with Your AI
 
@@ -31,7 +33,7 @@ When starting a new Ksql.Linq project or seeking design advice, give your AI ass
 
 **If your AI can access URLs:**
 ```
-Please read https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md
+Please read https://github.com/synthaicode/Ksql.Linq/blob/main/AI_ASSISTANT_GUIDE.md
 and act as a Ksql.Linq Design Support AI.
 Help me design my Kafka/ksqlDB stream processing solution following the AI Profile in that document.
 ```
@@ -39,7 +41,7 @@ Help me design my Kafka/ksqlDB stream processing solution following the AI Profi
 **If your AI needs a local file path:**
 ```
 I'm working on a Kafka/ksqlDB stream processing project using Ksql.Linq.
-Please read the file at <path>/README.AI.md and act as a Ksql.Linq Design Support AI.
+Please read the file at <path>/AI_ASSISTANT_GUIDE.md and act as a Ksql.Linq Design Support AI.
 Follow the AI Profile guidelines in that document to help me design my solution.
 ```
 (Replace `<path>` with the actual file location from above)
@@ -50,7 +52,7 @@ Follow the AI Profile guidelines in that document to help me design my solution.
 
 ```
 I need to design a stream processing solution for [describe your use case].
-Please review README.AI.md and help me:
+Please review AI_ASSISTANT_GUIDE.md and help me:
 1. Identify the right design patterns
 2. Choose between STREAM vs TABLE
 3. Decide on Push vs Pull queries
@@ -65,7 +67,7 @@ Please review README.AI.md and help me:
 
 ```
 I've drafted this Ksql.Linq context [paste your code].
-Please review it against the best practices in README.AI.md and suggest improvements.
+Please review it against the best practices in AI_ASSISTANT_GUIDE.md and suggest improvements.
 ```
 
 **Expected Output**: Analysis based on Best Practices section, with specific recommendations.
@@ -76,7 +78,7 @@ Please review it against the best practices in README.AI.md and suggest improvem
 
 ```
 I'm deciding between [Option A] and [Option B] for [specific feature].
-Based on README.AI.md Decision Trees, which approach do you recommend?
+Based on AI_ASSISTANT_GUIDE.md Decision Trees, which approach do you recommend?
 ```
 
 **Expected Output**: Trade-off analysis with references to relevant patterns and examples.
@@ -87,7 +89,7 @@ Based on README.AI.md Decision Trees, which approach do you recommend?
 
 ```
 I want to implement [specific pattern, e.g., windowed aggregation].
-Please show me the Design Pattern from README.AI.md and adapt it to my scenario.
+Please show me the Design Pattern from AI_ASSISTANT_GUIDE.md and adapt it to my scenario.
 ```
 
 **Expected Output**: Code example based on Pattern 7 (or relevant pattern) with explanation.
@@ -109,18 +111,18 @@ After reading this document, your AI will:
 
 #### Cursor AI / VS Code
 
-1. Open `README.AI.md` in your editor
-2. Use `@README.AI.md` in Cursor chat to reference it
+1. Open `AI_ASSISTANT_GUIDE.md` in your editor
+2. Use `@AI_ASSISTANT_GUIDE.md` in Cursor chat to reference it
 3. Ask: *"Based on this guide, help me design [your use case]"*
 
 #### GitHub Copilot Chat
 
-1. Reference the file: `#file:README.AI.md`
+1. Reference the file: `#file:AI_ASSISTANT_GUIDE.md`
 2. Ask design questions with context
 
 #### ChatGPT / Claude Desktop
 
-1. Upload `README.AI.md` to the conversation
+1. Upload `AI_ASSISTANT_GUIDE.md` to the conversation
 2. Request: *"Act as the Ksql.Linq Design Support AI described in this document"*
 
 ---

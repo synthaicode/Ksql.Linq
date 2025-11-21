@@ -42,15 +42,15 @@ runtime connections.
 AI-Assisted Development
 -----------------------
 
-This package includes **README.AI.md** — a comprehensive guide for AI coding assistants to provide design support for Ksql.Linq projects.
+This package includes **AI_ASSISTANT_GUIDE.md** — a comprehensive guide for AI coding assistants to provide design support for Ksql.Linq projects.
 
 **Access it at:**
-- GitHub: https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md
-- NuGet cache: `~/.nuget/packages/ksql.linq.cli/<version>/README.AI.md`
+- GitHub: https://github.com/synthaicode/Ksql.Linq/blob/main/AI_ASSISTANT_GUIDE.md
+- NuGet cache: `~/.nuget/packages/ksql.linq.cli/<version>/AI_ASSISTANT_GUIDE.md`
 
 **Quick Start**: Tell your AI assistant:
 ```
-Please read https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md
+Please read https://github.com/synthaicode/Ksql.Linq/blob/main/AI_ASSISTANT_GUIDE.md
 and help me design my Ksql.Linq stream processing solution.
 ```
 
