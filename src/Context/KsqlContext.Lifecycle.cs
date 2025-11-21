@@ -325,7 +325,7 @@ public abstract partial class KsqlContext : IKsqlContext
                 _dslOptions.KsqlDdlRetryCount,
                 _dslOptions.KsqlDdlRetryInitialDelayMs,
                 evt => RuntimeEventBus.PublishAsync(evt)),
-            WaitForQueryRunningAsync = (target, queryId, timeout) => KsqlWaitClient.WaitForQueryRunningAsync(sql => ExecuteStatementAsync(sql), target, queryId, timeout),
+            WaitForQueryRunningAsync = (target, queryId, timeout) => KsqlWaitClient.WaitForQueryRunningAsync(sql => ExecuteStatementAsync(sql), target, queryId, timeout, _dslOptions),
             TryGetQueryIdFromShowQueriesAsync = (targetTopic, statement) => KsqlWaitClient.TryGetQueryIdFromShowQueriesAsync(sql => ExecuteStatementAsync(sql), targetTopic, statement),
             TerminateQueriesAsync = executions => KsqlPersistentQueryMonitor.TerminateQueriesAsync(sql => ExecuteStatementAsync(sql), Logger, executions),
             AssertTopicPartitionsAsync = model => AssertTopicPartitionsAsync(model),

@@ -50,7 +50,8 @@ internal static class KsqlPersistentQueryMonitor
     public static async Task WaitForDerivedQueriesRunningAsync(
         Func<string, Task<KsqlDbResponse>> execute,
         IEnumerable<string> targetTopics,
-        TimeSpan timeout)
+        TimeSpan timeout,
+        Configuration.KsqlDslOptions? options = null)
     {
         foreach (var topic in targetTopics)
         {
@@ -58,7 +59,8 @@ internal static class KsqlPersistentQueryMonitor
                 execute,
                 topic,
                 null,
-                timeout).ConfigureAwait(false);
+                timeout,
+                options).ConfigureAwait(false);
         }
     }
 

@@ -1,3 +1,4 @@
+using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Retry;
 using System;
 using System.Threading.Tasks;
@@ -93,13 +94,13 @@ internal static class KsqlWaitClient
         Func<string, Task<KsqlDbResponse>> execute,
         string targetEntityName,
         string? queryId,
-        TimeSpan timeout)
+        TimeSpan timeout,
+        KsqlDslOptions? options = null)
     {
-        var required = GetRequiredConsecutiveSuccess();
-        var stability = GetStabilityWindow();
-        var interval = GetPollInterval();
-        await WaitForQueryRunningAsync(execute, targetEntityName, queryId, timeout, required, interval, stability)
-            .ConfigureAwait(false);
+        var required = ResolveRequiredConsecutiveSuccess(options);
+        var stability = ResolveStabilityWindow(options);
+        var interval = ResolvePollInterval(options);
+        await WaitForQueryRunningAsync(execute, targetEntityName, queryId, timeout, required, interval, stability).ConfigureAwait(false);
     }
 
     public static async Task WaitForQueryRunningAsync(
@@ -109,13 +110,14 @@ internal static class KsqlWaitClient
         TimeSpan timeout,
         int requiredConsecutive,
         TimeSpan pollInterval,
-        TimeSpan stability)
+        TimeSpan stability,
+        KsqlDslOptions? options = null)
     {
         var deadline = DateTime.UtcNow + timeout;
         var targetUpper = KsqlWaitService.NormalizeIdentifier(targetEntityName);
         var qidNorm = KsqlWaitService.NormalizeIdentifier(queryId);
         var consecutive = 0;
-        var required = requiredConsecutive > 0 ? requiredConsecutive : GetRequiredConsecutiveSuccess();
+        var required = requiredConsecutive > 0 ? requiredConsecutive : ResolveRequiredConsecutiveSuccess(options);
         while (DateTime.UtcNow < deadline)
         {
             var resp = await execute("SHOW QUERIES;").ConfigureAwait(false);
@@ -150,7 +152,7 @@ internal static class KsqlWaitClient
                     consecutive = 0;
                 }
             }
-            var delay = pollInterval > TimeSpan.Zero ? pollInterval : TimeSpan.FromMilliseconds(2000);
+            var delay = pollInterval > TimeSpan.Zero ? pollInterval : ResolvePollInterval(options);
             await Task.Delay(delay).ConfigureAwait(false);
         }
         throw new TimeoutException($"CTAS/CSAS query for {targetEntityName} did not reach RUNNING within {timeout.TotalSeconds}s");
@@ -160,7 +162,8 @@ internal static class KsqlWaitClient
         Func<string, Task<KsqlDbResponse>> execute,
         string targetEntityName,
         string statement,
-        TimeSpan timeout)
+        TimeSpan timeout,
+        KsqlDslOptions? options = null)
     {
         var deadline = DateTime.UtcNow + timeout;
         string? resolvedQueryId = null;
@@ -180,7 +183,7 @@ internal static class KsqlWaitClient
 
                 if (showConfirmed && describeConfirmed)
                 {
-                    await WaitForQueryRunningAsync(execute, targetEntityName, resolvedQueryId, TimeSpan.FromSeconds(60)).ConfigureAwait(false);
+                    await WaitForQueryRunningAsync(execute, targetEntityName, resolvedQueryId, TimeSpan.FromSeconds(60), options: options).ConfigureAwait(false);
                     return;
                 }
                 if (describeConfirmed && !showConfirmed)
@@ -207,24 +210,33 @@ internal static class KsqlWaitClient
         throw new TimeoutException($"Persistent query for {targetEntityName} did not register within the expected window.");
     }
 
-    private static int GetRequiredConsecutiveSuccess()
+    private static int ResolveRequiredConsecutiveSuccess(KsqlDslOptions? options)
     {
+        if (options != null && options.KsqlQueryRunningConsecutiveCount > 0)
+            return options.KsqlQueryRunningConsecutiveCount;
         var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_CONSECUTIVE");
-        if (int.TryParse(env, out var n) && n > 0) return n;
+        if (int.TryParse(env, out var n) && n > 0)
+            return n;
         return 5;
     }
 
-    private static TimeSpan GetStabilityWindow()
+    private static TimeSpan ResolveStabilityWindow(KsqlDslOptions? options)
     {
+        if (options != null && options.KsqlQueryRunningStabilityWindowSeconds >= 0)
+            return TimeSpan.FromSeconds(options.KsqlQueryRunningStabilityWindowSeconds);
         var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_STABILITY_WINDOW_SECONDS");
-        if (int.TryParse(env, out var seconds) && seconds >= 0) return TimeSpan.FromSeconds(seconds);
+        if (int.TryParse(env, out var seconds) && seconds >= 0)
+            return TimeSpan.FromSeconds(seconds);
         return TimeSpan.FromSeconds(15);
     }
 
-    private static TimeSpan GetPollInterval()
+    private static TimeSpan ResolvePollInterval(KsqlDslOptions? options)
     {
+        if (options != null && options.KsqlQueryRunningPollIntervalMs > 0)
+            return TimeSpan.FromMilliseconds(options.KsqlQueryRunningPollIntervalMs);
         var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_POLL_INTERVAL_MS");
-        if (int.TryParse(env, out var ms) && ms > 0) return TimeSpan.FromMilliseconds(ms);
+        if (int.TryParse(env, out var ms) && ms > 0)
+            return TimeSpan.FromMilliseconds(ms);
         return TimeSpan.FromMilliseconds(2000);
     }
 }

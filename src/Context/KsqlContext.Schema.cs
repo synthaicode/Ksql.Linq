@@ -648,7 +648,8 @@ public abstract partial class KsqlContext
         await KsqlPersistentQueryMonitor.WaitForDerivedQueriesRunningAsync(
             sql => ExecuteStatementAsync(sql),
             targets.ToList(),
-            timeout).ConfigureAwait(false);
+            timeout,
+            _dslOptions).ConfigureAwait(false);
     }
 
     private static bool RequiresPersistentQuery(EntityModel model, ref QueryMetadata metadata)
