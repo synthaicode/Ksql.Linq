@@ -63,13 +63,13 @@ public class KsqlDslOptions
     /// Policy when deserialization fails
     /// </summary>
     [DefaultValue(DeserializationErrorPolicy.Skip)]
-    public DeserializationErrorPolicy DeserializationErrorPolicy { get; set; }
+    public DeserializationErrorPolicy DeserializationErrorPolicy { get; init; }
 
     /// <summary>
     /// Whether reading from the Final topic is enabled by default
     /// </summary>
     [DefaultValue(false)]
-    public bool ReadFromFinalTopicByDefault { get; set; }
+    public bool ReadFromFinalTopicByDefault { get; init; }
 
     /// <summary>
     /// Global decimal precision applied when mapping decimal properties.
