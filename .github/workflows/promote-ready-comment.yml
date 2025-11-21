@@ -1,0 +1,78 @@
+name: Promote on Comment Command (auto tag & trigger nuget publish)
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  tag_on_comment:
+    if: contains(github.event.comment.body, '/release-ready') && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'COLLABORATOR')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from csproj
+        id: ver
+        shell: pwsh
+        run: |
+          $xml = Get-Content src/Ksql.Linq.csproj -Raw
+          $match = [regex]::Match($xml, '<Version>([^<]+)</Version>')
+          if (-not $match.Success) {
+            Write-Error "Version tag not found in csproj"
+            exit 1
+          }
+          $version = $match.Groups[1].Value.Trim()
+          if ($version -match '-') {
+            Write-Error "Version contains prerelease suffix ($version); expected stable"
+            exit 1
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Prepare tag
+        id: prep
+        run: |
+          tag="v${{ steps.ver.outputs.version }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure tag does not already exist
+        run: |
+          tag="${{ steps.prep.outputs.tag }}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "[INFO] Tag $tag already exists; skipping" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+      - name: Fetch main and set commit
+        run: |
+          git fetch origin main --prune
+          git checkout origin/main
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ steps.prep.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG" "$COMMIT_SHA"
+          git push origin "$TAG"
+
+      - name: Summary
+        run: |
+          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          ## Stable tag created from comment command
+          - Issue/PR: #${{ github.event.issue.number }}
+          - Commenter: @${{ github.event.comment.user.login }} (role: ${{ github.event.comment.author_association }})
+          - Tag: ${{ steps.prep.outputs.tag }}
+          - Commit: $COMMIT_SHA (origin/main)
+          Triggered workflow: `.github/workflows/nuget-publish.yml`
+          EOF

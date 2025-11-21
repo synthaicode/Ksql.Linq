@@ -10,7 +10,7 @@
     <!-- ✅ Keep nullable warnings as warnings (for phased migration) -->
     <WarningsNotAsErrors>CS8600;CS8601;CS8602;CS8603;CS8618;CS8619;CS8620;CS8625;CS1570;CS1573;CS1587;RS0016;RS0017</WarningsNotAsErrors>
     <PackageId>Ksql.Linq</PackageId>
-    <Version>0.9.3</Version>
+    <Version>0.9.6</Version>
     <Authors>SynthAICode</Authors>
     <Company>SynthAICode</Company>
     <Description>LINQ-style DSL for Kafka ksqlDB. Define time-windowed aggregations in C# and generate KSQL. Avro/Schema Registry integration, Streamiz-backed materialization.</Description>
@@ -21,7 +21,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>KsqlLinq-icon-128.png</PackageIcon>
-    <PackageReleaseNotes>Breaking: removed obsolete APIs and aligned EntitySet extensions and LINQ join/query patterns (may require minor code updates for deprecated paths); improved runtime behavior and examples (fixed runtime-events and daily-comparison samples, refined configuration and time-bucket handling); strengthened public surface and release flow (updated PublicAPI baseline, added strict Public API validation, and separated RC/preview packages on GitHub Packages from stable releases on nuget.org).</PackageReleaseNotes>
+    <PackageReleaseNotes>Maintenance release: stability fixes and release automation cleanups. See docs/diff_log/diff_release_v0_9_6_20251122.md for details.</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

@@ -1,0 +1,79 @@
+name: Promote RC to Stable Tag (auto trigger nuget publish)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Stable version (without leading v, e.g., 0.9.4)"
+        required: true
+      branch:
+        description: "Branch to tag (default: main)"
+        required: false
+        default: "main"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  tag_stable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare
+        id: prep
+        run: |
+          ver="${{ inputs.version }}"
+          if [[ -z "$ver" ]]; then
+            echo "[ERROR] version is required" >&2
+            exit 1
+          fi
+          if [[ "$ver" =~ ^v ]]; then
+            echo "[ERROR] version should not start with 'v'; provide e.g. 0.9.4" >&2
+            exit 1
+          fi
+          tag="v${ver}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "branch=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure branch exists and get commit
+        run: |
+          branch="${{ steps.prep.outputs.branch }}"
+          git fetch origin "$branch" --prune
+          if ! git show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+            echo "[ERROR] origin/${branch} not found" >&2
+            exit 1
+          fi
+          git checkout "origin/${branch}"
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Check tag collision
+        run: |
+          tag="${{ steps.prep.outputs.tag }}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "[ERROR] Tag $tag already exists" >&2
+            exit 1
+          fi
+
+      - name: Create and push tag (triggers nuget publish workflow)
+        env:
+          TAG: ${{ steps.prep.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG" "$COMMIT_SHA"
+          git push origin "$TAG"
+
+      - name: Summary
+        run: |
+          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          ## Stable tag created
+          - Tag: $TAG
+          - Commit: $COMMIT_SHA
+          - Branch: origin/${{ steps.prep.outputs.branch }}
+          Triggered workflow: `.github/workflows/nuget-publish.yml`
+          EOF
