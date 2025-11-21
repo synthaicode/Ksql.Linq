@@ -1,0 +1,81 @@
+# GitHub Issue Agent Configuration
+
+github:
+  repository: "synthaicode/Ksql.Linq"
+  poll_interval_minutes: 10
+
+  # Monitor issues with these labels
+  labels_to_watch:
+    - "question"
+    - "help wanted"
+    - "needs clarification"
+
+  # Skip issues with these labels
+  labels_to_skip:
+    - "wontfix"
+    - "duplicate"
+    - "invalid"
+
+  # Fetch recent issues (for initial scan)
+  fetch_recent_count: 20
+
+chatgpt:
+  # Model selection
+  model: "gpt-4o"  # gpt-4o | gpt-4-turbo | gpt-3.5-turbo
+
+  # Generation parameters
+  max_tokens: 2000
+  temperature: 0.7
+
+  # Cost control
+  max_input_tokens: 8000  # Truncate if exceeded
+
+agent:
+  # Operating mode: draft | auto-post
+  mode: "draft"
+
+  # Maximum responses per day (cost control)
+  max_daily_responses: 20
+
+  # Draft settings
+  draft_directory: "./drafts"
+
+  # Auto-post settings (if mode: auto-post)
+  auto_post_only_with_labels: true
+  post_as_comment: true  # true = comment | false = edit issue
+
+  # Notifications
+  notify_on_new_issue: true
+  notify_on_response_generated: true
+
+  # Ignore issues from bots
+  ignore_bot_issues: true
+
+storage:
+  state_file: "./data/agent_state.json"
+  log_directory: "./data/logs"
+
+  # Clean old drafts (days)
+  draft_retention_days: 30
+
+context:
+  # Include project context in prompts
+  include_readme: true
+  include_recent_issues: true
+  recent_issues_count: 5
+
+  # Search related code (expensive)
+  search_related_code: false
+  max_code_snippets: 3
+
+notifications:
+  # Windows toast notifications
+  enabled: true
+  sound: false
+  duration: "short"  # short | long
+
+logging:
+  level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+  console: true
+  file: true
+  format: "%(asctime)s [%(levelname)s] %(message)s"

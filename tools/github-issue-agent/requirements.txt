@@ -1,0 +1,29 @@
+# GitHub Issue Agent - Python Dependencies
+
+# GitHub API Client
+PyGithub==2.1.1
+
+# OpenAI ChatGPT API
+openai==1.12.0
+
+# HTTP Client
+requests==2.31.0
+
+# Configuration
+python-dotenv==1.0.0
+PyYAML==6.0.1
+
+# Date/Time handling
+python-dateutil==2.8.2
+
+# Windows notifications
+pywin32==306
+
+# Logging
+colorlog==6.8.0
+
+# CLI
+click==8.1.7
+
+# JSON handling
+orjson==3.9.10
