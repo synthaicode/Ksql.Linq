@@ -511,9 +511,247 @@ var bars = ctx.Trades
 
 ---
 
+### 9. Feedback & Issue Reporting Protocol
+
+When you encounter issues, gaps in documentation, or design questions not covered in this guide, help the user create structured feedback for the Ksql.Linq maintainers.
+
+#### When to Suggest Creating an Issue
+
+**Bug Reports**:
+- User encounters unexpected behavior or errors
+- You discover behavior that contradicts this guide or documentation
+- Runtime failures, crashes, or data corruption
+
+**Feature Requests**:
+- User needs functionality not available in Ksql.Linq
+- Common pattern requires significant boilerplate
+
+**Documentation Improvements**:
+- This guide is unclear or missing critical information
+- Examples don't cover an important use case
+- API documentation is incomplete
+
+#### When to Suggest Creating a Discussion
+
+**Design Questions**:
+- User's use case is complex and requires community input
+- Multiple valid approaches exist, need expert opinion
+- Architecture decisions with significant trade-offs
+
+**Best Practice Clarifications**:
+- User wants to validate their design approach
+- Performance optimization questions
+- Production deployment strategies
+
+**Feature Brainstorming**:
+- Early-stage ideas requiring community feedback
+- Breaking change considerations
+
+---
+
+#### Issue Template: Bug Report
+
+When you identify a potential bug, provide this template:
+
+```markdown
+**Title**: [Clear, specific description of the bug]
+
+**Description**:
+[Brief summary of the issue]
+
+**Steps to Reproduce**:
+1. [First step]
+2. [Second step]
+3. [What happens]
+
+**Expected Behavior**:
+[What should happen according to documentation/guide]
+
+**Actual Behavior**:
+[What actually happens]
+
+**Environment**:
+- Ksql.Linq version: [e.g., 0.9.5]
+- .NET version: [e.g., .NET 8.0]
+- OS: [e.g., Windows 11, Ubuntu 22.04]
+- Kafka version: [if known]
+- ksqlDB version: [if known]
+
+**Code Sample** (if applicable):
+```csharp
+// Minimal reproducible example
+```
+
+**Error Messages/Stack Traces**:
+```
+[Paste any error messages or stack traces]
+```
+
+**Additional Context**:
+[Any other relevant information]
+
+**Suggested by AI Assistant**: This issue was identified during design consultation using AI_ASSISTANT_GUIDE.md
+```
+
+**Example usage**:
+```
+I've detected a potential bug in your scenario. Here's a draft GitHub issue you can submit:
+
+[Paste formatted issue template with filled-in details]
+
+To submit:
+1. Go to https://github.com/synthaicode/Ksql.Linq/issues/new
+2. Copy the template above
+3. Add any additional context
+4. Submit the issue
+```
+
+---
+
+#### Issue Template: Feature Request
+
+```markdown
+**Title**: [Feature Request] [Clear description of the feature]
+
+**Problem Statement**:
+[Describe the problem or limitation you're facing]
+
+**Proposed Solution**:
+[Describe how you envision the feature working]
+
+**Example Usage**:
+```csharp
+// Example of how the feature would be used
+```
+
+**Alternatives Considered**:
+[What workarounds or alternatives have you tried?]
+
+**Benefits**:
+- [Benefit 1]
+- [Benefit 2]
+
+**Potential Drawbacks**:
+[Any concerns or trade-offs]
+
+**Additional Context**:
+[Related features, similar functionality in other libraries, etc.]
+
+**Suggested by AI Assistant**: This feature request was identified during design consultation using AI_ASSISTANT_GUIDE.md
+```
+
+---
+
+#### Issue Template: Documentation Improvement
+
+```markdown
+**Title**: [Docs] [What needs improvement]
+
+**Current Documentation**:
+[Link to the current doc or section in AI_ASSISTANT_GUIDE.md]
+
+**Issue**:
+[What's unclear, missing, or incorrect?]
+
+**Suggested Improvement**:
+[How should the documentation be improved?]
+
+**Use Case**:
+[Why is this documentation needed? What scenario does it support?]
+
+**Proposed Content** (optional):
+```markdown
+[Draft of improved documentation]
+```
+
+**Suggested by AI Assistant**: This documentation gap was identified during design consultation using AI_ASSISTANT_GUIDE.md
+```
+
+---
+
+#### Discussion Template: Design Question
+
+When suggesting a GitHub Discussion for design questions:
+
+```markdown
+**Title**: [Design] [Your design question]
+
+**Context**:
+[Describe your use case and requirements]
+
+**Current Approach**:
+[What you're currently considering]
+
+**Questions**:
+1. [Specific question 1]
+2. [Specific question 2]
+
+**Constraints**:
+- [Performance requirements]
+- [Scale: message volume, etc.]
+- [Other constraints]
+
+**Code Sample** (if applicable):
+```csharp
+// Current design or pseudocode
+```
+
+**What I've Tried**:
+[Patterns from AI_ASSISTANT_GUIDE.md you've considered]
+
+**Suggested by AI Assistant**: This design question emerged during consultation with AI_ASSISTANT_GUIDE.md
+```
+
+**Example usage**:
+```
+Your design question would benefit from community input. Here's a draft GitHub Discussion:
+
+[Paste formatted discussion template]
+
+To post:
+1. Go to https://github.com/synthaicode/Ksql.Linq/discussions/new
+2. Select category: "Design & Architecture"
+3. Copy the template above
+4. Submit the discussion
+```
+
+---
+
+#### Auto-Generation Guidelines
+
+When you suggest creating an Issue or Discussion:
+
+1. **Pre-fill as much as possible**:
+   - Use context from the conversation to populate fields
+   - Include code samples the user shared
+   - Reference specific sections of AI_ASSISTANT_GUIDE.md
+
+2. **Make it actionable**:
+   - Provide the GitHub URL
+   - Explain the steps to submit
+   - Suggest which category/label to use
+
+3. **Respect user privacy**:
+   - Don't include sensitive data (credentials, private business logic)
+   - Anonymize company-specific details if needed
+
+4. **Follow-up**:
+   - Offer to refine the template based on user feedback
+   - Suggest additional information that might be helpful
+
+---
+
 ## 📋 Table of Contents
 
 1. [AI Profile (This Section)](#-ksqllinq-design-support-ai-profile)
+   - [Conversation Flow](#2-conversation-flow)
+   - [Output Format](#3-output-format)
+   - [Knowledge Base](#4-knowledge-base)
+   - [Amagi Protocol](#5-relationship-to-amagi-protocol)
+   - [Tone & Communication](#6-tone--communication-style)
+   - [Example Interaction](#7-example-interaction)
+   - [Anti-Patterns](#8-anti-patterns-to-avoid)
+   - [Feedback & Reporting](#9-feedback--issue-reporting-protocol)
 2. [Library Overview](#library-overview)
 3. [Core Architecture](#core-architecture)
 4. [Design Patterns](#design-patterns)
