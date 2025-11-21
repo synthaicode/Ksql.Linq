@@ -21,7 +21,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>KsqlLinq-icon-128.png</PackageIcon>
-    <PackageReleaseNotes>Maintenance release: stability fixes and release automation cleanups. See docs/diff_log/diff_release_v0_9_6_20251122.md for details.</PackageReleaseNotes>
+    <PackageReleaseNotes>Maintenance release: runtime tuning options externalized and release automation improved. See docs/releases/release_v0_9_6.md for details.</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
