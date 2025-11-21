@@ -211,32 +211,21 @@ internal static class KsqlWaitClient
     }
 
     private static int ResolveRequiredConsecutiveSuccess(KsqlDslOptions? options)
-    {
-        if (options != null && options.KsqlQueryRunningConsecutiveCount > 0)
-            return options.KsqlQueryRunningConsecutiveCount;
-        var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_CONSECUTIVE");
-        if (int.TryParse(env, out var n) && n > 0)
-            return n;
-        return 5;
-    }
+        => options?.KsqlQueryRunningConsecutiveCount > 0
+            ? options.KsqlQueryRunningConsecutiveCount
+            : 5;
 
     private static TimeSpan ResolveStabilityWindow(KsqlDslOptions? options)
     {
-        if (options != null && options.KsqlQueryRunningStabilityWindowSeconds >= 0)
-            return TimeSpan.FromSeconds(options.KsqlQueryRunningStabilityWindowSeconds);
-        var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_STABILITY_WINDOW_SECONDS");
-        if (int.TryParse(env, out var seconds) && seconds >= 0)
-            return TimeSpan.FromSeconds(seconds);
-        return TimeSpan.FromSeconds(15);
+        var seconds = options?.KsqlQueryRunningStabilityWindowSeconds ?? 15;
+        if (seconds < 0) seconds = 0;
+        return TimeSpan.FromSeconds(seconds);
     }
 
     private static TimeSpan ResolvePollInterval(KsqlDslOptions? options)
     {
-        if (options != null && options.KsqlQueryRunningPollIntervalMs > 0)
-            return TimeSpan.FromMilliseconds(options.KsqlQueryRunningPollIntervalMs);
-        var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_POLL_INTERVAL_MS");
-        if (int.TryParse(env, out var ms) && ms > 0)
-            return TimeSpan.FromMilliseconds(ms);
-        return TimeSpan.FromMilliseconds(2000);
+        var ms = options?.KsqlQueryRunningPollIntervalMs ?? 2000;
+        if (ms <= 0) ms = 2000;
+        return TimeSpan.FromMilliseconds(ms);
     }
 }

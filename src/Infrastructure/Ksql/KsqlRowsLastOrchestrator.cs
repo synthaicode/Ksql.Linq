@@ -210,7 +210,8 @@ internal static class KsqlRowsLastOrchestrator
         var targetUpper = KsqlWaitService.NormalizeIdentifier(targetEntityName);
         var qidNorm = KsqlWaitService.NormalizeIdentifier(queryId);
         var consecutive = 0;
-        var required = GetRequiredConsecutiveSuccess();
+        const int required = 5;
+        const int pollMs = 2000;
         while (DateTime.UtcNow < deadline)
         {
             var resp = await execute("SHOW QUERIES;").ConfigureAwait(false);
@@ -229,16 +230,9 @@ internal static class KsqlRowsLastOrchestrator
                     consecutive = 0;
                 }
             }
-            await Task.Delay(2000).ConfigureAwait(false);
+            await Task.Delay(pollMs).ConfigureAwait(false);
         }
         throw new TimeoutException($"CTAS/CSAS query for {targetEntityName} did not reach RUNNING within {timeout.TotalSeconds}s");
-    }
-
-    private static int GetRequiredConsecutiveSuccess()
-    {
-        var env = Environment.GetEnvironmentVariable("KSQL_QUERY_RUNNING_CONSECUTIVE");
-        if (int.TryParse(env, out var n) && n > 0) return n;
-        return 5;
     }
 }
 
