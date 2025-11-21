@@ -1,6 +1,6 @@
 """
-GitHub Issue Agent - Main Entry Point
-Monitors GitHub issues and generates AI responses
+GitHub Issue Prompt Generator
+Monitors GitHub issues and generates prompts for ChatGPT web UI
 """
 
 import os
@@ -22,9 +22,7 @@ except ImportError:
     WINDOWS_NOTIFICATIONS = False
 
 from github_client import GitHubClient, IssueData
-from chatgpt_client import ChatGPTClient
 from prompt_builder import PromptBuilder
-from response_formatter import ResponseFormatter
 from storage import AgentStorage
 
 # Setup logging
@@ -40,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 class IssueAgent:
-    """Main GitHub Issue Agent"""
+    """GitHub Issue Prompt Generator"""
 
     def __init__(self, config_path: str = "config.yaml"):
         # Load environment variables
@@ -50,35 +48,30 @@ class IssueAgent:
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
 
-        # Initialize components
+        # Initialize GitHub client
         self.github = GitHubClient(
             token=os.getenv('GITHUB_TOKEN'),
             owner=os.getenv('REPOSITORY_OWNER'),
             repo=os.getenv('REPOSITORY_NAME')
         )
 
-        self.chatgpt = ChatGPTClient(
-            api_key=os.getenv('OPENAI_API_KEY'),
-            model=self.config['chatgpt']['model'],
-            max_tokens=self.config['chatgpt']['max_tokens'],
-            temperature=self.config['chatgpt']['temperature']
-        )
-
+        # Load README for context
         readme_content = None
         if self.config['context']['include_readme']:
             readme_content = self.github.get_readme_content()
 
         self.prompt_builder = PromptBuilder(readme_content=readme_content)
 
+        # Initialize storage
         self.storage = AgentStorage(
             state_file=self.config['storage']['state_file']
         )
 
         # Ensure directories exist
-        Path(self.config['agent']['draft_directory']).mkdir(parents=True, exist_ok=True)
+        Path(self.config['prompts']['output_directory']).mkdir(parents=True, exist_ok=True)
         Path(self.config['storage']['log_directory']).mkdir(parents=True, exist_ok=True)
 
-        logger.info("Issue Agent initialized")
+        logger.info("Issue Prompt Generator initialized")
 
     def notify(self, title: str, message: str):
         """Send Windows notification"""
@@ -99,13 +92,12 @@ class IssueAgent:
         else:
             logger.info(f"NOTIFICATION: {title} - {message}")
 
-    def process_issue(self, issue: IssueData, mode: str = "draft") -> bool:
+    def process_issue(self, issue: IssueData) -> bool:
         """
-        Process a single issue
+        Process a single issue and generate prompt
 
         Args:
             issue: IssueData object
-            mode: Processing mode (draft | auto-post)
 
         Returns:
             True if processed successfully
@@ -118,13 +110,13 @@ class IssueAgent:
             return False
 
         # Check daily limit
-        max_responses = self.config['agent']['max_daily_responses']
-        if not self.storage.can_respond_today(max_responses):
-            logger.warning(f"Daily response limit ({max_responses}) reached")
+        max_prompts = self.config['prompts']['max_daily_prompts']
+        if not self.storage.can_respond_today(max_prompts):
+            logger.warning(f"Daily prompt limit ({max_prompts}) reached")
             return False
 
         # Skip bot issues
-        if self.config['agent']['ignore_bot_issues'] and issue.is_bot:
+        if self.config['prompts']['ignore_bot_issues'] and issue.is_bot:
             logger.info(f"Skipping bot issue #{issue.number}")
             return False
 
@@ -132,43 +124,16 @@ class IssueAgent:
         comments = issue.get_comments()
 
         # Build prompt
-        messages = self.prompt_builder.build_messages(
+        prompt_text = self.prompt_builder.build_chatgpt_prompt(
             issue_title=issue.title,
             issue_body=issue.body,
+            issue_url=issue.url,
+            issue_number=issue.number,
             comments=comments
         )
 
-        # Truncate if needed
-        max_input_tokens = self.config['chatgpt']['max_input_tokens']
-        messages = self.prompt_builder.truncate_if_needed(messages, max_input_tokens)
-
-        # Generate response
-        logger.info(f"Generating response for issue #{issue.number}...")
-        response_text = self.chatgpt.generate_response(messages)
-
-        if not response_text:
-            logger.error(f"Failed to generate response for issue #{issue.number}")
-            return False
-
-        # Format response
-        formatted_response = ResponseFormatter.format_for_github(
-            response_text=response_text,
-            issue_number=issue.number
-        )
-
-        # Save or post based on mode
-        if mode == "draft":
-            self._save_draft(issue, formatted_response, response_text)
-        elif mode == "auto-post":
-            success = self.github.post_comment(issue.number, formatted_response)
-            if success:
-                logger.info(f"Posted response to issue #{issue.number}")
-                self.notify(
-                    "Response Posted",
-                    f"Auto-posted response to issue #{issue.number}"
-                )
-            else:
-                return False
+        # Save prompt to file
+        self._save_prompt(issue, prompt_text)
 
         # Update storage
         self.storage.mark_issue_processed(issue.number)
@@ -176,74 +141,64 @@ class IssueAgent:
 
         return True
 
-    def _save_draft(self, issue: IssueData, formatted_response: str, raw_response: str):
-        """Save response as draft file"""
-        draft_dir = Path(self.config['agent']['draft_directory'])
-        draft_file = draft_dir / f"issue-{issue.number}.md"
+    def _save_prompt(self, issue: IssueData, prompt_text: str):
+        """Save prompt to file"""
+        output_dir = Path(self.config['prompts']['output_directory'])
+        prompt_file = output_dir / f"issue-{issue.number}-prompt.txt"
 
-        draft_content = ResponseFormatter.format_draft(
-            response_text=raw_response,
-            issue_number=issue.number,
-            issue_title=issue.title,
-            issue_url=issue.url
-        )
+        # Create header
+        header = f"""{'='*70}
+GitHub Issue Prompt for ChatGPT
+{'='*70}
 
-        draft_file.write_text(draft_content, encoding='utf-8')
-        logger.info(f"Draft saved: {draft_file}")
+Issue: #{issue.number}
+Title: {issue.title}
+URL: {issue.url}
+Created: {issue.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+{'='*70}
+INSTRUCTIONS
+{'='*70}
+
+1. Copy the prompt below (everything after the separator)
+2. Paste it into ChatGPT web UI
+3. Review the generated response
+4. Post the response to GitHub manually
+
+{'='*70}
+PROMPT START
+{'='*70}
+
+"""
+
+        footer = f"""
+
+{'='*70}
+PROMPT END
+{'='*70}
+
+After getting the response from ChatGPT:
+- Review for technical accuracy
+- Adjust tone if needed
+- Post to: {issue.url}
+"""
+
+        full_content = header + prompt_text + footer
+
+        prompt_file.write_text(full_content, encoding='utf-8')
+        logger.info(f"Prompt saved: {prompt_file}")
 
         # Notify
         if self.config['notifications']['enabled']:
             self.notify(
-                "Draft Generated",
-                f"Review draft for issue #{issue.number}\n{draft_file}"
+                "New Issue Prompt Generated",
+                f"Issue #{issue.number}\n{prompt_file}"
             )
 
-    def post_draft(self, issue_number: int) -> bool:
-        """Post a draft to GitHub"""
-        draft_file = Path(self.config['agent']['draft_directory']) / f"issue-{issue_number}.md"
-
-        if not draft_file.exists():
-            logger.error(f"Draft file not found: {draft_file}")
-            return False
-
-        # Read draft content (skip header)
-        content = draft_file.read_text(encoding='utf-8')
-        lines = content.split('\n')
-
-        # Find response content section
-        response_lines = []
-        in_response = False
-        for line in lines:
-            if line.strip() == "## Response Content":
-                in_response = True
-                continue
-            if in_response and line.strip().startswith("---"):
-                break
-            if in_response:
-                response_lines.append(line)
-
-        response_text = '\n'.join(response_lines).strip()
-
-        if not response_text:
-            logger.error("No response content found in draft")
-            return False
-
-        # Post to GitHub
-        success = self.github.post_comment(issue_number, response_text)
-
-        if success:
-            logger.info(f"Posted draft to issue #{issue_number}")
-            # Archive draft
-            archive_file = draft_file.with_suffix('.posted.md')
-            draft_file.rename(archive_file)
-            return True
-        else:
-            logger.error(f"Failed to post draft to issue #{issue_number}")
-            return False
-
-    def run_once(self, mode: str = "draft"):
+    def run_once(self):
         """Run agent once (single check)"""
-        logger.info(f"Running agent in {mode} mode...")
+        logger.info("Running prompt generator...")
 
         # Get last check time
         last_check = self.storage.get_last_check()
@@ -263,13 +218,13 @@ class IssueAgent:
         # Process each issue
         processed_count = 0
         for issue in new_issues:
-            if self.process_issue(issue, mode=mode):
+            if self.process_issue(issue):
                 processed_count += 1
 
         # Update last check
         self.storage.update_last_check()
 
-        logger.info(f"Processing complete: {processed_count}/{len(new_issues)} issues processed")
+        logger.info(f"Processing complete: {processed_count}/{len(new_issues)} prompts generated")
 
         # Show stats
         stats = self.storage.get_stats()
@@ -277,73 +232,57 @@ class IssueAgent:
 
         return processed_count
 
-    def respond_to_issue(self, issue_number: int, mode: str = "draft") -> bool:
-        """Manually respond to specific issue"""
+    def generate_for_issue(self, issue_number: int) -> bool:
+        """Manually generate prompt for specific issue"""
         issue = self.github.get_issue(issue_number)
         if not issue:
             logger.error(f"Issue #{issue_number} not found")
             return False
 
-        return self.process_issue(issue, mode=mode)
+        return self.process_issue(issue)
 
 
 # CLI Commands
 
 @click.group()
 def cli():
-    """GitHub Issue Agent CLI"""
+    """GitHub Issue Prompt Generator CLI"""
     pass
 
 
 @cli.command()
-@click.option('--mode', type=click.Choice(['draft', 'auto-post']), default='draft',
-              help='Processing mode')
-def run(mode):
-    """Run agent once"""
+def run():
+    """Run generator once"""
     agent = IssueAgent()
-    agent.run_once(mode=mode)
+    agent.run_once()
 
 
 @cli.command()
 @click.option('--issue', type=int, required=True, help='Issue number')
-@click.option('--mode', type=click.Choice(['draft', 'auto-post']), default='draft')
-def respond(issue, mode):
-    """Respond to specific issue"""
+def generate(issue):
+    """Generate prompt for specific issue"""
     agent = IssueAgent()
-    success = agent.respond_to_issue(issue, mode=mode)
+    success = agent.generate_for_issue(issue)
     if success:
-        click.echo(f"Successfully processed issue #{issue}")
+        click.echo(f"Successfully generated prompt for issue #{issue}")
     else:
-        click.echo(f"Failed to process issue #{issue}", err=True)
-        sys.exit(1)
-
-
-@cli.command()
-@click.option('--issue', type=int, required=True, help='Issue number')
-def post_draft(issue):
-    """Post a draft response to GitHub"""
-    agent = IssueAgent()
-    success = agent.post_draft(issue)
-    if success:
-        click.echo(f"Posted draft for issue #{issue}")
-    else:
-        click.echo(f"Failed to post draft for issue #{issue}", err=True)
+        click.echo(f"Failed to generate prompt for issue #{issue}", err=True)
         sys.exit(1)
 
 
 @cli.command()
 def stats():
-    """Show agent statistics"""
+    """Show generator statistics"""
     agent = IssueAgent()
     stats = agent.storage.get_stats()
-    click.echo("\n=== Agent Statistics ===")
+    click.echo("\n=== Generator Statistics ===")
     for key, value in stats.items():
         click.echo(f"{key}: {value}")
 
 
 @cli.command()
 def test():
-    """Test API connections"""
+    """Test GitHub API connection"""
     agent = IssueAgent()
 
     click.echo("Testing GitHub API...")
@@ -354,14 +293,7 @@ def test():
         click.echo(f"✗ GitHub API failed: {e}", err=True)
         sys.exit(1)
 
-    click.echo("Testing ChatGPT API...")
-    if agent.chatgpt.test_connection():
-        click.echo("✓ ChatGPT API OK")
-    else:
-        click.echo("✗ ChatGPT API failed", err=True)
-        sys.exit(1)
-
-    click.echo("\n✓ All tests passed!")
+    click.echo("\n✓ Test passed!")
 
 
 if __name__ == '__main__':
