@@ -194,7 +194,7 @@ Ksql.Linq.Configuration.KsqlDslOptions.DecimalSetting.Precision.init -> void
 Ksql.Linq.Configuration.KsqlDslOptions.DecimalSetting.Scale.get -> int
 Ksql.Linq.Configuration.KsqlDslOptions.DecimalSetting.Scale.init -> void
 Ksql.Linq.Configuration.KsqlDslOptions.DeserializationErrorPolicy.get -> Ksql.Linq.Core.Abstractions.DeserializationErrorPolicy
-Ksql.Linq.Configuration.KsqlDslOptions.DeserializationErrorPolicy.set -> void
+Ksql.Linq.Configuration.KsqlDslOptions.DeserializationErrorPolicy.init -> void
 Ksql.Linq.Configuration.KsqlDslOptions.DlqOptions.get -> Ksql.Linq.Configuration.DlqOptions!
 Ksql.Linq.Configuration.KsqlDslOptions.DlqOptions.init -> void
 Ksql.Linq.Configuration.KsqlDslOptions.DlqTopicName.get -> string!
@@ -231,7 +231,7 @@ Ksql.Linq.Configuration.KsqlDslOptions.KsqlEntityDdlVisibilityTimeoutSeconds.ini
 Ksql.Linq.Configuration.KsqlDslOptions.KsqlHttpTimeoutSeconds.get -> int
 Ksql.Linq.Configuration.KsqlDslOptions.KsqlHttpTimeoutSeconds.init -> void
 Ksql.Linq.Configuration.KsqlDslOptions.ReadFromFinalTopicByDefault.get -> bool
-Ksql.Linq.Configuration.KsqlDslOptions.ReadFromFinalTopicByDefault.set -> void
+Ksql.Linq.Configuration.KsqlDslOptions.ReadFromFinalTopicByDefault.init -> void
 Ksql.Linq.Configuration.KsqlDslOptions.SchemaRegistry.get -> Ksql.Linq.Core.Configuration.SchemaRegistrySection!
 Ksql.Linq.Configuration.KsqlDslOptions.SchemaRegistry.init -> void
 Ksql.Linq.Configuration.KsqlDslOptions.SourceNameOverrides.get -> System.Collections.Generic.Dictionary<string!, string!>!
