@@ -14,32 +14,26 @@ public class KsqlDslOptions
     /// <summary>
     /// Validation mode (root level setting)
     /// </summary>
-    [DefaultValue(ValidationMode.Strict)]
     public ValidationMode ValidationMode { get; init; }
 
     /// <summary>
     /// Common settings (BootstrapServers, ClientId, etc.)
     /// </summary>
-    [DefaultValue(typeof(CommonSection))]
     public CommonSection Common { get; init; } = new();
 
-    [DefaultValue(typeof(KsqlServerOptions))]
     public KsqlServerOptions KsqlServer { get; init; } = new();
 
     /// <summary>
     /// Per-topic settings (manage producer/consumer settings per topic)
     /// </summary>
-    [DefaultValue(typeof(Dictionary<string, TopicSection>))]
     public Dictionary<string, TopicSection> Topics { get; init; } = new();
 
     // Heartbeat options removed (legacy HeartbeatRunner deprecated)
-    [DefaultValue(typeof(FillOptions))]
     public FillOptions Fill { get; init; } = new();
 
     /// <summary>
     /// Schema Registry settings
     /// </summary>
-    [DefaultValue(typeof(SchemaRegistrySection))]
     public SchemaRegistrySection SchemaRegistry { get; init; } = new();
 
     /// <summary>
@@ -47,10 +41,8 @@ public class KsqlDslOptions
     /// </summary>
     public string? KsqlDbUrl { get; init; }
 
-    [DefaultValue(typeof(List<EntityConfiguration>))]
     public List<EntityConfiguration> Entities { get; init; } = new();
 
-    [DefaultValue(typeof(DlqOptions))]
     public DlqOptions DlqOptions { get; init; } = new();
 
     public string DlqTopicName
@@ -62,25 +54,21 @@ public class KsqlDslOptions
     /// <summary>
     /// Policy when deserialization fails
     /// </summary>
-    [DefaultValue(DeserializationErrorPolicy.Skip)]
     public DeserializationErrorPolicy DeserializationErrorPolicy { get; init; }
 
     /// <summary>
     /// Whether reading from the Final topic is enabled by default
     /// </summary>
-    [DefaultValue(false)]
     public bool ReadFromFinalTopicByDefault { get; init; }
 
     /// <summary>
     /// Global decimal precision applied when mapping decimal properties.
     /// </summary>
-    [DefaultValue(18)]
     public int DecimalPrecision { get; init; }
 
     /// <summary>
     /// Global decimal scale applied when mapping decimal properties.
     /// </summary>
-    [DefaultValue(2)]
     public int DecimalScale { get; init; }
 
     /// <summary>
@@ -105,21 +93,18 @@ public class KsqlDslOptions
     /// Warm-up delay in milliseconds before issuing DDL to ksqlDB during initialization.
     /// App settings key: KsqlWarmupDelayMs. Default: 3000ms.
     /// </summary>
-    [DefaultValue(3000)]
     public int KsqlWarmupDelayMs { get; init; } = 3000;
 
     /// <summary>
     /// Number of retry attempts for ksqlDB DDL statements (CREATE STREAM/TABLE, CSAS/CTAS).
     /// Default: 3 retries.
     /// </summary>
-    [DefaultValue(5)]
     public int KsqlDdlRetryCount { get; init; } = 5;
 
     /// <summary>
     /// Initial delay in milliseconds used for exponential backoff when retrying DDL.
     /// Default: 500ms.
     /// </summary>
-    [DefaultValue(1000)]
     public int KsqlDdlRetryInitialDelayMs { get; init; } = 1000;
 
     /// <summary>
@@ -127,61 +112,52 @@ public class KsqlDslOptions
     /// broker count (useful for single-broker dev clusters). If false, no proactive adjustment is
     /// made and broker-side validation errors are surfaced (with a fallback retry path still in place).
     /// </summary>
-    [DefaultValue(true)]
     public bool AdjustReplicationFactorToBrokerCount { get; init; } = true;
 
     /// <summary>
     /// Number of consecutive RUNNING observations required in SHOW QUERIES before a query is
     /// considered stable. Used when waiting for persistent queries after CTAS/CSAS.
     /// </summary>
-    [DefaultValue(5)]
     public int KsqlQueryRunningConsecutiveCount { get; init; } = 5;
 
     /// <summary>
     /// Poll interval in milliseconds between SHOW QUERIES checks when waiting for a query to
     /// reach RUNNING state.
     /// </summary>
-    [DefaultValue(2000)]
     public int KsqlQueryRunningPollIntervalMs { get; init; } = 2000;
 
     /// <summary>
     /// Additional stability window in seconds after the required consecutive RUNNING observations
     /// before confirming the query as stable.
     /// </summary>
-    [DefaultValue(15)]
     public int KsqlQueryRunningStabilityWindowSeconds { get; init; } = 15;
 
     /// <summary>
     /// Overall timeout in seconds for waiting until a persistent query reports RUNNING.
     /// Falls back to 180 seconds when unset.
     /// </summary>
-    [DefaultValue(180)]
     public int KsqlQueryRunningTimeoutSeconds { get; init; } = 180;
 
     /// <summary>
     /// Warmup window in seconds for simple entity DDL (non-query entities) before issuing CREATE
     /// statements to ksqlDB.
     /// </summary>
-    [DefaultValue(15)]
     public int KsqlSimpleEntityWarmupSeconds { get; init; } = 15;
 
     /// <summary>
     /// Warmup window in seconds for query-defined entity DDL (CSAS/CTAS) before issuing CREATE
     /// statements to ksqlDB.
     /// </summary>
-    [DefaultValue(10)]
     public int KsqlQueryEntityWarmupSeconds { get; init; } = 10;
 
     /// <summary>
     /// Visibility timeout in seconds when waiting for ksqlDB metadata (SHOW TABLES/STREAMS)
     /// to reflect newly created entities.
     /// </summary>
-    [DefaultValue(12)]
     public int KsqlEntityDdlVisibilityTimeoutSeconds { get; init; } = 12;
 
     /// <summary>
     /// Default HTTP timeout in seconds for ksqlDB REST calls when no explicit timeout is provided.
     /// </summary>
-    [DefaultValue(60)]
     public int KsqlHttpTimeoutSeconds { get; init; } = 60;
 }
