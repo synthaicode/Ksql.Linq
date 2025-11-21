@@ -31,18 +31,51 @@ See practical usage examples in the
 
 Using AI coding assistants (Cursor, GitHub Copilot, Claude, ChatGPT)? This package includes **README.AI.md** — a comprehensive guide designed for AI agents to provide expert design support for Ksql.Linq projects.
 
-**Quick Start**: Tell your AI assistant:
-```
-Please read README.AI.md from the Ksql.Linq package and help me design my stream processing solution.
+### Where to Find README.AI.md
+
+**Option 1: View on GitHub** (easiest)
+- 📄 [README.AI.md on GitHub](https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md)
+
+**Option 2: In Your NuGet Package Cache**
+- Windows: `%userprofile%\.nuget\packages\ksql.linq\<version>\README.AI.md`
+- macOS/Linux: `~/.nuget/packages/ksql.linq/<version>/README.AI.md`
+
+**Option 3: In Visual Studio / Rider**
+1. Right-click on `Ksql.Linq` package in Solution Explorer
+2. Select "Open Folder in File Explorer" / "Show in Explorer"
+3. Look for `README.AI.md` in the package root
+
+**Option 4: Clone the Repository**
+```bash
+git clone https://github.com/synthaicode/Ksql.Linq.git
+# README.AI.md is in the root directory
 ```
 
-The AI will provide:
-- ✅ Structured design consultations (Prerequisites → Options → Recommendations)
-- ✅ Pattern-based architecture proposals
-- ✅ Trade-off analysis and decision support
-- ✅ Best practice validation
+### Quick Start with Your AI Assistant
 
-See `README.AI.md` for full details on AI-assisted workflows.
+Give your AI this prompt (replace `<path>` with the actual location):
+
+```
+Please read the file at <path>/README.AI.md and act as a Ksql.Linq Design Support AI.
+Follow the AI Profile guidelines in that document to help me design my stream processing solution.
+```
+
+**Or** (if your AI can fetch from URLs):
+```
+Please read https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md
+and help me design my Ksql.Linq stream processing solution.
+```
+
+### What Your AI Will Provide
+
+After reading README.AI.md, your AI assistant will:
+- ✅ Follow a structured 6-step design consultation flow
+- ✅ Present multiple architectural options with pros/cons
+- ✅ Reference specific patterns from the library
+- ✅ Provide production-ready recommendations
+- ✅ Identify open questions and next steps
+
+See README.AI.md for full details on AI-assisted workflows, example interactions, and integration guides for Cursor/Copilot/ChatGPT/Claude.
 
 ---
 

@@ -2,21 +2,47 @@
 
 > **Purpose**: This document helps AI agents understand and effectively use Ksql.Linq to design and implement Kafka/ksqlDB stream processing solutions.
 
+**Quick Navigation**:
+[For Developers](#-for-developers-how-to-use-this-guide-with-your-ai-assistant) |
+[AI Profile](#-ksqllinq-design-support-ai-profile) |
+[Design Patterns](#design-patterns) |
+[Use Cases](#common-use-cases) |
+[API Reference](#api-reference-quick-start) |
+[Best Practices](#best-practices)
+
 ---
 
 ## 👨‍💻 For Developers: How to Use This Guide with Your AI Assistant
 
 This README is designed to be read by **AI coding assistants** (like Claude, Cursor, GitHub Copilot, ChatGPT, etc.) to provide better design support for Ksql.Linq projects.
 
+### Where is This File?
+
+This file is included in the **Ksql.Linq** NuGet package. You can access it via:
+
+- **GitHub**: https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md
+- **NuGet Cache** (Windows): `%userprofile%\.nuget\packages\ksql.linq\<version>\README.AI.md`
+- **NuGet Cache** (macOS/Linux): `~/.nuget/packages/ksql.linq/<version>/README.AI.md`
+- **Visual Studio/Rider**: Right-click package → "Open Folder in File Explorer"
+
 ### Quick Start: Share This Document with Your AI
 
-When starting a new Ksql.Linq project or seeking design advice, give your AI assistant this prompt:
+When starting a new Ksql.Linq project or seeking design advice, give your AI assistant one of these prompts:
 
+**If your AI can access URLs:**
+```
+Please read https://github.com/synthaicode/Ksql.Linq/blob/main/README.AI.md
+and act as a Ksql.Linq Design Support AI.
+Help me design my Kafka/ksqlDB stream processing solution following the AI Profile in that document.
+```
+
+**If your AI needs a local file path:**
 ```
 I'm working on a Kafka/ksqlDB stream processing project using Ksql.Linq.
-Please read the README.AI.md file in this package and act as a Ksql.Linq Design Support AI.
+Please read the file at <path>/README.AI.md and act as a Ksql.Linq Design Support AI.
 Follow the AI Profile guidelines in that document to help me design my solution.
 ```
+(Replace `<path>` with the actual file location from above)
 
 ### Recommended Workflows
 
