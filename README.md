@@ -22,14 +22,33 @@ Ksql.Linq is a C# library that unifies Kafka/ksqlDB and Avro/Schema Registry usa
 ---
 
 ## 🚀 Examples
-See practical usage examples in the  
+See practical usage examples in the
 👉 [Ksql.Linq Wiki – Examples](https://github.com/synthaicode/Ksql.Linq/wiki/Examples)
+
+---
+
+## 🤖 AI-Assisted Development
+
+Using AI coding assistants (Cursor, GitHub Copilot, Claude, ChatGPT)? This package includes **README.AI.md** — a comprehensive guide designed for AI agents to provide expert design support for Ksql.Linq projects.
+
+**Quick Start**: Tell your AI assistant:
+```
+Please read README.AI.md from the Ksql.Linq package and help me design my stream processing solution.
+```
+
+The AI will provide:
+- ✅ Structured design consultations (Prerequisites → Options → Recommendations)
+- ✅ Pattern-based architecture proposals
+- ✅ Trade-off analysis and decision support
+- ✅ Best practice validation
+
+See `README.AI.md` for full details on AI-assisted workflows.
 
 ---
 
 ## 📚 Documentation
 Full guides, design notes, and examples are available in the
-👉 [Ksql.Linq Wiki](https://github.com/synthaicode/Ksql.Linq/wiki).  
+👉 [Ksql.Linq Wiki](https://github.com/synthaicode/Ksql.Linq/wiki).
 
 ---
 
