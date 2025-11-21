@@ -1,14 +1,13 @@
 # Release Notes v0.9.7
 
 ## Breaking Changes
-- `KsqlDslOptions.DeserializationErrorPolicy` と `ReadFromFinalTopicByDefault` を `{ get; init; }` に変更（初期化時のみ設定可能）。コードで後からセットしていた場合は初期化に寄せること。
-- ksql の待機設定は `KsqlDslOptions` を最優先し、環境変数フォールバックを廃止。環境変数 `KSQL_QUERY_RUNNING_*` に依存していた場合は appsettings で明示設定すること。
-- PublicAPI: 既存の Unshipped 定義を Shipped に移動し、Unshipped は空にリセット。API差分の基準点が更新された。
+- `KsqlDslOptions.DeserializationErrorPolicy` and `ReadFromFinalTopicByDefault` are now `{ get; init; }`. If you were setting them after construction, move the assignment to option initialization.
+- KSQL wait settings now rely on `KsqlDslOptions` first; environment variable fallbacks were removed. If you used `KSQL_QUERY_RUNNING_*`, set the equivalent keys in appsettings instead.
+- Public API baseline: all previous Unshipped entries were moved to Shipped; Unshipped is reset. Future API changes should be added to Unshipped.
 
 ## New Features / Changes
-- AI支援ドキュメントをパッケージ同梱: `AI_ASSISTANT_GUIDE.md` と制約集 `docs/sql_constraint_violations_100_patterns.md` を `docs/` 配下に含める。README に誘導を追加。
-- 待機ロジックの設定統一: RUNNING判定の連続回数/ポーリング間隔/安定化ウィンドウは `KsqlDslOptions` の値を使用し、未設定時のみデフォルト値（Consecutive=5, Interval=2000ms, Stability=15s, Timeout=180s）を適用。
-- デフォルト値の単一管理: `KsqlDslOptions` から `DefaultValue` 属性を削除し、初期化子のみでデフォルトを管理。
+- Wait settings unified: RUNNING checks now use `KsqlDslOptions` values; defaults apply when unset (Consecutive=5, Interval=2000ms, Stability=15s, Timeout=180s).
+- Defaults managed in one place: removed `DefaultValue` attributes from `KsqlDslOptions`; rely on initializers only.
 
 ### Key KsqlDslOptions (defaults)
 - `KsqlQueryRunningConsecutiveCount`: 5  
@@ -25,9 +24,9 @@
 - `DecimalPrecision`: 18 / `DecimalScale`: 2  
 
 ## Migration Guide
-- 環境変数 `KSQL_QUERY_RUNNING_*` に依存していた場合は、appsettings の `KsqlDsl` セクションに同名項目を設定する（未設定なら上記デフォルトが適用される）。
-- `DeserializationErrorPolicy` / `ReadFromFinalTopicByDefault` を code で後付けセットしていた場合は、オプション初期化時に設定する形へ変更する。
-- PublicAPI 基準点が Shipped に移ったため、以降のAPI差分は Unshipped に追加して管理する。
+- If you relied on `KSQL_QUERY_RUNNING_*`, configure the corresponding `KsqlDsl` settings in appsettings (defaults above apply if omitted).
+- If you set `DeserializationErrorPolicy` / `ReadFromFinalTopicByDefault` after construction, move the assignment to option initialization.
+- Track future API changes in `PublicAPI.Unshipped.txt` (baseline moved to Shipped).
 
 ## Known Issues
-- 現時点で新規の既知問題はありません。既存の待機動作は設定値変更により挙動が変わる場合があるため、必要に応じてタイミングを確認してください。
+- None new. Note that changing wait settings may alter stabilization timing; adjust values as needed for your environment.

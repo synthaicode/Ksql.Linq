@@ -31,10 +31,6 @@ See practical usage examples in the
 Full guides, design notes, and examples are available in the
 👉 [Ksql.Linq Wiki](https://github.com/synthaicode/Ksql.Linq/wiki).  
 
-## 🤖 AI-assisted usage
-- Load `AI_ASSISTANT_GUIDE.md` (included in the package and repo root) into your coding assistant for design support.
-- Constraint checklist: see `docs/sql_constraint_violations_100_patterns.md` (100 common LINQ → KSQL pitfalls and fixes).
-
 ---
 
 ## 🧭 License and roadmap
@@ -52,4 +48,3 @@ Full guides, design notes, and examples are available in the
 This library was built under the theme of "AI and human co-creation" with support from the Amagi, Naruse, Shion, Kyouka, Kusunoki, Jinto, Hiromu, and Hazuki AI agents. See [Acknowledgements.md](./docs/acknowledgements.md) for details.
 
 ---
-
