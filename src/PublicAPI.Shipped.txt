@@ -1,6 +1,4 @@
 #nullable enable
-
-#nullable enable
 abstract Ksql.Linq.EventSet<T>.GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerator<T!>!
 abstract Ksql.Linq.EventSet<T>.SendEntityAsync(T! entity, System.Collections.Generic.Dictionary<string!, string!>? headers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 const Ksql.Linq.KsqlContext.DefaultSectionName = "KsqlDsl" -> string!
