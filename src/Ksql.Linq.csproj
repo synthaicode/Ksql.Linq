@@ -78,6 +78,11 @@
     <!-- Exclude CLI host from main library; built as separate tool -->
     <Compile Remove="Ksql.Linq.Cli\**\*.cs" />
   </ItemGroup>
+  <!-- Package AI docs alongside README -->
+  <ItemGroup>
+    <None Include="AI_ASSISTANT_GUIDE.md" Pack="true" PackagePath="docs/" />
+    <None Include="docs/sql_constraint_violations_100_patterns.md" Pack="true" PackagePath="docs/" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="KsqlLinq-icon-128.png" Pack="true" PackagePath="" />
     <None Include="README.md" Pack="true" PackagePath="" />
