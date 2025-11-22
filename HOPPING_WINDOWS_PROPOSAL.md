@@ -67,6 +67,67 @@ Hopping (5分ウィンドウ, 2分Hop):
 
 ---
 
+## 🎨 複数時間帯サポートの利点
+
+### Tumblingの成功パターンを継承
+
+Ksql.Linqの既存Tumbling実装は、**複数時間帯を一度に処理**する優れた設計を持っています：
+
+```csharp
+// 1つのDSL呼び出しで、4つの異なる粒度のストリームを生成
+.Tumbling(r => r.Timestamp, new Windows { Minutes = new[] { 1, 5, 15, 60 } })
+
+// 生成結果: bar_1m, bar_5m, bar_15m, bar_60m
+```
+
+### Hoppingでも同様の発想を採用
+
+**提案**: Hoppingでも複数のウィンドウサイズ + 共通hop間隔をサポート
+
+```csharp
+// 5分/10分/15分ウィンドウを、全て1分間隔でhop
+.Hopping(
+    time: t => t.Timestamp,
+    windows: new HoppingWindows
+    {
+        Minutes = new[] { 5, 10, 15 },
+        HopInterval = TimeSpan.FromMinutes(1)
+    })
+
+// 生成結果:
+// - stats_5m_hop1m  (5分の移動平均、毎分更新)
+// - stats_10m_hop1m (10分の移動平均、毎分更新)
+// - stats_15m_hop1m (15分の移動平均、毎分更新)
+```
+
+### 実用的なユースケース
+
+#### 1. **リアルタイムダッシュボード**
+複数のタイムスケールを同時に表示:
+- 短期トレンド: 1分/5分移動平均
+- 中期トレンド: 15分/30分移動平均
+- 長期トレンド: 1時間/4時間移動平均
+
+#### 2. **マルチスケール異常検知**
+異なる時間窓で同時にパターン監視:
+- 即時検知: 5分ウィンドウ
+- 中期パターン: 15分ウィンドウ
+- トレンド分析: 1時間ウィンドウ
+
+#### 3. **A/Bテストの多粒度分析**
+同じデータを複数の時間粒度で集計し、最適な分析窓を発見
+
+### 設計上の一貫性
+
+| 機能 | Tumbling | Hopping（提案） |
+|------|----------|----------------|
+| 複数サイズ | ✅ `Minutes = [1,5,15]` | ✅ `Minutes = [5,10,15]` |
+| BuildAll() | ✅ 各サイズごとにSQL生成 | ✅ 同様の機能 |
+| 命名規則 | `bar_5m_live` | `bar_5m_hop1m_live` |
+| 独立ストリーム | ✅ サイズごとに独立 | ✅ サイズごとに独立 |
+
+---
+
 ## 🏗️ 現在のアーキテクチャ分析
 
 ### 既存のTumbling Windows実装
@@ -153,27 +214,48 @@ public class Windows
 }
 ```
 
-#### 1.2 新しい`HoppingWindows`クラス（代替案）
+#### 1.2 新しい`HoppingWindows`クラス（推奨案）
+
+**Tumblingとの一貫性を保ちつつ、複数時間帯をサポート**:
 
 ```csharp
 namespace Ksql.Linq.Query.Dsl;
 
 /// <summary>
-/// Hopping window specification with size and hop interval
+/// Hopping window specification with multiple sizes and shared hop interval
+/// Inspired by Tumbling's multi-timeframe design (Minutes = new[] { 1, 5, 15, 60 })
 /// </summary>
 public class HoppingWindows
 {
-    public TimeSpan Size { get; set; }
+    // 複数のウィンドウサイズを指定可能（Tumblingと同様）
+    public int[]? Minutes { get; set; }
+    public int[]? Hours { get; set; }
+    public int[]? Days { get; set; }
+
+    // 全ウィンドウで共通のHop間隔
     public TimeSpan HopInterval { get; set; }
 
-    public static HoppingWindows Create(TimeSpan size, TimeSpan hop)
+    /// <summary>
+    /// Creates hopping windows with multiple sizes and shared hop interval
+    /// Example: HoppingWindows.Create(hopMinutes: 1, windowMinutes: new[] { 5, 10, 15 })
+    /// Generates: 5m/10m/15m windows, all hopping every 1 minute
+    /// </summary>
+    public static HoppingWindows CreateMinutes(int hopMinutes, params int[] windowMinutes)
     {
-        if (hop > size)
-            throw new ArgumentException("Hop interval cannot exceed window size");
-        if (hop <= TimeSpan.Zero)
+        if (hopMinutes <= 0)
             throw new ArgumentException("Hop interval must be positive");
 
-        return new HoppingWindows { Size = size, HopInterval = hop };
+        foreach (var win in windowMinutes)
+        {
+            if (hopMinutes > win)
+                throw new ArgumentException($"Hop {hopMinutes}m cannot exceed window {win}m");
+        }
+
+        return new HoppingWindows
+        {
+            HopInterval = TimeSpan.FromMinutes(hopMinutes),
+            Minutes = windowMinutes
+        };
     }
 }
 ```
@@ -198,10 +280,49 @@ public KsqlQueryable<T1> Tumbling(
 }
 ```
 
-**Option B: 新しいHoppingメソッド（推奨）**
+**Option B: 新しいHoppingメソッド（推奨・複数時間帯対応）**
 ```csharp
 /// <summary>
-/// Apply hopping window with specified size and hop interval
+/// Apply hopping windows with multiple sizes and shared hop interval
+/// Follows Tumbling's multi-timeframe pattern for consistency
+/// </summary>
+public KsqlQueryable<T1> Hopping(
+    Expression<Func<T1, DateTime>> time,
+    HoppingWindows windows,
+    TimeSpan? grace = null,
+    bool continuation = false)
+{
+    _model.Extras["WindowType"] = "HOPPING";
+    _model.HoppingWindows = windows; // 複数のウィンドウサイズ + 共通hop
+    _model.Continuation = continuation;
+
+    if (time.Body is MemberExpression me)
+        _model.TimeKey = me.Member.Name;
+    else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+        _model.TimeKey = me2.Member.Name;
+
+    // Tumblingと同様に、各ウィンドウサイズを_model.Windowsに追加
+    if (windows.Minutes != null)
+        foreach (var m in windows.Minutes)
+            _model.Windows.Add($"{m}m:hop{(int)windows.HopInterval.TotalMinutes}m");
+
+    if (windows.Hours != null)
+        foreach (var h in windows.Hours)
+            _model.Windows.Add($"{h}h:hop{(int)windows.HopInterval.TotalHours}h");
+
+    if (windows.Days != null)
+        foreach (var d in windows.Days)
+            _model.Windows.Add($"{d}d:hop{(int)windows.HopInterval.TotalDays}d");
+
+    if (grace.HasValue)
+        _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
+
+    _stage = QueryBuildStage.Window;
+    return this;
+}
+
+/// <summary>
+/// Simple overload for single hopping window
 /// </summary>
 public KsqlQueryable<T1> Hopping(
     Expression<Func<T1, DateTime>> time,
@@ -210,27 +331,26 @@ public KsqlQueryable<T1> Hopping(
     TimeSpan? grace = null,
     bool continuation = false)
 {
-    if (hopInterval > windowSize)
-        throw new ArgumentException("Hop interval cannot exceed window size");
+    var windows = new HoppingWindows
+    {
+        HopInterval = hopInterval
+    };
 
-    _model.Extras["WindowType"] = "HOPPING";
-    _model.HoppingWindowSize = windowSize;
-    _model.HoppingHopInterval = hopInterval;
-    _model.Continuation = continuation;
+    // windowSizeを適切な単位に分解
+    if (windowSize.TotalMinutes < 60 && windowSize.TotalMinutes == (int)windowSize.TotalMinutes)
+        windows.Minutes = new[] { (int)windowSize.TotalMinutes };
+    else if (windowSize.TotalHours < 24 && windowSize.TotalHours == (int)windowSize.TotalHours)
+        windows.Hours = new[] { (int)windowSize.TotalHours };
+    else if (windowSize.TotalDays == (int)windowSize.TotalDays)
+        windows.Days = new[] { (int)windowSize.TotalDays };
 
-    if (time.Body is MemberExpression me)
-        _model.TimeKey = me.Member.Name;
-
-    if (grace.HasValue)
-        _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
-
-    _stage = QueryBuildStage.Window;
-    return this;
+    return Hopping(time, windows, grace, continuation);
 }
 ```
 
 #### 2.2 使用例
 
+**例1: 単一ウィンドウサイズ（シンプル）**
 ```csharp
 // 5分ウィンドウ、1分ごとに移動
 context.Set<Trade>()
@@ -248,6 +368,64 @@ context.Set<Trade>()
         AvgPrice = g.Average(t => t.Price),
         Volume = g.Sum(t => t.Quantity)
     });
+```
+
+**例2: 複数ウィンドウサイズ（Tumbling風・推奨）**
+```csharp
+// 5分/10分/15分ウィンドウを、全て1分ごとに移動
+// Tumblingの Minutes = new[] { 1, 5, 15 } と同様の発想
+var hoppingWindows = HoppingWindows.CreateMinutes(
+    hopMinutes: 1,
+    windowMinutes: 5, 10, 15);
+
+context.Set<Trade>()
+    .Hopping(
+        time: t => t.Timestamp,
+        windows: hoppingWindows,
+        grace: TimeSpan.FromSeconds(30))
+    .GroupBy(t => t.Symbol)
+    .Select(g => new
+    {
+        Symbol = g.Key,
+        WindowStart = g.WindowStart(),
+        AvgPrice = g.Average(t => t.Price)
+    });
+
+// 結果: 3つの独立したストリームが生成される
+// - trade_avg_5m_hop1m_live   (5分ウィンドウ、1分hop)
+// - trade_avg_10m_hop1m_live  (10分ウィンドウ、1分hop)
+// - trade_avg_15m_hop1m_live  (15分ウィンドウ、1分hop)
+```
+
+**例3: リアルタイムダッシュボード**
+```csharp
+// 1分/5分/15分/1時間の移動平均を、全て1分ごとに更新
+modelBuilder.Entity<TradingStats>()
+    .ToQuery(q => q.From<Trade>()
+        .Hopping(
+            time: t => t.Timestamp,
+            windows: new HoppingWindows
+            {
+                Minutes = new[] { 1, 5, 15 },
+                Hours = new[] { 1 },
+                HopInterval = TimeSpan.FromMinutes(1)
+            })
+        .GroupBy(t => new { t.Exchange, t.Symbol })
+        .Select(g => new TradingStats
+        {
+            Exchange = g.Key.Exchange,
+            Symbol = g.Key.Symbol,
+            BucketStart = g.WindowStart(),
+            AvgPrice = g.Average(t => t.Price),
+            TotalVolume = g.Sum(t => t.Volume),
+            TradeCount = g.Count()
+        }));
+
+// 生成される4つのストリーム:
+// - trading_stats_1m_hop1m
+// - trading_stats_5m_hop1m
+// - trading_stats_15m_hop1m
+// - trading_stats_1h_hop1m
 ```
 
 ### Phase 3: ウィンドウ管理ロジック
@@ -472,6 +650,70 @@ private static string ParseTimeframe(string timeframe)
 }
 ```
 
+#### 4.2 `BuildAll()`メソッドの拡張（複数時間帯サポート）
+
+**Tumblingと同様の機能**: 複数のウィンドウサイズごとに独立したSQL文を生成
+
+```csharp
+public static Dictionary<string, string> BuildAllHopping(
+    string namePrefix,
+    KsqlQueryModel model,
+    TimeSpan hopInterval,
+    Func<string, TimeSpan, string> nameFormatter)
+{
+    if (model is null) throw new ArgumentNullException(nameof(model));
+    if (nameFormatter is null) throw new ArgumentNullException(nameof(nameFormatter));
+
+    var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    // model.Windowsには "5m:hop1m", "10m:hop1m" のような形式で格納されている
+    foreach (var windowSpec in model.Windows)
+    {
+        // "5m:hop1m" から "5m" を抽出
+        var windowSize = windowSpec.Split(':')[0];
+        var streamName = nameFormatter(windowSize, hopInterval);
+
+        var sql = Build(
+            name: streamName,
+            model: model,
+            timeframe: windowSize,
+            hopInterval: hopInterval);
+
+        result[windowSpec] = sql;
+    }
+
+    return result;
+}
+```
+
+**使用例**:
+```csharp
+// 複数ウィンドウサイズのSQL一括生成
+var model = new KsqlQueryRoot()
+    .From<Trade>()
+    .Hopping(
+        t => t.Timestamp,
+        windows: new HoppingWindows
+        {
+            Minutes = new[] { 5, 10, 15 },
+            HopInterval = TimeSpan.FromMinutes(1)
+        })
+    .GroupBy(t => t.Symbol)
+    .Select(g => new { Symbol = g.Key, Avg = g.Average(x => x.Price) })
+    .Build();
+
+var sqlMap = KsqlCreateWindowedStatementBuilder.BuildAllHopping(
+    namePrefix: "trade_avg",
+    model: model,
+    hopInterval: TimeSpan.FromMinutes(1),
+    nameFormatter: (size, hop) => $"trade_avg_{size}_hop{(int)hop.TotalMinutes}m_live");
+
+// 結果:
+// sqlMap["5m:hop1m"]  = "CREATE STREAM trade_avg_5m_hop1m_live ... WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES)"
+// sqlMap["10m:hop1m"] = "CREATE STREAM trade_avg_10m_hop1m_live ... WINDOW HOPPING (SIZE 10 MINUTES, ADVANCE BY 1 MINUTES)"
+// sqlMap["15m:hop1m"] = "CREATE STREAM trade_avg_15m_hop1m_live ... WINDOW HOPPING (SIZE 15 MINUTES, ADVANCE BY 1 MINUTES)"
+```
+
 ---
 
 ## 📝 実装計画
@@ -479,14 +721,17 @@ private static string ParseTimeframe(string timeframe)
 ### マイルストーン
 
 #### **Milestone 1: 基盤整備** (Week 1-2)
-- [ ] `Windows`クラスに`HopInterval`プロパティ追加
-- [ ] `KsqlQueryModel`に`HoppingWindowSize`と`HoppingHopInterval`フィールド追加
+- [ ] `HoppingWindows`クラス新規作成（複数時間帯サポート）
+- [ ] `KsqlQueryModel`に`HoppingWindows`フィールド追加
+- [ ] ウィンドウ命名規則実装（例: `5m:hop1m`）
 - [ ] ユニットテスト作成
 
 #### **Milestone 2: DSL拡張** (Week 2-3)
-- [ ] `KsqlQueryable<T1>.Hopping()`メソッド実装
+- [ ] `KsqlQueryable<T1>.Hopping()`メソッド実装（複数サイズ対応）
+- [ ] シンプルオーバーロード実装（単一サイズ用）
+- [ ] `HoppingWindows.CreateMinutes()`ヘルパーメソッド実装
 - [ ] パラメータバリデーション実装
-- [ ] DSLユニットテスト作成
+- [ ] DSLユニットテスト作成（単一＋複数サイズ両方）
 
 #### **Milestone 3: ウィンドウ管理** (Week 3-4)
 - [ ] `HoppingWindowManager<TSource, TKey>`実装
@@ -497,7 +742,9 @@ private static string ParseTimeframe(string timeframe)
 #### **Milestone 4: SQL生成** (Week 4-5)
 - [ ] `KsqlCreateWindowedStatementBuilder`拡張
 - [ ] `FormatHoppingWindow()`実装
-- [ ] SQL生成テスト作成
+- [ ] `BuildAllHopping()`実装（複数時間帯対応）
+- [ ] SQL生成テスト作成（単一＋複数サイズ）
+- [ ] Tumbling `BuildAll()`との一貫性確認
 
 #### **Milestone 5: 統合テスト** (Week 5-6)
 - [ ] End-to-end統合テスト作成
@@ -554,12 +801,14 @@ public void FormatHoppingWindow_5MinWindow_1MinHop_GeneratesCorrectSql()
 ### 統合テスト
 
 #### 物理テスト（`physicalTests/OssSamples/HoppingWindowTests.cs`）
+
+**テスト1: 単一ウィンドウサイズ**
 ```csharp
 [TestFixture]
 public class HoppingWindowTests
 {
     [Test]
-    public async Task HoppingWindow_TradeStream_ProducesOverlappingAggregations()
+    public async Task HoppingWindow_SingleSize_ProducesOverlappingAggregations()
     {
         var context = new MyKsqlContext();
 
@@ -580,6 +829,48 @@ public class HoppingWindowTests
 
         // 重複ウィンドウが存在することを確認
         Assert.That(results.Count, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public async Task HoppingWindow_MultipleSize_GeneratesIndependentStreams()
+    {
+        var context = new MyKsqlContext();
+
+        // Tumblingと同様に複数時間帯をテスト
+        var model = new KsqlQueryRoot()
+            .From<Trade>()
+            .Hopping(
+                t => t.Timestamp,
+                windows: new HoppingWindows
+                {
+                    Minutes = new[] { 5, 10, 15 },
+                    HopInterval = TimeSpan.FromMinutes(1)
+                })
+            .GroupBy(t => t.Symbol)
+            .Select(g => new
+            {
+                Symbol = g.Key,
+                WindowStart = g.WindowStart(),
+                AvgPrice = g.Average(t => t.Price)
+            })
+            .Build();
+
+        var sqlMap = KsqlCreateWindowedStatementBuilder.BuildAllHopping(
+            namePrefix: "trade_avg",
+            model: model,
+            hopInterval: TimeSpan.FromMinutes(1),
+            nameFormatter: (size, hop) => $"trade_avg_{size}_hop{(int)hop.TotalMinutes}m");
+
+        // 3つのストリームが生成されることを確認
+        Assert.That(sqlMap.Count, Is.EqualTo(3));
+        Assert.That(sqlMap.ContainsKey("5m:hop1m"), Is.True);
+        Assert.That(sqlMap.ContainsKey("10m:hop1m"), Is.True);
+        Assert.That(sqlMap.ContainsKey("15m:hop1m"), Is.True);
+
+        // 各SQLにHOPPING構文が含まれることを確認
+        Assert.That(sqlMap["5m:hop1m"], Does.Contain("WINDOW HOPPING"));
+        Assert.That(sqlMap["5m:hop1m"], Does.Contain("SIZE 5 MINUTES"));
+        Assert.That(sqlMap["5m:hop1m"], Does.Contain("ADVANCE BY 1 MINUTES"));
     }
 }
 ```
