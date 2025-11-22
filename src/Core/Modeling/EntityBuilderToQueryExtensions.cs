@@ -1,5 +1,6 @@
 using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Runtime;
+using Ksql.Linq.Query.Metadata;
 using System;
 
 namespace Ksql.Linq.Core.Modeling;
@@ -39,6 +40,13 @@ public static class EntityBuilderToQueryExtensions
             var hopInterval = model.HopInterval.Value;
 
             TimeBucketTypes.RegisterHoppingRead(sourceType, period, hopInterval, typeof(T));
+
+            // Ensure metadata/timeframe/role are populated so cache & SerDe can resolve window size
+            var meta = builder.GetModel().GetOrCreateMetadata();
+            meta = meta with { TimeframeRaw = meta.TimeframeRaw ?? timeframe, Role = meta.Role ?? "Live" };
+            builder.GetModel().SetMetadata(meta);
+            builder.GetModel().AdditionalSettings["timeframe"] = meta.TimeframeRaw!;
+            builder.GetModel().AdditionalSettings["role"] = meta.Role!;
         }
 
         return builder;
