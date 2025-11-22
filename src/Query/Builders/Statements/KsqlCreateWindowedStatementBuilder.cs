@@ -47,7 +47,13 @@ internal static class KsqlCreateWindowedStatementBuilder
         var window = hopInterval.HasValue
             ? FormatHoppingWindow(timeframe, hopInterval.Value)
             : FormatWindow(timeframe);
-        // Optional GRACE insertion using simple heuristic: if model has AdditionalSettings[graceSeconds] on adapted entity, caller should pre-embed.
+
+        // Add GRACE PERIOD if specified in the model
+        if (model.GraceSeconds.HasValue && model.GraceSeconds.Value > 0)
+        {
+            window += $" GRACE PERIOD {model.GraceSeconds.Value} SECONDS";
+        }
+
         var sql = InjectWindowAfterFrom(baseSql, window);
         // 注入オフ: WINDOWSTART 列は値側に追加しない（Window開始時刻は windowed key から復元する）
         return sql;

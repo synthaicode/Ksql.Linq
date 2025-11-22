@@ -174,28 +174,36 @@ public class HoppingWindowBasicTests
             Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
 
             // Create hopping table via DDL generated from the DSL model
+            // GRACE PERIOD allows late-arriving events to be processed
             const string hoppingTableName = "tradestats_5m_hop1m_live";
+            var model = new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
+                .From<Trade>()
+                .Hopping(
+                    time: t => t.Timestamp,
+                    windowSize: TimeSpan.FromMinutes(5),
+                    hopInterval: TimeSpan.FromMinutes(1),
+                    grace: TimeSpan.FromMinutes(5))  // ← Add GRACE PERIOD
+                .GroupBy(t => t.Symbol)
+                .Select(g => new TradeStats
+                {
+                    Symbol = g.Key,
+                    BucketStart = g.WindowStart(),
+                    AvgPrice = g.Average(x => x.Price),
+                    TotalVolume = g.Sum(x => x.Volume),
+                    Count = g.Count()
+                })
+                .Build();
+
             var ddl = KsqlCreateWindowedStatementBuilder.Build(
                 name: hoppingTableName,
-                model: new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
-                    .From<Trade>()
-                    .Hopping(
-                        time: t => t.Timestamp,
-                        windowSize: TimeSpan.FromMinutes(5),
-                        hopInterval: TimeSpan.FromMinutes(1))
-                    .GroupBy(t => t.Symbol)
-                    .Select(g => new TradeStats
-                    {
-                        Symbol = g.Key,
-                        BucketStart = g.WindowStart(),
-                        AvgPrice = g.Average(x => x.Price),
-                        TotalVolume = g.Sum(x => x.Volume),
-                        Count = g.Count()
-                    })
-                    .Build(),
+                model: model,
                 timeframe: "5m",
                 hopInterval: TimeSpan.FromMinutes(1),
                 emitOverride: "EMIT CHANGES");
+
+            Console.WriteLine("\n=== Generated DDL ===");
+            Console.WriteLine(ddl);
+            Console.WriteLine("=== End DDL ===\n");
 
             var ddlResult = await ctx.ExecuteStatementAsync(ddl);
             Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
@@ -214,10 +222,11 @@ public class HoppingWindowBasicTests
                 typeof(TradeStats));         // Concrete read type
 
             // Produce test data: multiple trades within a 5-minute window
-            // CRITICAL: Use current time to avoid window expiration issues
-            // ksqlDB hopping windows use event time, and data too far in past/future is dropped
+            // CRITICAL: Use slightly future time to ensure events are within active window
+            // ksqlDB hopping windows process events based on event time with GRACE PERIOD
+            // Setting timestamps a few seconds in the future ensures they're accepted
             var now = DateTime.UtcNow;
-            var baseTime = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
+            var baseTime = now.AddSeconds(10); // Start 10 seconds from now
             Console.WriteLine($"Using base time: {baseTime:O} (current: {now:O})");
 
             await ctx.Trades.AddAsync(new Trade
@@ -254,12 +263,18 @@ public class HoppingWindowBasicTests
 
             Console.WriteLine($"Produced 4 test trades at base time {baseTime:O}");
 
+            // Wait for Kafka producer to flush and ksqlDB to start processing
+            // This ensures data is committed to Kafka before we query
+            Console.WriteLine("\nWaiting 15 seconds for data ingestion and initial processing...");
+            await Task.Delay(TimeSpan.FromSeconds(15));
+
             // === Test 0: Verify data flows through query with Push Query (EMIT CHANGES) ===
             Console.WriteLine("\n=== Test 0: Push Query verification (EMIT CHANGES) ===");
             try
             {
                 var pushSql = $"SELECT * FROM {hoppingTableName.ToUpperInvariant()} EMIT CHANGES LIMIT 5;";
-                var pushRows = await ctx.QueryRowsAsync(pushSql, TimeSpan.FromSeconds(45));
+                Console.WriteLine($"Executing: {pushSql}");
+                var pushRows = await ctx.QueryRowsAsync(pushSql, TimeSpan.FromSeconds(60));
                 Console.WriteLine($"Push query returned {pushRows?.Count ?? 0} change events");
                 if (pushRows != null && pushRows.Any())
                 {
@@ -277,11 +292,12 @@ public class HoppingWindowBasicTests
             catch (Exception ex)
             {
                 Console.WriteLine($"⚠ Push query error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
 
             // Wait additional time for state store materialization
-            Console.WriteLine("\nWaiting 10 seconds for state store materialization...");
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            Console.WriteLine("\nWaiting 20 seconds for state store materialization...");
+            await Task.Delay(TimeSpan.FromSeconds(20));
 
             // === Test 1: Pull Query to snapshot windows ===
             Console.WriteLine("=== Test 1: Pull Query with PullRowsAsync ===");
@@ -400,11 +416,12 @@ public class HoppingWindowBasicTests
         {
             using var http = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:18088") };
 
-            // Drop tables
+            // Drop tables and streams
             var dropStatements = new[]
             {
                 "DROP TABLE IF EXISTS TRADESTATS_5M_HOP1M_LIVE DELETE TOPIC;",
-                "DROP TABLE IF EXISTS TRADE_STATS_5M_HOP1M DELETE TOPIC;"
+                "DROP TABLE IF EXISTS TRADE_STATS_5M_HOP1M DELETE TOPIC;",
+                "DROP STREAM IF EXISTS TEST_TRADES DELETE TOPIC;"
             };
 
             foreach (var stmt in dropStatements)
@@ -417,6 +434,7 @@ public class HoppingWindowBasicTests
                         System.Text.Encoding.UTF8,
                         "application/json");
                     await http.PostAsync("/ksql", content);
+                    await Task.Delay(500); // Brief delay between drops
                 }
                 catch { /* Ignore cleanup errors */ }
             }
