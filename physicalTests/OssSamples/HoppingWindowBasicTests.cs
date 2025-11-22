@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -8,6 +9,7 @@ using Confluent.Kafka.Admin;
 using Confluent.Kafka;
 using Ksql.Linq;
 using Ksql.Linq.Configuration;
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Attributes;
 using Ksql.Linq.Core.Modeling;
 using Ksql.Linq.Query.Builders.Statements;
@@ -36,7 +38,7 @@ public class HoppingWindowBasicTests
         [KsqlKey(1)] public string Symbol { get; set; } = string.Empty;
         [KsqlKey(2)]
         [KsqlTimestamp]
-        public DateTime WindowStart { get; set; }
+        public DateTime BucketStart { get; set; }
         public double AvgPrice { get; set; }
         public long TotalVolume { get; set; }
         public long Count { get; set; }
@@ -74,12 +76,12 @@ public class HoppingWindowBasicTests
                 .Select(g => new TradeStats
                 {
                     Symbol = g.Key,
-                    WindowStart = g.WindowStart(),
+                    BucketStart = g.WindowStart(),
                     AvgPrice = g.Average(x => x.Price),
                     TotalVolume = g.Sum(x => x.Volume),
                     Count = g.Count()
                 }));
-        }
+    }
     }
 
     [Fact]
@@ -98,7 +100,7 @@ public class HoppingWindowBasicTests
             .Select(g => new TradeStats
             {
                 Symbol = g.Key,
-                WindowStart = g.WindowStart(),
+                BucketStart = g.WindowStart(),
                 AvgPrice = g.Average(x => x.Price),
                 TotalVolume = g.Sum(x => x.Volume),
                 Count = g.Count()
@@ -144,17 +146,52 @@ public class HoppingWindowBasicTests
         // Cleanup test artifacts
         await CleanupTestArtifactsAsync();
 
-        // Create test topic
-        await EnsureKafkaTopicAsync("test_trades");
-
         await using var ctx = new TestContext();
 
-        // Wait for derived entity to be registered/running
-        var baseUpper = ctx.GetTopicName<TradeStats>().ToUpperInvariant();
-        await WaitForLiveObjectsAsync("http://127.0.0.1:18088", new[] { baseUpper }, TimeSpan.FromSeconds(180));
+        // Create test topic
+        using (var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = "127.0.0.1:39092" }).Build())
+        {
+            try
+            {
+                await admin.CreateTopicsAsync(new[]
+                {
+                    new TopicSpecification { Name = "test_trades", NumPartitions = 1, ReplicationFactor = 1 }
+                });
+            }
+            catch { /* Already exists */ }
+        }
 
         try
         {
+            // Ensure ksqlDB metadata is materialized for source stream
+            await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
+
+            // Create hopping table via DDL generated from the DSL model
+            const string hoppingTableName = "tradestats_5m_hop1m_live";
+            var ddl = KsqlCreateWindowedStatementBuilder.Build(
+                name: hoppingTableName,
+                model: new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
+                    .From<Trade>()
+                    .Hopping(
+                        time: t => t.Timestamp,
+                        windowSize: TimeSpan.FromMinutes(5),
+                        hopInterval: TimeSpan.FromMinutes(1))
+                    .GroupBy(t => t.Symbol)
+                    .Select(g => new TradeStats
+                    {
+                        Symbol = g.Key,
+                        BucketStart = g.WindowStart(),
+                        AvgPrice = g.Average(x => x.Price),
+                        TotalVolume = g.Sum(x => x.Volume),
+                        Count = g.Count()
+                    })
+                    .Build(),
+                timeframe: "5m",
+                hopInterval: TimeSpan.FromMinutes(1),
+                emitOverride: "EMIT CHANGES");
+
+            var ddlResult = await ctx.ExecuteStatementAsync(ddl);
+            Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
 
             // Produce test data: multiple trades within a 5-minute window
             var baseTime = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
@@ -194,99 +231,59 @@ public class HoppingWindowBasicTests
             Console.WriteLine($"Produced 4 test trades at base time {baseTime}");
 
             // Wait for hopping window processing (5min window, 1min hop means multiple overlapping windows)
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(10));
 
-            // ===== Test 1: QueryRowsAsync (Push Query) =====
-            Console.WriteLine("\n=== Test 1: Push Query with QueryRowsAsync ===");
-            try
+            // === Test 1: Pull Query to snapshot windows ===
+            Console.WriteLine("=== Test 1: Pull Query with PullRowsAsync ===");
+            List<object?[]>? pullSnapshot = null;
+            for (var attempt = 1; attempt <= 3; attempt++)
             {
-                var sql = "SELECT * FROM TRADESTATS EMIT CHANGES LIMIT 10;";
-                var rows = await ctx.QueryRowsAsync(sql, TimeSpan.FromSeconds(15));
-
-                Console.WriteLine($"QueryRowsAsync returned {rows?.Count() ?? 0} rows");
-                if (rows != null && rows.Any())
+                try
                 {
-                    foreach (var row in rows)
-                    {
-                        Console.WriteLine($"  Row: {row}");
-                    }
+                    pullSnapshot = await ctx.PullRowsAsync(
+                        "TRADESTATS_5M_HOP1M_LIVE",
+                        limit: 10,
+                        timeout: TimeSpan.FromSeconds(20));
+                    if (pullSnapshot.Count > 0) break;
                 }
-
-                // Assert at least some windows were created
-                // Note: With hopping windows, each event triggers multiple window updates
-                Assert.NotNull(rows);
-                Assert.NotEmpty(rows);
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Pull attempt {attempt} failed: {ex.Message}");
+                }
+                await Task.Delay(TimeSpan.FromSeconds(2));
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"QueryRowsAsync error (may be expected if table is empty): {ex.Message}");
-            }
+            Console.WriteLine($"PullRowsAsync returned {pullSnapshot?.Count ?? 0} rows");
+            Assert.NotNull(pullSnapshot);
+            Assert.NotEmpty(pullSnapshot);
 
-            // ===== Test 2: TimeBucket.GetHopping() Read API =====
-            Console.WriteLine("\n=== Test 2: TimeBucket.GetHopping() Read API ===");
+            // === Test 2: TimeBucket.GetHopping() Read API ===
+            Console.WriteLine("=== Test 2: TimeBucket.GetHopping() Read API ===");
+            var hop = TimeSpan.FromMinutes(1);
             try
             {
-                // Create hopping window reader
-                var bucket = TimeBucket.GetHopping<TradeStats>(
-                    ctx,
-                    Period.Minutes(5),      // 5 minute window
-                    TimeSpan.FromMinutes(1) // 1 minute hop
-                );
-
-                // Read all windows
-                var allWindows = await bucket.ToListAsync(CancellationToken.None);
-                Console.WriteLine($"TimeBucket.ToListAsync() returned {allWindows?.Count ?? 0} windows");
-
-                // Read AAPL-specific windows
-                var aaplWindows = await bucket.ToListAsync(
-                    pkFilter: new[] { "AAPL" },
-                    ct: CancellationToken.None);
-                Console.WriteLine($"AAPL-filtered windows: {aaplWindows?.Count ?? 0}");
-
-                if (aaplWindows != null && aaplWindows.Any())
+                var tb = Ksql.Linq.Runtime.TimeBucket.GetHopping<TradeStats>(ctx, Period.Minutes(5), hop);
+                var windows = await tb.ToListAsync();
+                Console.WriteLine($"TimeBucket.ToListAsync() returned {windows.Count} windows");
+                var aapl = windows.Where(w => w.Symbol == "AAPL").ToList();
+                Console.WriteLine($"AAPL-filtered windows: {aapl.Count}");
+                foreach (var w in aapl.Take(5))
                 {
-                    foreach (var window in aaplWindows)
-                    {
-                        Console.WriteLine($"  AAPL Window: Start={window.WindowStart}, Avg={window.AvgPrice:F2}, Vol={window.TotalVolume}, Count={window.Count}");
-                    }
-
-                    // Verify aggregation logic
-                    var firstWindow = aaplWindows.First();
-                    Assert.True(firstWindow.Count > 0, "Window should contain at least one trade");
-                    Assert.True(firstWindow.AvgPrice > 0, "Average price should be positive");
-                    Assert.True(firstWindow.TotalVolume > 0, "Total volume should be positive");
+                    Console.WriteLine($"  AAPL Window: Start={w.BucketStart:o}, Avg={w.AvgPrice}, Vol={w.TotalVolume}, Count={w.Count}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"TimeBucket.GetHopping() error: {ex.Message}");
-                // Don't fail test - hopping windows may need more time to materialize
+                Console.WriteLine($"TimeBucket.GetHopping() unavailable: {ex.Message}");
             }
 
-            // ===== Test 3: Pull Query =====
-            Console.WriteLine("\n=== Test 3: Pull Query with PullRowsAsync ===");
-            try
-            {
-                var pullRows = await ctx.PullRowsAsync(
-                    tableOrSql: "TRADESTATS",
-                    where: "Symbol = 'AAPL'",
-                    limit: 10);
+            // === Test 3: Pull Query with PullRowsAsync ===
+            Console.WriteLine("=== Test 3: Pull Query with PullRowsAsync ===");
+            var pullSql = "SELECT * FROM TRADESTATS_5M_HOP1M_LIVE WHERE SYMBOL='AAPL';";
+            var pullRows = await ctx.PullRowsAsync(pullSql, timeout: TimeSpan.FromSeconds(30));
+            Console.WriteLine($"PullRowsAsync returned {pullRows.Count} rows for AAPL");
+            Assert.NotEmpty(pullRows);
 
-                Console.WriteLine($"PullRowsAsync returned {pullRows?.Count ?? 0} rows for AAPL");
-                if (pullRows != null && pullRows.Any())
-                {
-                    foreach (var row in pullRows)
-                    {
-                        Console.WriteLine($"  Pull row: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"PullRowsAsync error (may be expected if table doesn't support pull): {ex.Message}");
-            }
-
-            Console.WriteLine("\nHopping window table created and test data produced successfully");
+            Console.WriteLine("Hopping window table created, data produced, and queries returned results");
         }
         finally
         {
@@ -318,7 +315,7 @@ public class HoppingWindowBasicTests
             // Drop tables
             var dropStatements = new[]
             {
-                "DROP TABLE IF EXISTS TRADESTATS DELETE TOPIC;",
+                "DROP TABLE IF EXISTS TRADESTATS_5M_HOP1M_LIVE DELETE TOPIC;",
                 "DROP TABLE IF EXISTS TRADE_STATS_5M_HOP1M DELETE TOPIC;"
             };
 
@@ -337,74 +334,5 @@ public class HoppingWindowBasicTests
             }
         }
         catch { /* Ignore cleanup errors */ }
-    }
-
-    private static async Task WaitForLiveObjectsAsync(string ksqlBaseUrl, string[] nameTokens, TimeSpan timeout)
-    {
-        using var http = new HttpClient { BaseAddress = new Uri(ksqlBaseUrl.TrimEnd('/')) };
-        var until = DateTime.UtcNow + timeout;
-        int consec = 0;
-        while (DateTime.UtcNow < until)
-        {
-            try
-            {
-                var statements = new[] { "SHOW QUERIES;", "SHOW TABLES;", "SHOW STREAMS;" };
-                var anyOk = false;
-                foreach (var stmt in statements)
-                {
-                    var payload = new { ksql = stmt, streamsProperties = new { } };
-                    using var content = new StringContent(
-                        JsonSerializer.Serialize(payload),
-                        System.Text.Encoding.UTF8,
-                        "application/json");
-                    using var resp = await http.PostAsync("/ksql", content);
-                    var body = await resp.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrWhiteSpace(body) && nameTokens.All(t => body.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0))
-                    {
-                        anyOk = true;
-                        break;
-                    }
-                }
-                if (anyOk)
-                {
-                    consec++;
-                    if (consec >= 3) return;
-                }
-                else
-                {
-                    consec = 0;
-                }
-            }
-            catch
-            {
-                consec = 0;
-            }
-            await Task.Delay(1000);
-        }
-    }
-
-    private static async Task EnsureKafkaTopicAsync(string topicName, int partitions = 1, short replicationFactor = 1)
-    {
-        using var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = "127.0.0.1:39092" }).Build();
-        try
-        {
-            var md = admin.GetMetadata(topicName, TimeSpan.FromSeconds(2));
-            if (md?.Topics != null && md.Topics.Any(t => string.Equals(t.Topic, topicName, StringComparison.OrdinalIgnoreCase) && t.Error.Code == ErrorCode.NoError))
-                return;
-        }
-        catch { }
-
-        try
-        {
-            await admin.CreateTopicsAsync(new[]
-            {
-                new TopicSpecification { Name = topicName, NumPartitions = partitions, ReplicationFactor = replicationFactor }
-            });
-        }
-        catch (CreateTopicsException ex)
-        {
-            if (ex.Results.Any(r => r.Error.Code != ErrorCode.TopicAlreadyExists && r.Error.Code != ErrorCode.NoError))
-                throw;
-        }
     }
 }
