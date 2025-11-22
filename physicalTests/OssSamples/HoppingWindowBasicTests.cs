@@ -153,13 +153,11 @@ public class HoppingWindowBasicTests
 
         try
         {
-            // Ensure ksqlDB metadata is materialized for source stream
-            await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
-
-            // Manually create source stream with explicit TIMESTAMP column
-            // This ensures ksqlDB uses event time (Timestamp) instead of kafka message time
+            // Manually create source stream with explicit TIMESTAMP column and auto.offset.reset
+            // Using CREATE OR REPLACE to ensure fresh stream with correct configuration
+            // This ensures ksqlDB uses event time (Timestamp) and reads from beginning of topic
             var createStreamSql = @"
-                CREATE STREAM IF NOT EXISTS TEST_TRADES (
+                CREATE OR REPLACE STREAM TEST_TRADES (
                     Symbol VARCHAR,
                     Timestamp TIMESTAMP,
                     Price DOUBLE,
@@ -167,11 +165,17 @@ public class HoppingWindowBasicTests
                 ) WITH (
                     KAFKA_TOPIC='test_trades',
                     VALUE_FORMAT='AVRO',
-                    TIMESTAMP='Timestamp'
+                    TIMESTAMP='Timestamp',
+                    'auto.offset.reset'='earliest'
                 );";
 
             var streamResult = await ctx.ExecuteStatementAsync(createStreamSql);
             Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
+
+            // Wait for stream metadata to be ready
+            Console.WriteLine("Waiting for TEST_TRADES stream metadata to be ready...");
+            await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
+            Console.WriteLine("TEST_TRADES stream is ready");
 
             // Create hopping table via DDL generated from the DSL model
             // GRACE PERIOD allows late-arriving events to be processed
@@ -230,6 +234,7 @@ public class HoppingWindowBasicTests
             var baseTime = now.AddSeconds(-30); // 30 seconds in the past (well within 5-min grace)
             Console.WriteLine($"Using base time: {baseTime:O} (current: {now:O})");
 
+            Console.WriteLine("\n=== Producing test data ===");
             var trade1 = new Trade
             {
                 Symbol = "AAPL",
@@ -237,8 +242,16 @@ public class HoppingWindowBasicTests
                 Price = 150.00,
                 Volume = 100
             };
-            await ctx.Trades.AddAsync(trade1);
-            Console.WriteLine($"  Produced trade 1: {trade1.Symbol} @ {trade1.Timestamp:O}, Price={trade1.Price}, Vol={trade1.Volume}");
+            try
+            {
+                await ctx.Trades.AddAsync(trade1);
+                Console.WriteLine($"  ✓ Produced trade 1: {trade1.Symbol} @ {trade1.Timestamp:O}, Price={trade1.Price}, Vol={trade1.Volume}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  ✗ Failed to produce trade 1: {ex.Message}");
+                throw;
+            }
 
             var trade2 = new Trade
             {
@@ -283,24 +296,37 @@ public class HoppingWindowBasicTests
             {
                 var sourceSql = "SELECT * FROM TEST_TRADES EMIT CHANGES LIMIT 4;";
                 Console.WriteLine($"Executing: {sourceSql}");
-                var sourceRows = await ctx.QueryRowsAsync(sourceSql, TimeSpan.FromSeconds(30));
+                Console.WriteLine($"Query timeout: 60 seconds");
+                Console.WriteLine($"Waiting for up to 4 rows from source stream...");
+
+                var sourceRows = await ctx.QueryRowsAsync(sourceSql, TimeSpan.FromSeconds(60));
                 Console.WriteLine($"Source stream returned {sourceRows?.Count ?? 0} rows");
+
                 if (sourceRows != null && sourceRows.Any())
                 {
                     Console.WriteLine($"✓ Source data is in Kafka");
-                    foreach (var row in sourceRows.Take(2))
+                    foreach (var row in sourceRows)
                     {
                         Console.WriteLine($"  Source row: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("⚠ WARNING: Source stream has no data - data production may have failed");
+                    Console.WriteLine("✗ CRITICAL: Source stream has no data - data production or stream reading failed");
+                    Console.WriteLine("  This means either:");
+                    Console.WriteLine("  1. Data was not produced to Kafka topic 'test_trades'");
+                    Console.WriteLine("  2. Stream TEST_TRADES is not reading from the topic");
+                    Console.WriteLine("  3. auto.offset.reset='earliest' is not working");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⚠ Source stream query error: {ex.Message}");
+                Console.WriteLine($"✗ Source stream query error: {ex.Message}");
+                Console.WriteLine($"  Exception type: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"  Inner exception: {ex.InnerException.Message}");
+                }
             }
 
             Console.WriteLine("\nWaiting 10 seconds for hopping window processing...");
