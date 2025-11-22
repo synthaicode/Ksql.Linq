@@ -65,12 +65,24 @@ public class HoppingWindowBasicTests
 
         protected override void OnModelCreating(IModelBuilder mb)
         {
-            // NOTE: We manually execute DDL in the test (line 166-189) to avoid interference
-            // from DerivedTumblingPipeline which doesn't support hopping windows.
-            // ToQuery is NOT used here to prevent automatic pipeline execution.
-
-            // Base entity registration only (no ToQuery)
             mb.Entity<Trade>();
+
+            mb.Entity<TradeStats>()
+              .ToQuery(q => q.From<Trade>()
+                  .Hopping(
+                      time: t => t.Timestamp,
+                      windowSize: TimeSpan.FromMinutes(5),
+                      hopInterval: TimeSpan.FromMinutes(1),
+                      grace: TimeSpan.FromMinutes(5))
+                  .GroupBy(t => t.Symbol)
+                  .Select(g => new TradeStats
+                  {
+                      Symbol = g.Key,
+                      BucketStart = g.WindowStart(),
+                      AvgPrice = g.Average(x => x.Price),
+                      TotalVolume = g.Sum(x => x.Volume),
+                      Count = g.Count()
+                  }));
         }
     }
 
@@ -159,44 +171,13 @@ public class HoppingWindowBasicTests
             await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
             Console.WriteLine("✓ TEST_TRADES stream is ready");
 
-            // === STEP 2: Create hopping table BEFORE producing data ===
-            // This ensures the hopping table's query is running when data arrives
-            Console.WriteLine("\n=== Creating hopping window table ===");
+            // === STEP 2: Wait for hopping table (auto-created from OnModelCreating) ===
+            Console.WriteLine("\n=== Waiting for hopping window table ===");
             const string hoppingTableName = "tradestats_5m_hop1m_live";
-            var model = new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
-                .From<Trade>()
-                .Hopping(
-                    time: t => t.Timestamp,
-                    windowSize: TimeSpan.FromMinutes(5),
-                    hopInterval: TimeSpan.FromMinutes(1),
-                    grace: TimeSpan.FromMinutes(5))
-                .GroupBy(t => t.Symbol)
-                .Select(g => new TradeStats
-                {
-                    Symbol = g.Key,
-                    BucketStart = g.WindowStart(),
-                    AvgPrice = g.Average(x => x.Price),
-                    TotalVolume = g.Sum(x => x.Volume),
-                    Count = g.Count()
-                })
-                .Build();
 
-            var ddl = KsqlCreateWindowedStatementBuilder.Build(
-                name: hoppingTableName,
-                model: model,
-                timeframe: "5m",
-                hopInterval: TimeSpan.FromMinutes(1),
-                emitOverride: "EMIT CHANGES");
-
-            Console.WriteLine("\n=== Generated DDL ===");
-            Console.WriteLine(ddl);
-            Console.WriteLine("=== End DDL ===\n");
-
-            var ddlResult = await ctx.ExecuteStatementAsync(ddl);
-            Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
-            Console.WriteLine($"✓ DDL executed successfully: {hoppingTableName}");
-
-            // Wait for query to be RUNNING
+            // OnModelCreating defines the hopping table via ToQuery
+            // Wait for it to be created and running
+            await Task.Delay(TimeSpan.FromSeconds(5)); // Give time for DDL execution
             await WaitForQueryRunningAsync("http://127.0.0.1:18088", hoppingTableName, TimeSpan.FromSeconds(60));
             Console.WriteLine($"✓ Query is RUNNING for {hoppingTableName}");
 
