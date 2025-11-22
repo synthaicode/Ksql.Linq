@@ -44,15 +44,15 @@ internal static class KsqlCreateWindowedStatementBuilder
         {
             baseSql = OverrideFrom(baseSql, inputOverride);
         }
-        var window = hopInterval.HasValue
-            ? FormatHoppingWindow(timeframe, hopInterval.Value)
-            : FormatWindow(timeframe);
 
-        // Add GRACE PERIOD if specified in the model
-        if (model.GraceSeconds.HasValue && model.GraceSeconds.Value > 0)
-        {
-            window += $" GRACE PERIOD {model.GraceSeconds.Value} SECONDS";
-        }
+        // Build window clause with optional GRACE PERIOD
+        var graceSeconds = model.GraceSeconds.HasValue && model.GraceSeconds.Value > 0
+            ? (int?)model.GraceSeconds.Value
+            : null;
+
+        var window = hopInterval.HasValue
+            ? FormatHoppingWindow(timeframe, hopInterval.Value, graceSeconds)
+            : FormatWindow(timeframe, graceSeconds);
 
         var sql = InjectWindowAfterFrom(baseSql, window);
         // 注入オフ: WINDOWSTART 列は値側に追加しない（Window開始時刻は windowed key から復元する）
@@ -72,36 +72,39 @@ internal static class KsqlCreateWindowedStatementBuilder
         return result;
     }
 
-    private static string FormatWindow(string timeframe)
+    private static string FormatWindow(string timeframe, int? graceSeconds = null)
     {
         // timeframe like: 1m, 5m, 1h, 1d, 7d, 1wk, 1mo
+        var gracePart = graceSeconds.HasValue ? $", GRACE PERIOD {graceSeconds.Value} SECONDS" : "";
+
         if (timeframe.EndsWith("wk", StringComparison.OrdinalIgnoreCase))
         {
             if (int.TryParse(timeframe[..^2], out var w))
-                return $"WINDOW TUMBLING (SIZE {w * 7} DAYS)";
+                return $"WINDOW TUMBLING (SIZE {w * 7} DAYS{gracePart})";
         }
         if (timeframe.EndsWith("mo", StringComparison.OrdinalIgnoreCase))
         {
             if (int.TryParse(timeframe[..^2], out var mo))
-                return $"WINDOW TUMBLING (SIZE {mo} MONTHS)"; // KSQL supports MONTHS in recent versions
+                return $"WINDOW TUMBLING (SIZE {mo} MONTHS{gracePart})"; // KSQL supports MONTHS in recent versions
         }
         var unit = timeframe[^1];
         if (!int.TryParse(timeframe[..^1], out var val)) val = 1;
         return unit switch
         {
-            's' => $"WINDOW TUMBLING (SIZE {val} SECONDS)",
-            'm' => $"WINDOW TUMBLING (SIZE {val} MINUTES)",
-            'h' => $"WINDOW TUMBLING (SIZE {val} HOURS)",
-            'd' => $"WINDOW TUMBLING (SIZE {val} DAYS)",
-            _ => $"WINDOW TUMBLING (SIZE {val} MINUTES)"
+            's' => $"WINDOW TUMBLING (SIZE {val} SECONDS{gracePart})",
+            'm' => $"WINDOW TUMBLING (SIZE {val} MINUTES{gracePart})",
+            'h' => $"WINDOW TUMBLING (SIZE {val} HOURS{gracePart})",
+            'd' => $"WINDOW TUMBLING (SIZE {val} DAYS{gracePart})",
+            _ => $"WINDOW TUMBLING (SIZE {val} MINUTES{gracePart})"
         };
     }
 
-    private static string FormatHoppingWindow(string timeframe, TimeSpan hopInterval)
+    private static string FormatHoppingWindow(string timeframe, TimeSpan hopInterval, int? graceSeconds = null)
     {
         var (windowValue, windowUnit) = ParseTimeframe(timeframe);
         var (hopValue, hopUnit) = FormatTimeSpan(hopInterval);
-        return $"WINDOW HOPPING (SIZE {windowValue} {windowUnit}, ADVANCE BY {hopValue} {hopUnit})";
+        var gracePart = graceSeconds.HasValue ? $", GRACE PERIOD {graceSeconds.Value} SECONDS" : "";
+        return $"WINDOW HOPPING (SIZE {windowValue} {windowUnit}, ADVANCE BY {hopValue} {hopUnit}{gracePart})";
     }
 
     private static (int Value, string Unit) ParseTimeframe(string timeframe)
