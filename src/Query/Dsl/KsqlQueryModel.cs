@@ -101,10 +101,17 @@ public class KsqlQueryModel
 
     public bool HasGroupBy() => GroupByExpression != null;
 
-    public bool HasHopping() =>
-        Extras.TryGetValue("WindowType", out var windowType) &&
-        windowType is string wt &&
-        wt == "HOPPING";
+    public bool HasHopping()
+    {
+        var hasWindowType = Extras.TryGetValue("WindowType", out var windowType);
+        var isString = windowType is string;
+        var isHopping = windowType is string wt && wt == "HOPPING";
+
+        // Debug logging
+        Console.WriteLine($"[HasHopping] hasWindowType={hasWindowType}, windowType={windowType}, isString={isString}, isHopping={isHopping}, ExtrasCount={Extras.Count}, Windows={Windows.Count}");
+
+        return hasWindowType && isString && isHopping;
+    }
 
     public bool HasTumbling() => Windows.Count > 0 && !HasHopping();
 
