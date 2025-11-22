@@ -153,83 +153,13 @@ public class HoppingWindowBasicTests
 
         try
         {
-            // Manually create source stream with explicit TIMESTAMP column and auto.offset.reset
-            // Using CREATE OR REPLACE to ensure fresh stream with correct configuration
-            // This ensures ksqlDB uses event time (Timestamp) and reads from beginning of topic
-            var createStreamSql = @"
-                CREATE OR REPLACE STREAM TEST_TRADES (
-                    Symbol VARCHAR,
-                    Timestamp TIMESTAMP,
-                    Price DOUBLE,
-                    Volume BIGINT
-                ) WITH (
-                    KAFKA_TOPIC='test_trades',
-                    VALUE_FORMAT='AVRO',
-                    TIMESTAMP='Timestamp',
-                    'auto.offset.reset'='earliest'
-                );";
+            // === STEP 1: Produce test data to Kafka BEFORE creating stream ===
+            // This ensures data is in Kafka when stream starts reading
+            // auto.offset.reset=earliest will then read this data
 
-            var streamResult = await ctx.ExecuteStatementAsync(createStreamSql);
-            Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
-
-            // Wait for stream metadata to be ready
-            Console.WriteLine("Waiting for TEST_TRADES stream metadata to be ready...");
-            await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
-            Console.WriteLine("TEST_TRADES stream is ready");
-
-            // Create hopping table via DDL generated from the DSL model
-            // GRACE PERIOD allows late-arriving events to be processed
-            const string hoppingTableName = "tradestats_5m_hop1m_live";
-            var model = new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
-                .From<Trade>()
-                .Hopping(
-                    time: t => t.Timestamp,
-                    windowSize: TimeSpan.FromMinutes(5),
-                    hopInterval: TimeSpan.FromMinutes(1),
-                    grace: TimeSpan.FromMinutes(5))  // ← Add GRACE PERIOD
-                .GroupBy(t => t.Symbol)
-                .Select(g => new TradeStats
-                {
-                    Symbol = g.Key,
-                    BucketStart = g.WindowStart(),
-                    AvgPrice = g.Average(x => x.Price),
-                    TotalVolume = g.Sum(x => x.Volume),
-                    Count = g.Count()
-                })
-                .Build();
-
-            var ddl = KsqlCreateWindowedStatementBuilder.Build(
-                name: hoppingTableName,
-                model: model,
-                timeframe: "5m",
-                hopInterval: TimeSpan.FromMinutes(1),
-                emitOverride: "EMIT CHANGES");
-
-            Console.WriteLine("\n=== Generated DDL ===");
-            Console.WriteLine(ddl);
-            Console.WriteLine("=== End DDL ===\n");
-
-            var ddlResult = await ctx.ExecuteStatementAsync(ddl);
-            Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
-            Console.WriteLine($"DDL executed successfully: {hoppingTableName}");
-
-            // Wait for query to be RUNNING
-            await WaitForQueryRunningAsync("http://127.0.0.1:18088", hoppingTableName, TimeSpan.FromSeconds(60));
-            Console.WriteLine($"Query is RUNNING for {hoppingTableName}");
-
-            // Register hopping window type mapping (required for TimeBucket.GetHopping())
-            // This mapping allows TimeBucket.GetHopping<TradeStats>() to resolve to the correct table
-            Runtime.TimeBucketTypes.RegisterHoppingRead(
-                typeof(Trade),               // Base type
-                Period.Minutes(5),           // Window size
-                TimeSpan.FromMinutes(1),     // Hop interval
-                typeof(TradeStats));         // Concrete read type
-
-            // Produce test data: multiple trades within a 5-minute window
             // CRITICAL: Use recent past timestamps to ensure immediate processing
             // ksqlDB processes events when wall-clock time >= event time
             // Using past timestamps (within GRACE PERIOD) ensures immediate processing
-            // Future timestamps cause ksqlDB to wait until wall-clock catches up
             var now = DateTime.UtcNow;
             var baseTime = now.AddSeconds(-30); // 30 seconds in the past (well within 5-min grace)
             Console.WriteLine($"Using base time: {baseTime:O} (current: {now:O})");
@@ -285,26 +215,110 @@ public class HoppingWindowBasicTests
 
             Console.WriteLine($"\nProduced 4 test trades. Timestamps range: {baseTime.AddSeconds(10):O} to {baseTime.AddSeconds(130):O}");
 
-            // Wait for Kafka producer to flush and ksqlDB to start processing
-            // This ensures data is committed to Kafka before we query
-            Console.WriteLine("\nWaiting 10 seconds for Kafka producer flush...");
+            // === STEP 2: Wait for Kafka producer flush ===
+            Console.WriteLine("\nWaiting 10 seconds for Kafka producer flush to commit data...");
             await Task.Delay(TimeSpan.FromSeconds(10));
+            Console.WriteLine("✓ Data should now be in Kafka topic 'test_trades'");
 
-            // === Test -1: Verify source data arrived in Kafka ===
+            // === STEP 3: Create source stream with auto.offset.reset=earliest ===
+            // NOW the stream will read from beginning of topic and find our 4 trades
+            Console.WriteLine("\n=== Creating source stream TEST_TRADES ===");
+            var createStreamSql = @"
+                CREATE OR REPLACE STREAM TEST_TRADES (
+                    Symbol VARCHAR,
+                    Timestamp TIMESTAMP,
+                    Price DOUBLE,
+                    Volume BIGINT
+                ) WITH (
+                    KAFKA_TOPIC='test_trades',
+                    VALUE_FORMAT='AVRO',
+                    TIMESTAMP='Timestamp',
+                    'auto.offset.reset'='earliest'
+                );";
+
+            var streamResult = await ctx.ExecuteStatementAsync(createStreamSql);
+            Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
+
+            // Wait for stream metadata to be ready
+            Console.WriteLine("Waiting for TEST_TRADES stream metadata to be ready...");
+            await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
+            Console.WriteLine("✓ TEST_TRADES stream is ready");
+
+            // === STEP 4: Create hopping table ===
+            Console.WriteLine("\n=== Creating hopping window table ===");
+            const string hoppingTableName = "tradestats_5m_hop1m_live";
+            var model = new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
+                .From<Trade>()
+                .Hopping(
+                    time: t => t.Timestamp,
+                    windowSize: TimeSpan.FromMinutes(5),
+                    hopInterval: TimeSpan.FromMinutes(1),
+                    grace: TimeSpan.FromMinutes(5))
+                .GroupBy(t => t.Symbol)
+                .Select(g => new TradeStats
+                {
+                    Symbol = g.Key,
+                    BucketStart = g.WindowStart(),
+                    AvgPrice = g.Average(x => x.Price),
+                    TotalVolume = g.Sum(x => x.Volume),
+                    Count = g.Count()
+                })
+                .Build();
+
+            var ddl = KsqlCreateWindowedStatementBuilder.Build(
+                name: hoppingTableName,
+                model: model,
+                timeframe: "5m",
+                hopInterval: TimeSpan.FromMinutes(1),
+                emitOverride: "EMIT CHANGES");
+
+            Console.WriteLine("\n=== Generated DDL ===");
+            Console.WriteLine(ddl);
+            Console.WriteLine("=== End DDL ===\n");
+
+            var ddlResult = await ctx.ExecuteStatementAsync(ddl);
+            Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
+            Console.WriteLine($"✓ DDL executed successfully: {hoppingTableName}");
+
+            // Wait for query to be RUNNING
+            await WaitForQueryRunningAsync("http://127.0.0.1:18088", hoppingTableName, TimeSpan.FromSeconds(60));
+            Console.WriteLine($"✓ Query is RUNNING for {hoppingTableName}");
+
+            // Register hopping window type mapping
+            Runtime.TimeBucketTypes.RegisterHoppingRead(
+                typeof(Trade),
+                Period.Minutes(5),
+                TimeSpan.FromMinutes(1),
+                typeof(TradeStats));
+
+            // === STEP 5: Wait for stream processing ===
+            Console.WriteLine("\nWaiting 15 seconds for streams to process existing data...");
+            await Task.Delay(TimeSpan.FromSeconds(15));
+
+            // === Test -1: Verify stream read the data from Kafka ===
+            // Stream was created AFTER data was produced, with auto.offset.reset=earliest
+            // So it should have read all 4 trades from the beginning of the topic
             Console.WriteLine("\n=== Test -1: Source Stream verification ===");
             try
             {
                 var sourceSql = "SELECT * FROM TEST_TRADES EMIT CHANGES LIMIT 4;";
                 Console.WriteLine($"Executing: {sourceSql}");
-                Console.WriteLine($"Query timeout: 60 seconds");
-                Console.WriteLine($"Waiting for up to 4 rows from source stream...");
+                Console.WriteLine($"Expecting 4 rows (stream created AFTER data with auto.offset.reset=earliest)");
 
-                var sourceRows = await ctx.QueryRowsAsync(sourceSql, TimeSpan.FromSeconds(60));
+                var sourceRows = await ctx.QueryRowsAsync(sourceSql, TimeSpan.FromSeconds(30));
                 Console.WriteLine($"Source stream returned {sourceRows?.Count ?? 0} rows");
 
-                if (sourceRows != null && sourceRows.Any())
+                if (sourceRows != null && sourceRows.Count == 4)
                 {
-                    Console.WriteLine($"✓ Source data is in Kafka");
+                    Console.WriteLine($"✓ Stream successfully read all 4 trades from Kafka");
+                    foreach (var row in sourceRows)
+                    {
+                        Console.WriteLine($"  Source row: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
+                    }
+                }
+                else if (sourceRows != null && sourceRows.Any())
+                {
+                    Console.WriteLine($"⚠ WARNING: Expected 4 rows but got {sourceRows.Count}");
                     foreach (var row in sourceRows)
                     {
                         Console.WriteLine($"  Source row: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
@@ -312,11 +326,10 @@ public class HoppingWindowBasicTests
                 }
                 else
                 {
-                    Console.WriteLine("✗ CRITICAL: Source stream has no data - data production or stream reading failed");
-                    Console.WriteLine("  This means either:");
-                    Console.WriteLine("  1. Data was not produced to Kafka topic 'test_trades'");
-                    Console.WriteLine("  2. Stream TEST_TRADES is not reading from the topic");
-                    Console.WriteLine("  3. auto.offset.reset='earliest' is not working");
+                    Console.WriteLine("✗ CRITICAL: Source stream returned 0 rows");
+                    Console.WriteLine("  Data was produced BEFORE stream creation");
+                    Console.WriteLine("  Stream has auto.offset.reset='earliest'");
+                    Console.WriteLine("  This indicates stream is not reading from Kafka correctly");
                 }
             }
             catch (Exception ex)
@@ -328,9 +341,6 @@ public class HoppingWindowBasicTests
                     Console.WriteLine($"  Inner exception: {ex.InnerException.Message}");
                 }
             }
-
-            Console.WriteLine("\nWaiting 10 seconds for hopping window processing...");
-            await Task.Delay(TimeSpan.FromSeconds(10));
 
             // === Test 0: Verify data flows through query with Push Query (EMIT CHANGES) ===
             Console.WriteLine("\n=== Test 0: Push Query verification (EMIT CHANGES) ===");
