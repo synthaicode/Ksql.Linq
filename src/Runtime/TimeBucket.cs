@@ -22,6 +22,24 @@ public static class TimeBucket
 
     public static TimeBucketWriter<T> Set<T>(Ksql.Linq.KsqlContext ctx, Period period) where T : class
         => new(ctx, period);
+
+    /// <summary>
+    /// Get a TimeBucket reader for hopping windows (MVP: basic support)
+    /// </summary>
+    /// <param name="ctx">KsqlContext</param>
+    /// <param name="period">Window size period</param>
+    /// <param name="hopInterval">Hop interval (must be <= window size)</param>
+    /// <returns>TimeBucket reader configured for hopping window topic</returns>
+    /// <remarks>
+    /// Reads from hopping window tables created with .Hopping() DSL.
+    /// Topic naming: {base}_{period}_hop{interval}_live
+    /// Example: trade_5m_hop1m_live (5 minute window, 1 minute hop)
+    /// </remarks>
+    public static TimeBucket<T> GetHopping<T>(
+        Ksql.Linq.KsqlContext ctx,
+        Period period,
+        TimeSpan hopInterval) where T : class
+        => new(ctx, period, hopInterval);
 }
 
 public sealed class TimeBucket<T> where T : class
@@ -31,14 +49,27 @@ public sealed class TimeBucket<T> where T : class
     private readonly string _liveTopic;
     private readonly Type _readType;
     private readonly Type _writeType;
+    private readonly TimeSpan? _hopInterval;
 
-    internal TimeBucket(Ksql.Linq.KsqlContext ctx, Period period)
+    internal TimeBucket(Ksql.Linq.KsqlContext ctx, Period period, TimeSpan? hopInterval = null)
     {
         _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
         _period = period;
-        _liveTopic = TimeBucketTypes.GetLiveTopicName(typeof(T), period);
-        _readType = TimeBucketTypes.ResolveRead(typeof(T), period) ?? typeof(T);
-        _writeType = TimeBucketTypes.ResolveWrite(typeof(T), period) ?? typeof(T);
+        _hopInterval = hopInterval;
+
+        // For hopping windows, use hop-specific topic naming
+        if (hopInterval.HasValue)
+        {
+            _liveTopic = TimeBucketTypes.GetHoppingLiveTopicName(typeof(T), period, hopInterval.Value);
+            _readType = TimeBucketTypes.ResolveHoppingRead(typeof(T), period, hopInterval.Value) ?? typeof(T);
+            _writeType = typeof(T); // Write not supported for hopping in MVP
+        }
+        else
+        {
+            _liveTopic = TimeBucketTypes.GetLiveTopicName(typeof(T), period);
+            _readType = TimeBucketTypes.ResolveRead(typeof(T), period) ?? typeof(T);
+            _writeType = TimeBucketTypes.ResolveWrite(typeof(T), period) ?? typeof(T);
+        }
     }
 
     public Task<List<T>> ToListAsync(CancellationToken ct)

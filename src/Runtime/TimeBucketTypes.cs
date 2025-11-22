@@ -47,4 +47,40 @@ internal static class TimeBucketTypes
             return $"{topic}_1s_rows";
         return $"{topic}_{period}_live";
     }
+
+    // ========================================
+    // Hopping Windows Support (MVP)
+    // ========================================
+
+    public static void RegisterHoppingRead(Type baseType, Period period, TimeSpan hopInterval, Type concrete)
+    {
+        var topic = GetBaseTopic(baseType);
+        var hopStr = FormatHopInterval(hopInterval);
+        Map[(topic, $"{period}:hop{hopStr}", "read")] = concrete;
+    }
+
+    public static Type? ResolveHoppingRead(Type baseType, Period period, TimeSpan hopInterval)
+    {
+        var topic = GetBaseTopic(baseType);
+        var hopStr = FormatHopInterval(hopInterval);
+        return Map.TryGetValue((topic, $"{period}:hop{hopStr}", "read"), out var t) ? t : baseType;
+    }
+
+    public static string GetHoppingLiveTopicName(Type baseType, Period period, TimeSpan hopInterval)
+    {
+        var topic = GetBaseTopic(baseType);
+        var hopStr = FormatHopInterval(hopInterval);
+        return $"{topic}_{period}_hop{hopStr}_live";
+    }
+
+    private static string FormatHopInterval(TimeSpan hop)
+    {
+        if (hop.TotalMinutes < 60 && hop.TotalMinutes == (int)hop.TotalMinutes)
+            return $"{(int)hop.TotalMinutes}m";
+        if (hop.TotalHours < 24 && hop.TotalHours == (int)hop.TotalHours)
+            return $"{(int)hop.TotalHours}h";
+        if (hop.TotalDays == (int)hop.TotalDays)
+            return $"{(int)hop.TotalDays}d";
+        return $"{(int)hop.TotalSeconds}s";
+    }
 }
