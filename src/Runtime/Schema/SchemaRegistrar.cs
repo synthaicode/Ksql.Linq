@@ -3,6 +3,7 @@ using Ksql.Linq.Events;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Ddl;
+using Ksql.Linq.Query.Metadata;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
