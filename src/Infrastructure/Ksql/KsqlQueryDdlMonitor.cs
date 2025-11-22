@@ -69,15 +69,25 @@ internal sealed class KsqlQueryDdlMonitor
         if (model.QueryModel != null)
             _deps.RegisterQueryModelMapping(model);
 
+        // Debug logging
+        _deps.Logger?.LogInformation("DDL Path Decision for {Entity}: HasHopping={HasHopping}, HasTumbling={HasTumbling}, WindowsCount={WindowsCount}, WindowType={WindowType}",
+            entityType.Name,
+            model.QueryModel?.HasHopping(),
+            model.QueryModel?.HasTumbling(),
+            model.QueryModel?.Windows?.Count ?? 0,
+            model.QueryModel?.Extras.TryGetValue("WindowType", out var wt) == true ? wt : "NONE");
+
         // Hopping windows: use direct HOPPING CTAS, skip derived tumbling pipeline
         if (model.QueryModel?.HasHopping() == true)
         {
+            _deps.Logger?.LogInformation("Taking HOPPING path for {Entity}", entityType.Name);
             await EnsureHoppingWindowEntityDdlAsync(entityType, model).ConfigureAwait(false);
             return;
         }
 
         if (model.QueryModel?.HasTumbling() == true)
         {
+            _deps.Logger?.LogInformation("Taking TUMBLING path for {Entity}", entityType.Name);
             await EnsureDerivedQueryEntityDdlAsync(entityType, model).ConfigureAwait(false);
             return;
         }
@@ -86,6 +96,7 @@ internal sealed class KsqlQueryDdlMonitor
             model.QueryModel?.DetermineType() == StreamTableType.Table;
         if (model.QueryModel?.DetermineType() == StreamTableType.Table)
         {
+            _deps.Logger?.LogInformation("Taking TABLE path for {Entity}", entityType.Name);
             await EnsureTableQueryEntityDdlAsync(entityType, model).ConfigureAwait(false);
             return;
         }
