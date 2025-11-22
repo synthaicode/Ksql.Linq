@@ -69,4 +69,30 @@ public class UseTableCacheRegistrationTests
 
         Assert.False(InvokeShouldRegister(model, isExplicit: false));
     }
+
+    private static MethodInfo GetResolveWindowSizeMsMethod()
+    {
+        var method = typeof(KsqlContextCacheExtensions)
+            .GetMethod("ResolveWindowSizeMs", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        return method!;
+    }
+
+    private static long? InvokeResolveWindowSizeMs(EntityModel model)
+    {
+        var method = GetResolveWindowSizeMsMethod();
+        return (long?)method.Invoke(null, new object[] { model });
+    }
+
+    [Fact]
+    public void ResolveWindowSizeMs_ReturnsMilliseconds_ForHoppingMetadata()
+    {
+        var model = CreateModel();
+        model.AdditionalSettings["timeframe"] = "5m";
+        model.AdditionalSettings["role"] = "Live";
+
+        var ms = InvokeResolveWindowSizeMs(model);
+
+        Assert.Equal(300_000, ms);
+    }
 }

@@ -63,6 +63,37 @@ internal sealed class SchemaRegistrar : ISchemaRegistrar
             foreach (var (type, model) in allQ.Where(e => e.Value.QueryModel != null))
             {
                 ct.ThrowIfCancellationRequested();
+                // Hopping: generate専用CTASのみ（通常CTASは衝突するのでスキップ）
+                if (model.QueryModel!.HasHopping())
+                {
+                    var timeframe = model.QueryModel.Windows.FirstOrDefault() ?? "5m";
+                    var hopInterval = model.QueryModel.HopInterval ?? TimeSpan.FromMinutes(1);
+                    var period = timeframe.EndsWith("h", StringComparison.OrdinalIgnoreCase)
+                        ? Ksql.Linq.Runtime.Period.Hours(int.TryParse(timeframe[..^1], out var h) ? h : 1)
+                        : timeframe.EndsWith("d", StringComparison.OrdinalIgnoreCase)
+                            ? Ksql.Linq.Runtime.Period.Days(int.TryParse(timeframe[..^1], out var d) ? d : 1)
+                            : Ksql.Linq.Runtime.Period.Minutes(int.TryParse(timeframe[..^1], out var m) ? m : 1);
+                    // Align sink topic with TimeBucket hopping naming so cache lookup succeeds.
+                    var sinkTopic = Ksql.Linq.Runtime.TimeBucketTypes.GetHoppingLiveTopicName(type, period, hopInterval);
+                    model.TopicName = sinkTopic;
+                    var ddl = KsqlCreateWindowedStatementBuilder.Build(
+                        name: model.GetTopicName(),
+                        model: model.QueryModel!,
+                        timeframe: timeframe,
+                        emitOverride: "EMIT CHANGES",
+                        inputOverride: null,
+                        options: null,
+                        hopInterval: hopInterval,
+                        // Hopping は windowed key を ksql に生成させるため keySchemaFullName は渡さない
+                        keySchemaFullName: null,
+                        valueSchemaFullName: model.ValueSchemaFullName);
+                    _context.Logger?.LogInformation("KSQL DDL (hopping {Entity}): {Sql}", type.Name, ddl);
+                    var _ = await ExecuteWithRetryAsync(ddl, ct).ConfigureAwait(false);
+                    var queryId = await _context.TryGetQueryIdFromShowQueriesAdapterAsync(model.GetTopicName(), ddl).ConfigureAwait(false);
+                    await _context.WaitForQueryRunningAdapterAsync(model.GetTopicName(), TimeSpan.FromSeconds(60), queryId).ConfigureAwait(false);
+                    await _context.AssertTopicPartitionsAdapterAsync(model).ConfigureAwait(false);
+                    continue;
+                }
                 // Derived (tumbling) はアダプタで一発安定化まで実行（A案）
                 if (model.QueryModel!.HasTumbling())
                 {

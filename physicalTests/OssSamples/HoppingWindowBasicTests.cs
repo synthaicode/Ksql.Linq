@@ -34,8 +34,7 @@ public class HoppingWindowBasicTests
     public class TradeStats
     {
         [KsqlKey(1)] public string Symbol { get; set; } = string.Empty;
-        [KsqlKey(2)]
-        [KsqlTimestamp]
+        [KsqlIgnore] // WindowStart is part of the windowed key; we no longer project it in SELECT
         public DateTime BucketStart { get; set; }
         public double AvgPrice { get; set; }
         public long TotalVolume { get; set; }

@@ -2,7 +2,9 @@ using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Dsl;
 using System;
+using System.Linq;
 using Xunit;
+using Ksql.Linq.Tests.Utils;
 
 namespace Ksql.Linq.Tests.Query.Builders;
 

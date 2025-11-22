@@ -263,26 +263,49 @@ public abstract partial class KsqlContext
         {
             try
             {
-                var mapping = _mappingRegistry.GetMapping(type);
-                if (model.QueryModel == null && model.QueryExpression == null && model.HasKeys() && mapping.AvroKeySchema != null)
+                // Normalize hopping window models so topic/metadata align with TimeBucket cache naming.
+                if (model.QueryModel?.HasHopping() == true)
                 {
-                    var keySubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName());
+                    var timeframe = model.QueryModel.Windows.FirstOrDefault() ?? "5m";
+                    var hopInterval = model.QueryModel.HopInterval ?? TimeSpan.FromMinutes(1);
+                    var unit = timeframe[^1];
+                    if (!int.TryParse(timeframe[..^1], out var val)) val = 1;
+                    var period = unit switch
+                    {
+                        'h' or 'H' => Ksql.Linq.Runtime.Period.Hours(val),
+                        'd' or 'D' => Ksql.Linq.Runtime.Period.Days(val),
+                        _ => Ksql.Linq.Runtime.Period.Minutes(val)
+                    };
+                    var sinkTopic = Ksql.Linq.Runtime.TimeBucketTypes.GetHoppingLiveTopicName(type, period, hopInterval);
+                    model.TopicName = sinkTopic;
+                    model.EnableCache = true;
+                    model.AdditionalSettings["role"] = "Live";
+                    model.AdditionalSettings["timeframe"] = timeframe;
+                    var md = model.GetOrCreateMetadata();
+                    model.SetMetadata(md with { Role = "Live", TimeframeRaw = timeframe });
+                }
+
+                var mapping = _mappingRegistry.GetMapping(type);
+                var keySubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName());
+                var valueSubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(model.GetTopicName());
+                // Hopping は ksql 側に windowed key を生成させるため、キーの事前登録をスキップする
+                if (model.QueryModel == null && model.QueryExpression == null && model.HasKeys() && mapping.AvroKeySchema != null && model.QueryModel?.HasHopping() != true)
+                {
                     await client.RegisterSchemaIfNewAsync(keySubject, mapping.AvroKeySchema);
                     var keySchema = Avro.Schema.Parse(mapping.AvroKeySchema);
                     model.KeySchemaFullName = keySchema.Fullname;
                 }
-                var valueSubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(model.GetTopicName());
                 var valueResult = await client.RegisterSchemaIfNewAsync(valueSubject, mapping.AvroValueSchema!);
                 var valueSchema = Avro.Schema.Parse(mapping.AvroValueSchema!);
-                if (mapping.AvroValueType == typeof(Avro.Generic.GenericRecord))
-                {
-                    model.ValueSchemaFullName = null;
-                }
-                else
-                {
-                    model.ValueSchemaFullName = valueSchema.Fullname;
-                }
+                // Even if GenericRecord, keep the full name so CTAS can reference VALUE_AVRO_SCHEMA_FULL_NAME
+                model.ValueSchemaFullName = valueSchema.Fullname;
                 schemaResults[type] = valueResult;
+                Logger.LogInformation("Schema registry registered {Entity}: keySubject={KeySubject}, valueSubject={ValueSubject}, keySchema={KeySchema}, valueSchema={ValueSchema}",
+                    type.Name,
+                    keySubject,
+                    valueSubject,
+                    model.KeySchemaFullName ?? "(none)",
+                    model.ValueSchemaFullName ?? "(generic)");
                 DecimalSchemaValidator.Validate(model, client, ValidationMode.Strict, Logger);
                 try
                 {

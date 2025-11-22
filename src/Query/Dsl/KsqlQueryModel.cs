@@ -105,12 +105,13 @@ public class KsqlQueryModel
     {
         var hasWindowType = Extras.TryGetValue("WindowType", out var windowType);
         var isString = windowType is string;
-        var isHopping = windowType is string wt && wt == "HOPPING";
+        var wt = windowType as string;
+        var isHopping = isString && wt == "HOPPING";
 
-        // Debug logging
+        // Debug log to trace window detection (requested for hopping diagnostics)
         Console.WriteLine($"[HasHopping] hasWindowType={hasWindowType}, windowType={windowType}, isString={isString}, isHopping={isHopping}, ExtrasCount={Extras.Count}, Windows={Windows.Count}");
 
-        return hasWindowType && isString && isHopping;
+        return isHopping;
     }
 
     public bool HasTumbling() => Windows.Count > 0 && !HasHopping();

@@ -14,7 +14,16 @@ namespace Ksql.Linq.Query.Builders.Statements;
 /// </summary>
 internal static class KsqlCreateWindowedStatementBuilder
 {
-    public static string Build(string name, KsqlQueryModel model, string timeframe, string? emitOverride = null, string? inputOverride = null, RenderOptions? options = null, TimeSpan? hopInterval = null)
+    public static string Build(
+        string name,
+        KsqlQueryModel model,
+        string timeframe,
+        string? emitOverride = null,
+        string? inputOverride = null,
+        RenderOptions? options = null,
+        TimeSpan? hopInterval = null,
+        string? keySchemaFullName = null,
+        string? valueSchemaFullName = null)
     {
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name required", nameof(name));
         if (model is null) throw new ArgumentNullException(nameof(model));
@@ -37,7 +46,12 @@ internal static class KsqlCreateWindowedStatementBuilder
         if (!model.Extras.ContainsKey("sink/replicas"))
             model.Extras["sink/replicas"] = 1;
 
-        var baseSql = KsqlCreateStatementBuilder.Build(name, model, options: options);
+        var baseSql = KsqlCreateStatementBuilder.Build(
+            name,
+            model,
+            keySchemaFullName: keySchemaFullName,
+            valueSchemaFullName: valueSchemaFullName,
+            options: options);
         if (!string.IsNullOrWhiteSpace(emitOverride))
             baseSql = baseSql.Replace("EMIT CHANGES", emitOverride);
         if (!string.IsNullOrWhiteSpace(inputOverride))
