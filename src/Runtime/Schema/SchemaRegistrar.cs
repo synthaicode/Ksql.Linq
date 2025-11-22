@@ -76,6 +76,15 @@ internal sealed class SchemaRegistrar : ISchemaRegistrar
                     // Align sink topic with TimeBucket hopping naming so cache lookup succeeds.
                     var sinkTopic = Ksql.Linq.Runtime.TimeBucketTypes.GetHoppingLiveTopicName(type, period, hopInterval);
                     model.TopicName = sinkTopic;
+
+                    // Set metadata for streamiz cache integration (same as tumbling)
+                    var md = model.GetOrCreateMetadata();
+                    model.SetMetadata(md with
+                    {
+                        Role = "Live",
+                        TimeframeRaw = timeframe
+                    });
+
                     var ddl = KsqlCreateWindowedStatementBuilder.Build(
                         name: model.GetTopicName(),
                         model: model.QueryModel!,
