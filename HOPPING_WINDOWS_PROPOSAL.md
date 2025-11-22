@@ -1824,19 +1824,424 @@ EMIT CHANGES;  -- ← ウィンドウ更新ごとにchange event発行
 
 ## 📅 リリース計画
 
-### v1.0 (MVP)
-- 基本的なHopping Window機能
-- 単一ウィンドウサイズ/Hop間隔
-- Grace period対応
+### v1.0 (MVP) - 早期動作確認重視
 
-### v1.1 (拡張)
-- 複数ウィンドウサイズの同時サポート（Tumblingと同様）
+**スコープ**: 単一サイズHopping＋DSL/SQL生成＋最小ユニットテスト
+
+**含まれるもの**:
+- ✅ 単一ウィンドウサイズ/Hop間隔のみ（`Minutes = new[] { 5 }`形式は**後回し**）
+- ✅ DSL API: `Hopping(time, windowSize, hopInterval)`（シンプルオーバーロード）
+- ✅ SQL生成: `WINDOW HOPPING (SIZE X, ADVANCE BY Y)`構文
+- ✅ 最小限のユニットテスト（既存Tumblingテストを焼き直し）
+- ✅ `EMIT CHANGES`対応
+- ✅ Grace period基本対応
+
+**意図的に除外**（後続バージョンへ）:
+- ❌ 複数ウィンドウサイズの同時サポート（`Minutes = new[] { 5, 10, 15 }`）
+- ❌ ランタイムパイプライン（DerivedHoppingPipeline等）
+- ❌ 読み取りAPI（HoppingTimeBucket等）
+- ❌ 重複ウィンドウ管理ロジック（HoppingWindowManager）
+- ❌ 統合テスト・物理テスト
+
+**実装戦略**: 既存Tumblingテストを最小限変更して動作確認
+- `tests/Query/Builders/KsqlCreateWindowedStatementBuilderTests.cs`の焼き直し
+- SQL文字列生成の正しさのみ検証
+- ksqlDB実行は手動確認で可
+
+**成功基準**:
+- [ ] `.Hopping(t => t.Timestamp, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(1))`が動作
+- [ ] SQL生成: `WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES)`が正しく生成
+- [ ] `CREATE TABLE ... EMIT CHANGES`が生成される
+- [ ] ユニットテストが全てパス
+
+**所要時間**: 1-2日（実装）+ 1日（テスト/修正）
+
+---
+
+### v1.1 (拡張) - 複数時間帯サポート
+- 複数ウィンドウサイズの同時サポート（`HoppingWindows { Minutes = new[] { 5, 10, 15 }, HopInterval = ... }`）
+- ランタイムパイプライン実装（HoppingQao、DerivedHoppingPipeline等）
+- 読み取りAPI実装（HoppingTimeBucket<T>）
 - パフォーマンス最適化
+- 統合テスト追加
+
+### v1.2 (プロダクション対応)
+- 重複ウィンドウ管理ロジック（HoppingWindowManager）
+- メモリ最適化
+- Change event頻度の監視メトリクス
 - 追加のサンプルとドキュメント
 
 ### v2.0 (将来)
 - Session Windows対応
 - カスタムウィンドウ戦略対応
+
+---
+
+## 🚀 MVP実装ガイド（v1.0）
+
+### 実装の優先順位
+
+**Phase 1**: SQL生成ロジック（1日）
+**Phase 2**: DSL API（半日）
+**Phase 3**: ユニットテスト（半日）
+**Phase 4**: 手動動作確認（半日）
+
+---
+
+### Phase 1: SQL生成ロジック拡張
+
+#### 1.1 `KsqlCreateWindowedStatementBuilder.cs`の拡張
+
+**ファイル**: `/src/Query/Builders/Statements/KsqlCreateWindowedStatementBuilder.cs`
+
+**変更内容**:
+
+```csharp
+// 新しいメソッド追加
+public static string Build(
+    string name,
+    KsqlQueryModel model,
+    string timeframe,
+    string? emitOverride = null,
+    string? inputOverride = null,
+    RenderOptions? options = null,
+    TimeSpan? hopInterval = null)  // ← NEW: オプショナルパラメータ
+{
+    // 既存のBuild()と同じロジック
+    var baseSql = /* ... */;
+
+    // NEW: hopInterval指定時はHOPPING構文を使用
+    var window = hopInterval.HasValue
+        ? FormatHoppingWindow(timeframe, hopInterval.Value)
+        : FormatWindow(timeframe);  // 既存のTUMBLING構文
+
+    var sql = InjectWindowAfterFrom(baseSql, window);
+    return sql;
+}
+
+// 新しいヘルパーメソッド追加
+private static string FormatHoppingWindow(string timeframe, TimeSpan hop)
+{
+    var (windowValue, windowUnit) = ParseTimeframe(timeframe);
+    var (hopValue, hopUnit) = FormatTimeSpan(hop);
+
+    return $"WINDOW HOPPING (SIZE {windowValue} {windowUnit}, ADVANCE BY {hopValue} {hopUnit})";
+}
+
+private static (int Value, string Unit) ParseTimeframe(string tf)
+{
+    var unit = tf[^1];
+    if (!int.TryParse(tf[..^1], out var val)) val = 1;
+
+    var unitName = unit switch
+    {
+        's' => "SECONDS",
+        'm' => "MINUTES",
+        'h' => "HOURS",
+        'd' => "DAYS",
+        _ => "MINUTES"
+    };
+
+    return (val, unitName);
+}
+
+private static (int Value, string Unit) FormatTimeSpan(TimeSpan ts)
+{
+    if (ts.TotalSeconds < 60 && ts.TotalSeconds == (int)ts.TotalSeconds)
+        return ((int)ts.TotalSeconds, "SECONDS");
+    if (ts.TotalMinutes < 60 && ts.TotalMinutes == (int)ts.TotalMinutes)
+        return ((int)ts.TotalMinutes, "MINUTES");
+    if (ts.TotalHours < 24 && ts.TotalHours == (int)ts.TotalHours)
+        return ((int)ts.TotalHours, "HOURS");
+    return ((int)ts.TotalDays, "DAYS");
+}
+```
+
+**影響範囲**: このファイルのみ（既存メソッドシグネチャは変更なし）
+
+---
+
+#### 1.2 `KsqlQueryModel.cs`の拡張（オプション）
+
+**ファイル**: `/src/Query/Dsl/KsqlQueryModel.cs`
+
+**変更内容**（最小限）:
+
+```csharp
+public class KsqlQueryModel
+{
+    // 既存フィールド
+    public List<string> Windows { get; } = new();
+
+    // NEW: Hop間隔を保持（MVPではオプション）
+    public TimeSpan? HopInterval { get; set; }
+
+    // 既存のIsAggregateQuery()は変更なし
+    // → Hoppingもaggregate扱いなので既存ロジックで動作
+}
+```
+
+---
+
+### Phase 2: DSL API追加
+
+#### 2.1 `KsqlQueryable<T1>`への新メソッド
+
+**ファイル**: `/src/Query/Dsl/KsqlQueryable.cs`
+
+**追加内容**（シンプルオーバーロードのみ）:
+
+```csharp
+/// <summary>
+/// Apply hopping window with fixed size and advance interval (MVP: single window only)
+/// </summary>
+public KsqlQueryable<T1> Hopping(
+    Expression<Func<T1, DateTime>> time,
+    TimeSpan windowSize,
+    TimeSpan hopInterval,
+    TimeSpan? grace = null,
+    bool continuation = false)
+{
+    // 検証
+    if (hopInterval > windowSize)
+        throw new ArgumentException("Hop interval cannot exceed window size");
+
+    // Tumblingと同様のロジック
+    _model.Extras["WindowType"] = "HOPPING";
+    _model.HopInterval = hopInterval;
+
+    if (time.Body is MemberExpression me)
+        _model.TimeKey = me.Member.Name;
+    else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+        _model.TimeKey = me2.Member.Name;
+
+    // MVP: 単一ウィンドウのみなので、1つのみ追加
+    var windowStr = FormatWindow(windowSize);
+    _model.Windows.Add(windowStr);
+
+    if (grace.HasValue)
+        _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
+
+    _model.Continuation = continuation;
+    _stage = QueryBuildStage.Window;
+    return this;
+}
+
+private static string FormatWindow(TimeSpan ts)
+{
+    if (ts.TotalMinutes < 60 && ts.TotalMinutes == (int)ts.TotalMinutes)
+        return $"{(int)ts.TotalMinutes}m";
+    if (ts.TotalHours < 24 && ts.TotalHours == (int)ts.TotalHours)
+        return $"{(int)ts.TotalHours}h";
+    if (ts.TotalDays == (int)ts.TotalDays)
+        return $"{(int)ts.TotalDays}d";
+    return $"{(int)ts.TotalSeconds}s";
+}
+```
+
+---
+
+### Phase 3: ユニットテスト（既存Tumblingテストを焼き直し）
+
+#### 3.1 新テストファイル作成
+
+**ファイル**: `/tests/Query/Builders/KsqlCreateHoppingStatementBuilderTests.cs`
+
+**内容**: 既存の`KsqlCreateWindowedStatementBuilderTests.cs`をコピーして変更
+
+```csharp
+using Ksql.Linq.Query.Builders.Statements;
+using Ksql.Linq.Query.Dsl;
+using System;
+using Xunit;
+
+namespace Ksql.Linq.Tests.Query.Builders;
+
+[Trait("Level", TestLevel.L3)]
+public class KsqlCreateHoppingStatementBuilderTests
+{
+    private class Trade
+    {
+        public string Symbol { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public double Price { get; set; }
+    }
+
+    // ========================================
+    // Tumbling焼き直しテスト #1
+    // 元: Build_Includes_Window_Tumbling_1m()
+    // ========================================
+    [Fact]
+    public void Build_Includes_Window_Hopping_5m_1m()
+    {
+        var model = new KsqlQueryRoot()
+            .From<Trade>()
+            .Hopping(
+                time: t => t.Timestamp,
+                windowSize: TimeSpan.FromMinutes(5),
+                hopInterval: TimeSpan.FromMinutes(1))
+            .GroupBy(t => t.Symbol)
+            .Select(g => new
+            {
+                g.Key,
+                WindowStart = g.WindowStart(),
+                AvgPrice = g.Average(x => x.Price)
+            })
+            .Build();
+
+        var sql = KsqlCreateWindowedStatementBuilder.Build(
+            name: "trade_avg_5m_hop1m",
+            model: model,
+            timeframe: "5m",
+            hopInterval: TimeSpan.FromMinutes(1));
+
+        // 検証: HOPPING構文が含まれる
+        SqlAssert.ContainsNormalized(sql, "WINDOW HOPPING");
+        SqlAssert.ContainsNormalized(sql, "SIZE 5 MINUTES");
+        SqlAssert.ContainsNormalized(sql, "ADVANCE BY 1 MINUTES");
+
+        // 検証: TABLE生成（aggregateなのでTABLE）
+        SqlAssert.StartsWithNormalized(sql, "CREATE TABLE IF NOT EXISTS trade_avg_5m_hop1m");
+    }
+
+    // ========================================
+    // Tumbling焼き直しテスト #2
+    // 元: Build_Live_Table_Uses_EmitChanges()
+    // ========================================
+    [Fact]
+    public void Build_Hopping_Live_Table_Uses_EmitChanges()
+    {
+        var model = new KsqlQueryRoot()
+            .From<Trade>()
+            .Hopping(t => t.Timestamp, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(2))
+            .GroupBy(t => t.Symbol)
+            .Select(g => new { g.Key, Avg = g.Average(x => x.Price) })
+            .Build();
+
+        var sql = KsqlCreateWindowedStatementBuilder.Build(
+            name: "trade_10m_hop2m_live",
+            model: model,
+            timeframe: "10m",
+            emitOverride: "EMIT CHANGES",
+            inputOverride: null,
+            hopInterval: TimeSpan.FromMinutes(2));
+
+        SqlAssert.ContainsNormalized(sql, "EMIT CHANGES");
+        SqlAssert.ContainsNormalized(sql, "WINDOW HOPPING");
+    }
+
+    // ========================================
+    // Tumbling焼き直しテスト #3
+    // 元: DetermineType_Tumbling_Returns_Table()
+    // ========================================
+    [Fact]
+    public void DetermineType_Hopping_Returns_Table()
+    {
+        var model = new KsqlQueryRoot()
+            .From<Trade>()
+            .Hopping(t => t.Timestamp, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(1))
+            .GroupBy(t => t.Symbol)
+            .Select(g => new { g.Key, Avg = g.Average(x => x.Price) })
+            .Build();
+
+        // Hoppingもaggregateなので、TABLEを返すはず
+        Assert.Equal(StreamTableType.Table, model.DetermineType());
+    }
+
+    // ========================================
+    // 新規テスト: Hop > Windowの検証
+    // ========================================
+    [Fact]
+    public void Hopping_HopGreaterThanWindow_ThrowsException()
+    {
+        var query = new KsqlQueryRoot().From<Trade>();
+
+        Assert.Throws<ArgumentException>(() =>
+            query.Hopping(
+                time: t => t.Timestamp,
+                windowSize: TimeSpan.FromMinutes(5),
+                hopInterval: TimeSpan.FromMinutes(10)));  // ← Hop > Window
+    }
+}
+```
+
+**焼き直すべきテスト**（優先度順）:
+
+| 元テスト（Tumbling） | 新テスト（Hopping） | 検証内容 |
+|-------------------|------------------|---------|
+| `Build_Includes_Window_Tumbling_1m` | `Build_Includes_Window_Hopping_5m_1m` | SQL構文生成 |
+| `Build_Live_Table_Uses_EmitChanges` | `Build_Hopping_Live_Table_Uses_EmitChanges` | EMIT CHANGES |
+| `Build_WithWindow_Creates_Table` | `Build_Hopping_Creates_Table` | TABLE生成 |
+| `DetermineType_Tumbling_Returns_Table` | `DetermineType_Hopping_Returns_Table` | 型判定 |
+
+---
+
+### Phase 4: 手動動作確認
+
+#### 4.1 ksqlDBでの手動実行
+
+```sql
+-- 手動で生成されたSQLをksqlDBで実行して確認
+
+CREATE TABLE trade_avg_5m_hop1m AS
+SELECT
+  Symbol,
+  WINDOWSTART AS WindowStart,
+  AVG(Price) AS AvgPrice
+FROM trades
+WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES)
+GROUP BY Symbol
+EMIT CHANGES;
+
+-- 確認クエリ
+SELECT * FROM trade_avg_5m_hop1m EMIT CHANGES LIMIT 10;
+```
+
+#### 4.2 動作確認チェックリスト
+
+- [ ] SQL生成が正しい（`WINDOW HOPPING (SIZE X, ADVANCE BY Y)`）
+- [ ] `CREATE TABLE`が生成される（STREAMではない）
+- [ ] `EMIT CHANGES`が含まれる
+- [ ] ksqlDBで実際に実行してエラーなし
+- [ ] Change eventが発行される（changelog topicを確認）
+
+---
+
+### 実装時の注意点
+
+1. **複数ウィンドウサイズは後回し**
+   - `HoppingWindows { Minutes = new[] { 5, 10 } }`形式は実装しない
+   - シンプルオーバーロードのみ
+
+2. **ランタイムパイプラインは後回し**
+   - `DerivedHoppingPipeline`等は実装しない
+   - SQL生成のみに集中
+
+3. **読み取りAPIは後回し**
+   - `HoppingTimeBucket<T>`は実装しない
+   - v1.1で対応
+
+4. **既存コードへの影響最小化**
+   - 既存メソッドシグネチャは変更しない
+   - オプショナルパラメータで拡張
+
+5. **テストはコピー＆変更**
+   - Tumblingテストを焼き直すだけ
+   - 新規ロジック最小限
+
+---
+
+### 期待される実装サイズ
+
+- **新規コード**: 約100-150行
+  - `KsqlCreateWindowedStatementBuilder.cs`: +50行
+  - `KsqlQueryable.cs`: +30行
+  - `KsqlQueryModel.cs`: +5行
+  - テスト: +60行
+
+- **変更コード**: ほぼなし（既存メソッドシグネチャ維持）
+
+- **実装時間**: 2-3日（テスト含む）
 
 ---
 
