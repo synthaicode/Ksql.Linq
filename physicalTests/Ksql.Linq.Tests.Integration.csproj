@@ -36,6 +36,8 @@
     <Compile Include="OssSamples/TranslationsTimeBucketTests.cs" />
     <Compile Include="OssSamples/BarTranslationsSmokeTests.cs" />
     <Compile Include="OssSamples/BarTxYearTests.cs" />
+    <!-- Hopping Windows physical test -->
+    <Compile Include="OssSamples/HoppingWindowBasicTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../tests/Common/CategoryAttribute.cs" Link="CategoryAttribute.cs" />

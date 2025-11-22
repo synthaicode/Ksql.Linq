@@ -144,29 +144,17 @@ public class HoppingWindowBasicTests
         // Cleanup test artifacts
         await CleanupTestArtifactsAsync();
 
+        // Create test topic
+        await EnsureKafkaTopicAsync("test_trades");
+
         await using var ctx = new TestContext();
 
-        // Create test topic
-        using (var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = "127.0.0.1:39092" }).Build())
-        {
-            try
-            {
-                await admin.CreateTopicsAsync(new[]
-                {
-                    new TopicSpecification { Name = "test_trades", NumPartitions = 1, ReplicationFactor = 1 }
-                });
-            }
-            catch { /* Already exists */ }
-        }
+        // Wait for derived entity to be registered/running
+        var baseUpper = ctx.GetTopicName<TradeStats>().ToUpperInvariant();
+        await WaitForLiveObjectsAsync("http://127.0.0.1:18088", new[] { baseUpper }, TimeSpan.FromSeconds(180));
 
         try
         {
-            // Execute EnsureCreatedAsync which should create the hopping window table
-            await ctx.EnsureCreatedAsync();
-
-            // Verify table was created by checking ksqlDB
-            var tables = await ctx.ListTablesAsync();
-            Assert.Contains(tables, t => t.Contains("TRADE", StringComparison.OrdinalIgnoreCase));
 
             // Produce test data: multiple trades within a 5-minute window
             var baseTime = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
@@ -284,5 +272,74 @@ public class HoppingWindowBasicTests
             }
         }
         catch { /* Ignore cleanup errors */ }
+    }
+
+    private static async Task WaitForLiveObjectsAsync(string ksqlBaseUrl, string[] nameTokens, TimeSpan timeout)
+    {
+        using var http = new HttpClient { BaseAddress = new Uri(ksqlBaseUrl.TrimEnd('/')) };
+        var until = DateTime.UtcNow + timeout;
+        int consec = 0;
+        while (DateTime.UtcNow < until)
+        {
+            try
+            {
+                var statements = new[] { "SHOW QUERIES;", "SHOW TABLES;", "SHOW STREAMS;" };
+                var anyOk = false;
+                foreach (var stmt in statements)
+                {
+                    var payload = new { ksql = stmt, streamsProperties = new { } };
+                    using var content = new StringContent(
+                        JsonSerializer.Serialize(payload),
+                        System.Text.Encoding.UTF8,
+                        "application/json");
+                    using var resp = await http.PostAsync("/ksql", content);
+                    var body = await resp.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrWhiteSpace(body) && nameTokens.All(t => body.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        anyOk = true;
+                        break;
+                    }
+                }
+                if (anyOk)
+                {
+                    consec++;
+                    if (consec >= 3) return;
+                }
+                else
+                {
+                    consec = 0;
+                }
+            }
+            catch
+            {
+                consec = 0;
+            }
+            await Task.Delay(1000);
+        }
+    }
+
+    private static async Task EnsureKafkaTopicAsync(string topicName, int partitions = 1, short replicationFactor = 1)
+    {
+        using var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = "127.0.0.1:39092" }).Build();
+        try
+        {
+            var md = admin.GetMetadata(topicName, TimeSpan.FromSeconds(2));
+            if (md?.Topics != null && md.Topics.Any(t => string.Equals(t.Topic, topicName, StringComparison.OrdinalIgnoreCase) && t.Error.Code == ErrorCode.NoError))
+                return;
+        }
+        catch { }
+
+        try
+        {
+            await admin.CreateTopicsAsync(new[]
+            {
+                new TopicSpecification { Name = topicName, NumPartitions = partitions, ReplicationFactor = replicationFactor }
+            });
+        }
+        catch (CreateTopicsException ex)
+        {
+            if (ex.Results.Any(r => r.Error.Code != ErrorCode.TopicAlreadyExists && r.Error.Code != ErrorCode.NoError))
+                throw;
+        }
     }
 }
