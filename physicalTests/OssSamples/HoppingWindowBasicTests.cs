@@ -65,8 +65,6 @@ public class HoppingWindowBasicTests
 
         protected override void OnModelCreating(IModelBuilder mb)
         {
-            mb.Entity<Trade>();
-
             mb.Entity<TradeStats>()
               .ToQuery(q => q.From<Trade>()
                   .Hopping(
