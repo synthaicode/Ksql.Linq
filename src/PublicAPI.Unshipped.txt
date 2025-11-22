@@ -892,6 +892,7 @@ Ksql.Linq.Query.Dsl.KsqlQueryModel.GroupByExpression.get -> System.Linq.Expressi
 Ksql.Linq.Query.Dsl.KsqlQueryModel.GroupByExpression.set -> void
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasAggregates() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasGroupBy() -> bool
+Ksql.Linq.Query.Dsl.KsqlQueryModel.HasHopping() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasTumbling() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HavingCondition.get -> System.Linq.Expressions.LambdaExpression?
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HavingCondition.set -> void

@@ -68,6 +68,13 @@ internal sealed class KsqlQueryDdlMonitor
         if (model.QueryModel != null)
             _deps.RegisterQueryModelMapping(model);
 
+        // Hopping windows: use direct HOPPING CTAS, skip derived tumbling pipeline
+        if (model.QueryModel?.HasHopping() == true)
+        {
+            await EnsureHoppingWindowEntityDdlAsync(entityType, model).ConfigureAwait(false);
+            return;
+        }
+
         if (model.QueryModel?.HasTumbling() == true)
         {
             await EnsureDerivedQueryEntityDdlAsync(entityType, model).ConfigureAwait(false);
@@ -107,6 +114,34 @@ internal sealed class KsqlQueryDdlMonitor
     public Task EnsureTableQueryEntityDdlAsync(Type entityType, EntityModel tableModel)
     {
         return EnsureTableQueryEntityDdlCoreAsync(entityType, tableModel);
+    }
+
+    public Task EnsureHoppingWindowEntityDdlAsync(Type entityType, EntityModel model)
+    {
+        return EnsureHoppingWindowEntityDdlCoreAsync(entityType, model);
+    }
+
+    private async Task EnsureHoppingWindowEntityDdlCoreAsync(Type entityType, EntityModel model)
+    {
+        Func<Type, string> resolver = type => ResolveSourceName(type);
+
+        // Generate HOPPING CTAS using KsqlCreateWindowedStatementBuilder
+        var queryModel = model.QueryModel!;
+        var timeframe = queryModel.Windows.FirstOrDefault() ?? "5m";
+        var hopInterval = queryModel.HopInterval ?? TimeSpan.FromMinutes(1);
+
+        var ddl = KsqlCreateWindowedStatementBuilder.Build(
+            name: model.GetTopicName(),
+            model: queryModel,
+            timeframe: timeframe,
+            emitOverride: "EMIT CHANGES",
+            inputOverride: null,
+            options: null,
+            hopInterval: hopInterval);
+
+        _deps.Logger?.LogInformation("KSQL DDL (hopping window {Entity}): {Sql}", entityType.Name, ddl);
+
+        await _persistentStabilizer.StabilizeAsync(entityType, model, ddl).ConfigureAwait(false);
     }
 
     private async Task EnsureTableQueryEntityDdlCoreAsync(Type entityType, EntityModel tableModel)

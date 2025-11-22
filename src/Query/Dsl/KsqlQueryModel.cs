@@ -103,6 +103,11 @@ public class KsqlQueryModel
 
     public bool HasTumbling() => Windows.Count > 0;
 
+    public bool HasHopping() =>
+        Extras.TryGetValue("WindowType", out var windowType) &&
+        windowType is string wt &&
+        wt == "HOPPING";
+
     public bool HasAggregates()
     {
         if (SelectProjection == null) return false;
