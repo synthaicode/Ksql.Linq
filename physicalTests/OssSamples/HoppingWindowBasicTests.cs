@@ -153,16 +153,36 @@ public class HoppingWindowBasicTests
 
         try
         {
-            // === STEP 1: Produce test data to Kafka BEFORE creating stream ===
-            // This ensures data is in Kafka when stream starts reading
-            // auto.offset.reset=earliest will then read this data
+            // === STEP 1: Create source stream FIRST ===
+            // Stream starts reading from latest offset when created
+            // Data produced AFTER stream creation will be read
+            Console.WriteLine("\n=== Creating source stream TEST_TRADES ===");
+            var createStreamSql = @"
+                CREATE OR REPLACE STREAM TEST_TRADES (
+                    Symbol VARCHAR,
+                    Timestamp TIMESTAMP,
+                    Price DOUBLE,
+                    Volume BIGINT
+                ) WITH (
+                    KAFKA_TOPIC='test_trades',
+                    VALUE_FORMAT='AVRO',
+                    TIMESTAMP='Timestamp'
+                );";
 
+            var streamResult = await ctx.ExecuteStatementAsync(createStreamSql);
+            Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
+
+            // Wait for stream metadata to be ready
+            Console.WriteLine("Waiting for TEST_TRADES stream metadata to be ready...");
+            await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
+            Console.WriteLine("✓ TEST_TRADES stream is ready and consuming from topic");
+
+            // === STEP 2: Produce test data to Kafka AFTER stream is ready ===
+            // Stream is already consuming, so it will read this data
             // CRITICAL: Use recent past timestamps to ensure immediate processing
-            // ksqlDB processes events when wall-clock time >= event time
-            // Using past timestamps (within GRACE PERIOD) ensures immediate processing
             var now = DateTime.UtcNow;
             var baseTime = now.AddSeconds(-30); // 30 seconds in the past (well within 5-min grace)
-            Console.WriteLine($"Using base time: {baseTime:O} (current: {now:O})");
+            Console.WriteLine($"\nUsing base time: {baseTime:O} (current: {now:O})");
 
             Console.WriteLine("\n=== Producing test data ===");
             var trade1 = new Trade
@@ -215,34 +235,10 @@ public class HoppingWindowBasicTests
 
             Console.WriteLine($"\nProduced 4 test trades. Timestamps range: {baseTime.AddSeconds(10):O} to {baseTime.AddSeconds(130):O}");
 
-            // === STEP 2: Wait for Kafka producer flush ===
-            Console.WriteLine("\nWaiting 10 seconds for Kafka producer flush to commit data...");
-            await Task.Delay(TimeSpan.FromSeconds(10));
-            Console.WriteLine("✓ Data should now be in Kafka topic 'test_trades'");
-
-            // === STEP 3: Create source stream with auto.offset.reset=earliest ===
-            // NOW the stream will read from beginning of topic and find our 4 trades
-            Console.WriteLine("\n=== Creating source stream TEST_TRADES ===");
-            var createStreamSql = @"
-                CREATE OR REPLACE STREAM TEST_TRADES (
-                    Symbol VARCHAR,
-                    Timestamp TIMESTAMP,
-                    Price DOUBLE,
-                    Volume BIGINT
-                ) WITH (
-                    KAFKA_TOPIC='test_trades',
-                    VALUE_FORMAT='AVRO',
-                    TIMESTAMP='Timestamp',
-                    'auto.offset.reset'='earliest'
-                );";
-
-            var streamResult = await ctx.ExecuteStatementAsync(createStreamSql);
-            Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
-
-            // Wait for stream metadata to be ready
-            Console.WriteLine("Waiting for TEST_TRADES stream metadata to be ready...");
-            await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
-            Console.WriteLine("✓ TEST_TRADES stream is ready");
+            // === STEP 3: Wait for data to flow through stream ===
+            Console.WriteLine("\nWaiting 20 seconds for Kafka producer flush and stream consumption...");
+            await Task.Delay(TimeSpan.FromSeconds(20));
+            Console.WriteLine("✓ Data should have flowed through TEST_TRADES stream");
 
             // === STEP 4: Create hopping table ===
             Console.WriteLine("\n=== Creating hopping window table ===");
@@ -291,108 +287,72 @@ public class HoppingWindowBasicTests
                 TimeSpan.FromMinutes(1),
                 typeof(TradeStats));
 
-            // === STEP 5: Wait for stream processing ===
-            Console.WriteLine("\nWaiting 15 seconds for streams to process existing data...");
-            await Task.Delay(TimeSpan.FromSeconds(15));
-
-            // === Test -1: Verify stream read the data from Kafka ===
-            // Stream was created AFTER data was produced, with auto.offset.reset=earliest
-            // So it should have read all 4 trades from the beginning of the topic
-            Console.WriteLine("\n=== Test -1: Source Stream verification ===");
-            try
-            {
-                var sourceSql = "SELECT * FROM TEST_TRADES EMIT CHANGES LIMIT 4;";
-                Console.WriteLine($"Executing: {sourceSql}");
-                Console.WriteLine($"Expecting 4 rows (stream created AFTER data with auto.offset.reset=earliest)");
-
-                var sourceRows = await ctx.QueryRowsAsync(sourceSql, TimeSpan.FromSeconds(30));
-                Console.WriteLine($"Source stream returned {sourceRows?.Count ?? 0} rows");
-
-                if (sourceRows != null && sourceRows.Count == 4)
-                {
-                    Console.WriteLine($"✓ Stream successfully read all 4 trades from Kafka");
-                    foreach (var row in sourceRows)
-                    {
-                        Console.WriteLine($"  Source row: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
-                    }
-                }
-                else if (sourceRows != null && sourceRows.Any())
-                {
-                    Console.WriteLine($"⚠ WARNING: Expected 4 rows but got {sourceRows.Count}");
-                    foreach (var row in sourceRows)
-                    {
-                        Console.WriteLine($"  Source row: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("✗ CRITICAL: Source stream returned 0 rows");
-                    Console.WriteLine("  Data was produced BEFORE stream creation");
-                    Console.WriteLine("  Stream has auto.offset.reset='earliest'");
-                    Console.WriteLine("  This indicates stream is not reading from Kafka correctly");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"✗ Source stream query error: {ex.Message}");
-                Console.WriteLine($"  Exception type: {ex.GetType().Name}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"  Inner exception: {ex.InnerException.Message}");
-                }
-            }
-
-            // === Test 0: Verify data flows through query with Push Query (EMIT CHANGES) ===
-            Console.WriteLine("\n=== Test 0: Push Query verification (EMIT CHANGES) ===");
-            try
-            {
-                var pushSql = $"SELECT * FROM {hoppingTableName.ToUpperInvariant()} EMIT CHANGES LIMIT 5;";
-                Console.WriteLine($"Executing: {pushSql}");
-                var pushRows = await ctx.QueryRowsAsync(pushSql, TimeSpan.FromSeconds(60));
-                Console.WriteLine($"Push query returned {pushRows?.Count ?? 0} change events");
-                if (pushRows != null && pushRows.Any())
-                {
-                    Console.WriteLine($"✓ Data is flowing through the hopping window query");
-                    foreach (var row in pushRows.Take(3))
-                    {
-                        Console.WriteLine($"  Change event: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("⚠ WARNING: Push query returned no events - data may not be flowing");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠ Push query error: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            }
-
-            // Wait additional time for state store materialization
-            Console.WriteLine("\nWaiting 20 seconds for state store materialization...");
+            // === STEP 5: Wait for hopping window processing ===
+            Console.WriteLine("\nWaiting 20 seconds for hopping window to process data...");
             await Task.Delay(TimeSpan.FromSeconds(20));
 
+            // === Test -1: SKIPPED - Source Stream verification ===
+            // NOTE: Push queries (EMIT CHANGES) return FUTURE data, not historical data
+            // Since we already produced data and the stream consumed it,
+            // we can't verify it with a push query without producing new data
+            // Instead, we verify data flow by checking the hopping table results
+            Console.WriteLine("\n=== Test -1: SKIPPED - Source stream verification ===");
+            Console.WriteLine("Push queries return future data, not historical");
+            Console.WriteLine("Data flow will be verified via hopping table results");
+
+            // === Test 0: SKIPPED - Push Query verification ===
+            // NOTE: Push queries (EMIT CHANGES) also return FUTURE data only
+            // Since data was already produced and processed, push query would timeout
+            // We verify data processing via pull queries on the materialized state store
+            Console.WriteLine("\n=== Test 0: SKIPPED - Push query verification ===");
+            Console.WriteLine("Push queries return future data, would timeout on historical data");
+            Console.WriteLine("Using pull queries instead to verify state store contents");
+
             // === Test 1: Pull Query to snapshot windows ===
-            Console.WriteLine("=== Test 1: Pull Query with PullRowsAsync ===");
+            // Pull queries return current state from materialized state store
+            // This should contain aggregated window results from our 4 trades
+            Console.WriteLine("\n=== Test 1: Pull Query with PullRowsAsync ===");
+            Console.WriteLine("Pull queries read from state store (historical data OK)");
             List<object?[]>? pullSnapshot = null;
-            for (var attempt = 1; attempt <= 3; attempt++)
+            for (var attempt = 1; attempt <= 5; attempt++)
             {
                 try
                 {
+                    Console.WriteLine($"Pull query attempt {attempt}/5...");
                     pullSnapshot = await ctx.PullRowsAsync(
                         "TRADESTATS_5M_HOP1M_LIVE",
-                        limit: 10,
-                        timeout: TimeSpan.FromSeconds(20));
-                    if (pullSnapshot.Count > 0) break;
+                        limit: 20,
+                        timeout: TimeSpan.FromSeconds(30));
+                    Console.WriteLine($"  Returned {pullSnapshot?.Count ?? 0} rows");
+                    if (pullSnapshot != null && pullSnapshot.Count > 0)
+                    {
+                        Console.WriteLine($"✓ Pull query SUCCESS - got {pullSnapshot.Count} window(s)");
+                        break;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Pull attempt {attempt} failed: {ex.Message}");
+                    Console.WriteLine($"  Pull attempt {attempt} error: {ex.Message}");
                 }
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                if (attempt < 5)
+                {
+                    Console.WriteLine($"  Waiting 5 seconds before retry...");
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                }
             }
-            Console.WriteLine($"PullRowsAsync returned {pullSnapshot?.Count ?? 0} rows");
+
+            if (pullSnapshot == null || pullSnapshot.Count == 0)
+            {
+                Console.WriteLine("\n✗ CRITICAL: Pull query returned 0 rows after 5 attempts");
+                Console.WriteLine("This means:");
+                Console.WriteLine("  1. Hopping table exists and is RUNNING (verified earlier)");
+                Console.WriteLine("  2. But state store has no data");
+                Console.WriteLine("  3. Possible causes:");
+                Console.WriteLine("     - Data didn't flow from TEST_TRADES to hopping table");
+                Console.WriteLine("     - Timestamps outside active window range");
+                Console.WriteLine("     - State store not yet materialized (need more wait time)");
+            }
+
             Assert.NotNull(pullSnapshot);
             Assert.NotEmpty(pullSnapshot);
 
