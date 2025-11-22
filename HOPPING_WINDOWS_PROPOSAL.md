@@ -1716,6 +1716,64 @@ context.Set<Trade>()
 - 並列処理の最適化
 - ksqlDB側での処理（可能な限りDBに委譲）
 
+#### 3. Change Event頻度（重要）
+
+**✅ Change eventは発生します**
+
+HoppingウィンドウはTumblingと同様に`EMIT CHANGES`を使用し、changelog topicが自動生成されます：
+
+```sql
+CREATE TABLE trade_5m_hop1m_live AS
+SELECT ...
+FROM trades
+WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES)
+GROUP BY symbol
+EMIT CHANGES;  -- ← ウィンドウ更新ごとにchange event発行
+```
+
+**⚠️ Hoppingの特性：change eventの増幅**
+
+重複ウィンドウのため、**1メッセージで複数のchange eventが発生**：
+
+```
+例：5分ウィンドウ、1分hop
+
+時刻10:03にメッセージ到着
+↓
+以下の5つのウィンドウが更新される：
+- 09:59-10:04
+- 10:00-10:05
+- 10:01-10:06
+- 10:02-10:07
+- 10:03-10:08
+↓
+5つのchange eventが発行される（同一メッセージで）
+```
+
+**影響**:
+- **Changelog topic**: Tumblingの (window_size / hop_interval) 倍のイベント数
+  - 例：5分ウィンドウ、1分hop → 5倍のイベント
+  - 例：1時間ウィンドウ、5分hop → 12倍のイベント
+- **下流コンシューマー**: より高頻度のイベント処理が必要
+- **ネットワーク帯域**: イベント増加に伴うトラフィック増大
+
+**対策**:
+- Hop間隔を適切に設定（過度に小さくしない）
+- 下流で必要なウィンドウサイズのみを購読（複数サイズを全て購読しない）
+- Changelog topic retention設定の見直し（ディスク使用量管理）
+- コンシューマー側のバックプレッシャー対策
+
+**Changelog topic命名規則**（ksqlDB自動生成）:
+```
+{queryId}-changelog
+
+例：CTAS_TRADE_5M_HOP1M_123-changelog
+```
+
+**証拠**（既存実装）:
+- `src/Infrastructure/Ksql/KsqlPersistentQueryMonitor.cs:437` - changelog topic生成
+- `physicalTests/OssSamples/TumblingCtasCachePocTests.cs:125` - Tumblingでもchangelog確認済み
+
 ### 互換性
 
 #### 既存コードへの影響
