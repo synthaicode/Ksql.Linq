@@ -153,29 +153,11 @@ public class HoppingWindowBasicTests
 
         try
         {
-            // === STEP 1: Create source stream FIRST ===
-            // Stream starts reading from latest offset when created
-            // Data produced AFTER stream creation will be read
-            Console.WriteLine("\n=== Creating source stream TEST_TRADES ===");
-            var createStreamSql = @"
-                CREATE OR REPLACE STREAM TEST_TRADES (
-                    Symbol VARCHAR,
-                    Timestamp TIMESTAMP,
-                    Price DOUBLE,
-                    Volume BIGINT
-                ) WITH (
-                    KAFKA_TOPIC='test_trades',
-                    VALUE_FORMAT='AVRO',
-                    TIMESTAMP='Timestamp'
-                );";
-
-            var streamResult = await ctx.ExecuteStatementAsync(createStreamSql);
-            Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
-
-            // Wait for stream metadata to be ready
-            Console.WriteLine("Waiting for TEST_TRADES stream metadata to be ready...");
+            // === STEP 1: Wait for auto-created stream to be ready ===
+            // EventSet<Trade> automatically creates TEST_TRADES stream
+            Console.WriteLine("\n=== Waiting for TEST_TRADES stream (auto-created by EventSet) ===");
             await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
-            Console.WriteLine("✓ TEST_TRADES stream is ready and consuming from topic");
+            Console.WriteLine("✓ TEST_TRADES stream is ready");
 
             // === STEP 2: Create hopping table BEFORE producing data ===
             // This ensures the hopping table's query is running when data arrives
@@ -227,16 +209,19 @@ public class HoppingWindowBasicTests
 
             // === STEP 3: NOW produce test data ===
             // Both TEST_TRADES stream and hopping table are ready to consume
-            // CRITICAL: Use recent past timestamps to ensure immediate processing
+            // Use timestamps in the recent PAST so ksqlDB processes them immediately
+            // All timestamps within a 3-minute window to ensure they're in the same hopping windows
             var now = DateTime.UtcNow;
-            var baseTime = now.AddSeconds(-30); // 30 seconds in the past (well within 5-min grace)
+            var baseTime = now.AddMinutes(-2); // 2 minutes in the past
             Console.WriteLine($"\nUsing base time: {baseTime:O} (current: {now:O})");
 
             Console.WriteLine("\n=== Producing test data ===");
+
+            // All trades within a 3-minute span, all in the past
             var trade1 = new Trade
             {
                 Symbol = "AAPL",
-                Timestamp = baseTime.AddSeconds(10),
+                Timestamp = baseTime.AddSeconds(10),     // -110 seconds from now
                 Price = 150.00,
                 Volume = 100
             };
@@ -254,34 +239,37 @@ public class HoppingWindowBasicTests
             var trade2 = new Trade
             {
                 Symbol = "AAPL",
-                Timestamp = baseTime.AddSeconds(70),  // 1:10
+                Timestamp = baseTime.AddSeconds(70),     // -50 seconds from now
                 Price = 151.00,
                 Volume = 200
             };
             await ctx.Trades.AddAsync(trade2);
-            Console.WriteLine($"  Produced trade 2: {trade2.Symbol} @ {trade2.Timestamp:O}, Price={trade2.Price}, Vol={trade2.Volume}");
+            Console.WriteLine($"  ✓ Produced trade 2: {trade2.Symbol} @ {trade2.Timestamp:O}, Price={trade2.Price}, Vol={trade2.Volume}");
 
             var trade3 = new Trade
             {
                 Symbol = "AAPL",
-                Timestamp = baseTime.AddSeconds(130), // 2:10
+                Timestamp = baseTime.AddSeconds(130),    // +10 seconds from now (slightly future)
                 Price = 152.00,
                 Volume = 150
             };
             await ctx.Trades.AddAsync(trade3);
-            Console.WriteLine($"  Produced trade 3: {trade3.Symbol} @ {trade3.Timestamp:O}, Price={trade3.Price}, Vol={trade3.Volume}");
+            Console.WriteLine($"  ✓ Produced trade 3: {trade3.Symbol} @ {trade3.Timestamp:O}, Price={trade3.Price}, Vol={trade3.Volume}");
 
             var trade4 = new Trade
             {
                 Symbol = "GOOGL",
-                Timestamp = baseTime.AddSeconds(20),
+                Timestamp = baseTime.AddSeconds(20),     // -100 seconds from now
                 Price = 2800.00,
                 Volume = 50
             };
             await ctx.Trades.AddAsync(trade4);
-            Console.WriteLine($"  Produced trade 4: {trade4.Symbol} @ {trade4.Timestamp:O}, Price={trade4.Price}, Vol={trade4.Volume}");
+            Console.WriteLine($"  ✓ Produced trade 4: {trade4.Symbol} @ {trade4.Timestamp:O}, Price={trade4.Price}, Vol={trade4.Volume}");
 
-            Console.WriteLine($"\nProduced 4 test trades. Timestamps range: {baseTime.AddSeconds(10):O} to {baseTime.AddSeconds(130):O}");
+            Console.WriteLine($"\nProduced 4 test trades.");
+            Console.WriteLine($"Timestamp range: {baseTime.AddSeconds(10):O} to {baseTime.AddSeconds(130):O}");
+            var timespanMinutes = (baseTime.AddSeconds(130) - baseTime.AddSeconds(10)).TotalMinutes;
+            Console.WriteLine($"Time span: {timespanMinutes:F1} minutes (fits in 5-minute hopping windows)");
 
             // === STEP 4: Wait for data to flow through both streams ===
             Console.WriteLine("\nWaiting 30 seconds for Kafka flush and hopping window processing...");
