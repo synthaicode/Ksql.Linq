@@ -121,7 +121,6 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         if (grace.HasValue)
             _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
 
-        _stage = QueryBuildStage.Window;
         return this;
     }
 
