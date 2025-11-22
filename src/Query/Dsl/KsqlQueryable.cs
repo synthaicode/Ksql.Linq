@@ -91,6 +91,51 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         throw new NotSupportedException("Legacy Tumbling overload is not supported in this phase.");
     }
 
+    /// <summary>
+    /// Apply hopping window with fixed size and advance interval (MVP: single window only)
+    /// </summary>
+    public KsqlQueryable<T1> Hopping(
+        Expression<Func<T1, DateTime>> time,
+        TimeSpan windowSize,
+        TimeSpan hopInterval,
+        TimeSpan? grace = null,
+        bool continuation = false)
+    {
+        if (hopInterval > windowSize)
+            throw new ArgumentException("Hop interval cannot exceed window size", nameof(hopInterval));
+
+        _model.Extras["WindowType"] = "HOPPING";
+        _model.HopInterval = hopInterval;
+        _model.Continuation = continuation;
+        _model.Extras["continuation"] = continuation;
+
+        if (time.Body is MemberExpression me)
+            _model.TimeKey = me.Member.Name;
+        else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+            _model.TimeKey = me2.Member.Name;
+
+        // MVP: single window only, so add one window spec
+        var windowStr = FormatWindow(windowSize);
+        _model.Windows.Add(windowStr);
+
+        if (grace.HasValue)
+            _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
+
+        _stage = QueryBuildStage.Window;
+        return this;
+    }
+
+    private static string FormatWindow(TimeSpan ts)
+    {
+        if (ts.TotalMinutes < 60 && ts.TotalMinutes == (int)ts.TotalMinutes)
+            return $"{(int)ts.TotalMinutes}m";
+        if (ts.TotalHours < 24 && ts.TotalHours == (int)ts.TotalHours)
+            return $"{(int)ts.TotalHours}h";
+        if (ts.TotalDays == (int)ts.TotalDays)
+            return $"{(int)ts.TotalDays}d";
+        return $"{(int)ts.TotalSeconds}s";
+    }
+
     // Filtering raw is upstream's responsibility. The DSL references an already-filtered stream
     // (e.g., trade_raw_filtered)
     public IScheduledScope<T1> TimeFrame<TSchedule>(

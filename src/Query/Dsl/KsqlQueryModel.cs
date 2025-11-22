@@ -47,6 +47,10 @@ public class KsqlQueryModel
     public int? BaseUnitSeconds { get; set; }
     public int? GraceSeconds { get; set; }
     public bool Continuation { get; set; } = false;
+    /// <summary>
+    /// Hop interval for hopping windows. If null, uses tumbling windows instead.
+    /// </summary>
+    public TimeSpan? HopInterval { get; set; }
     public bool PrimarySourceRequiresAlias { get; set; }
     public System.Collections.Generic.Dictionary<string, object?> Extras { get; } = new();
     internal ProjectionMetadata? SelectProjectionMetadata { get; set; }
@@ -75,6 +79,7 @@ public class KsqlQueryModel
             BaseUnitSeconds = BaseUnitSeconds,
             GraceSeconds = GraceSeconds,
             Continuation = Continuation,
+            HopInterval = HopInterval,
             PrimarySourceRequiresAlias = PrimarySourceRequiresAlias
         };
         clone.Windows.AddRange(Windows);

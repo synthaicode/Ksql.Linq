@@ -14,7 +14,7 @@ namespace Ksql.Linq.Query.Builders.Statements;
 /// </summary>
 internal static class KsqlCreateWindowedStatementBuilder
 {
-    public static string Build(string name, KsqlQueryModel model, string timeframe, string? emitOverride = null, string? inputOverride = null, RenderOptions? options = null)
+    public static string Build(string name, KsqlQueryModel model, string timeframe, string? emitOverride = null, string? inputOverride = null, RenderOptions? options = null, TimeSpan? hopInterval = null)
     {
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name required", nameof(name));
         if (model is null) throw new ArgumentNullException(nameof(model));
@@ -44,7 +44,9 @@ internal static class KsqlCreateWindowedStatementBuilder
         {
             baseSql = OverrideFrom(baseSql, inputOverride);
         }
-        var window = FormatWindow(timeframe);
+        var window = hopInterval.HasValue
+            ? FormatHoppingWindow(timeframe, hopInterval.Value)
+            : FormatWindow(timeframe);
         // Optional GRACE insertion using simple heuristic: if model has AdditionalSettings[graceSeconds] on adapted entity, caller should pre-embed.
         var sql = InjectWindowAfterFrom(baseSql, window);
         // 注入オフ: WINDOWSTART 列は値側に追加しない（Window開始時刻は windowed key から復元する）
@@ -87,6 +89,53 @@ internal static class KsqlCreateWindowedStatementBuilder
             'd' => $"WINDOW TUMBLING (SIZE {val} DAYS)",
             _ => $"WINDOW TUMBLING (SIZE {val} MINUTES)"
         };
+    }
+
+    private static string FormatHoppingWindow(string timeframe, TimeSpan hopInterval)
+    {
+        var (windowValue, windowUnit) = ParseTimeframe(timeframe);
+        var (hopValue, hopUnit) = FormatTimeSpan(hopInterval);
+        return $"WINDOW HOPPING (SIZE {windowValue} {windowUnit}, ADVANCE BY {hopValue} {hopUnit})";
+    }
+
+    private static (int Value, string Unit) ParseTimeframe(string timeframe)
+    {
+        // Handle special cases first
+        if (timeframe.EndsWith("wk", StringComparison.OrdinalIgnoreCase))
+        {
+            if (int.TryParse(timeframe[..^2], out var w))
+                return (w * 7, "DAYS");
+        }
+        if (timeframe.EndsWith("mo", StringComparison.OrdinalIgnoreCase))
+        {
+            if (int.TryParse(timeframe[..^2], out var mo))
+                return (mo, "MONTHS");
+        }
+
+        var unit = timeframe[^1];
+        if (!int.TryParse(timeframe[..^1], out var val)) val = 1;
+
+        var unitName = unit switch
+        {
+            's' => "SECONDS",
+            'm' => "MINUTES",
+            'h' => "HOURS",
+            'd' => "DAYS",
+            _ => "MINUTES"
+        };
+
+        return (val, unitName);
+    }
+
+    private static (int Value, string Unit) FormatTimeSpan(TimeSpan ts)
+    {
+        if (ts.TotalSeconds < 60 && ts.TotalSeconds == (int)ts.TotalSeconds)
+            return ((int)ts.TotalSeconds, "SECONDS");
+        if (ts.TotalMinutes < 60 && ts.TotalMinutes == (int)ts.TotalMinutes)
+            return ((int)ts.TotalMinutes, "MINUTES");
+        if (ts.TotalHours < 24 && ts.TotalHours == (int)ts.TotalHours)
+            return ((int)ts.TotalHours, "HOURS");
+        return ((int)ts.TotalDays, "DAYS");
     }
 
     private static string OverrideFrom(string sql, string source)
