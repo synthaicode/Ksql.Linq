@@ -156,6 +156,23 @@ public class HoppingWindowBasicTests
             // Ensure ksqlDB metadata is materialized for source stream
             await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
 
+            // Manually create source stream with explicit TIMESTAMP column
+            // This ensures ksqlDB uses event time (Timestamp) instead of kafka message time
+            var createStreamSql = @"
+                CREATE STREAM IF NOT EXISTS TEST_TRADES (
+                    Symbol VARCHAR,
+                    Timestamp TIMESTAMP,
+                    Price DOUBLE,
+                    Volume BIGINT
+                ) WITH (
+                    KAFKA_TOPIC='test_trades',
+                    VALUE_FORMAT='AVRO',
+                    TIMESTAMP='Timestamp'
+                );";
+
+            var streamResult = await ctx.ExecuteStatementAsync(createStreamSql);
+            Console.WriteLine($"Source stream creation: {(streamResult.IsSuccess ? "SUCCESS" : streamResult.Message)}");
+
             // Create hopping table via DDL generated from the DSL model
             const string hoppingTableName = "tradestats_5m_hop1m_live";
             var ddl = KsqlCreateWindowedStatementBuilder.Build(
@@ -197,7 +214,11 @@ public class HoppingWindowBasicTests
                 typeof(TradeStats));         // Concrete read type
 
             // Produce test data: multiple trades within a 5-minute window
-            var baseTime = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+            // CRITICAL: Use current time to avoid window expiration issues
+            // ksqlDB hopping windows use event time, and data too far in past/future is dropped
+            var now = DateTime.UtcNow;
+            var baseTime = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
+            Console.WriteLine($"Using base time: {baseTime:O} (current: {now:O})");
 
             await ctx.Trades.AddAsync(new Trade
             {
@@ -231,13 +252,36 @@ public class HoppingWindowBasicTests
                 Volume = 50
             });
 
-            Console.WriteLine($"Produced 4 test trades at base time {baseTime}");
+            Console.WriteLine($"Produced 4 test trades at base time {baseTime:O}");
 
-            // Wait for hopping window processing (5min window, 1min hop means multiple overlapping windows)
-            // Hopping windows need more time to materialize than tumbling windows
-            // Also need to wait for data to flow through ksqlDB query and materialize in state store
-            Console.WriteLine("Waiting 30 seconds for window materialization and state store update...");
-            await Task.Delay(TimeSpan.FromSeconds(30));
+            // === Test 0: Verify data flows through query with Push Query (EMIT CHANGES) ===
+            Console.WriteLine("\n=== Test 0: Push Query verification (EMIT CHANGES) ===");
+            try
+            {
+                var pushSql = $"SELECT * FROM {hoppingTableName.ToUpperInvariant()} EMIT CHANGES LIMIT 5;";
+                var pushRows = await ctx.QueryRowsAsync(pushSql, TimeSpan.FromSeconds(45));
+                Console.WriteLine($"Push query returned {pushRows?.Count ?? 0} change events");
+                if (pushRows != null && pushRows.Any())
+                {
+                    Console.WriteLine($"✓ Data is flowing through the hopping window query");
+                    foreach (var row in pushRows.Take(3))
+                    {
+                        Console.WriteLine($"  Change event: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("⚠ WARNING: Push query returned no events - data may not be flowing");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠ Push query error: {ex.Message}");
+            }
+
+            // Wait additional time for state store materialization
+            Console.WriteLine("\nWaiting 10 seconds for state store materialization...");
+            await Task.Delay(TimeSpan.FromSeconds(10));
 
             // === Test 1: Pull Query to snapshot windows ===
             Console.WriteLine("=== Test 1: Pull Query with PullRowsAsync ===");
