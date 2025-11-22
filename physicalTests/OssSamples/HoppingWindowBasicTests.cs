@@ -65,23 +65,13 @@ public class HoppingWindowBasicTests
 
         protected override void OnModelCreating(IModelBuilder mb)
         {
-            // Hopping window: 5 minute window, 1 minute hop
-            mb.Entity<TradeStats>()
-              .ToQuery(q => q.From<Trade>()
-                .Hopping(
-                    time: t => t.Timestamp,
-                    windowSize: TimeSpan.FromMinutes(5),
-                    hopInterval: TimeSpan.FromMinutes(1))
-                .GroupBy(t => t.Symbol)
-                .Select(g => new TradeStats
-                {
-                    Symbol = g.Key,
-                    BucketStart = g.WindowStart(),
-                    AvgPrice = g.Average(x => x.Price),
-                    TotalVolume = g.Sum(x => x.Volume),
-                    Count = g.Count()
-                }));
-    }
+            // NOTE: We manually execute DDL in the test (line 166-189) to avoid interference
+            // from DerivedTumblingPipeline which doesn't support hopping windows.
+            // ToQuery is NOT used here to prevent automatic pipeline execution.
+
+            // Base entity registration only (no ToQuery)
+            mb.Entity<Trade>();
+        }
     }
 
     [Fact]
@@ -192,6 +182,11 @@ public class HoppingWindowBasicTests
 
             var ddlResult = await ctx.ExecuteStatementAsync(ddl);
             Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
+            Console.WriteLine($"DDL executed successfully: {hoppingTableName}");
+
+            // Wait for query to be RUNNING
+            await WaitForQueryRunningAsync("http://127.0.0.1:18088", hoppingTableName, TimeSpan.FromSeconds(60));
+            Console.WriteLine($"Query is RUNNING for {hoppingTableName}");
 
             // Register hopping window type mapping (required for TimeBucket.GetHopping())
             // This mapping allows TimeBucket.GetHopping<TradeStats>() to resolve to the correct table
@@ -239,7 +234,10 @@ public class HoppingWindowBasicTests
             Console.WriteLine($"Produced 4 test trades at base time {baseTime}");
 
             // Wait for hopping window processing (5min window, 1min hop means multiple overlapping windows)
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            // Hopping windows need more time to materialize than tumbling windows
+            // Also need to wait for data to flow through ksqlDB query and materialize in state store
+            Console.WriteLine("Waiting 30 seconds for window materialization and state store update...");
+            await Task.Delay(TimeSpan.FromSeconds(30));
 
             // === Test 1: Pull Query to snapshot windows ===
             Console.WriteLine("=== Test 1: Pull Query with PullRowsAsync ===");
@@ -312,6 +310,44 @@ public class HoppingWindowBasicTests
         {
             return false;
         }
+    }
+
+    private static async Task WaitForQueryRunningAsync(string ksqlBaseUrl, string nameToken, TimeSpan timeout)
+    {
+        using var http = new HttpClient { BaseAddress = new Uri(ksqlBaseUrl.TrimEnd('/')) };
+        var until = DateTime.UtcNow + timeout;
+        int consec = 0;
+        while (DateTime.UtcNow < until)
+        {
+            try
+            {
+                var payload = new { ksql = "SHOW QUERIES;", streamsProperties = new { } };
+                using var content = new StringContent(
+                    JsonSerializer.Serialize(payload),
+                    System.Text.Encoding.UTF8,
+                    "application/json");
+                using var resp = await http.PostAsync("/ksql", content);
+                var body = await resp.Content.ReadAsStringAsync();
+
+                // Check if query with nameToken exists and is RUNNING
+                if (body.IndexOf(nameToken, StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    body.IndexOf("RUNNING", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    consec++;
+                    if (consec >= 3) return; // Consistent for 3 checks
+                }
+                else
+                {
+                    consec = 0;
+                }
+            }
+            catch
+            {
+                consec = 0;
+            }
+            await Task.Delay(1000);
+        }
+        throw new TimeoutException($"Query containing '{nameToken}' did not reach RUNNING state within {timeout}");
     }
 
     private static async Task CleanupTestArtifactsAsync()
