@@ -714,6 +714,759 @@ var sqlMap = KsqlCreateWindowedStatementBuilder.BuildAllHopping(
 // sqlMap["15m:hop1m"] = "CREATE STREAM trade_avg_15m_hop1m_live ... WINDOW HOPPING (SIZE 15 MINUTES, ADVANCE BY 1 MINUTES)"
 ```
 
+### Phase 5: ランタイムパイプライン（複数時間帯処理）
+
+**Tumblingと同様のC#側処理が必要**: 複数のウィンドウサイズを自動的に複数のKSQLストリームに展開
+
+#### 5.1 処理フロー概要
+
+```
+ユーザーDSL呼び出し
+    ↓
+.Hopping(windows: new HoppingWindows { Minutes = [5, 10, 15], HopInterval = 1m })
+    ↓
+KsqlQueryModel構築 (model.Windows = ["5m:hop1m", "10m:hop1m", "15m:hop1m"])
+    ↓
+HoppingQao生成 (クエリ分析オブジェクト)
+    ↓
+HoppingDerivationPlanner.Plan() ← 複数のDerivedEntity生成
+    ↓
+DerivedHoppingPipeline.RunAsync() ← 各エンティティのDDL実行
+    ↓
+3つの独立したKSQLストリームが作成される:
+- trade_bar_5m_hop1m_live
+- trade_bar_10m_hop1m_live
+- trade_bar_15m_hop1m_live
+```
+
+#### 5.2 新クラス: `HoppingQao` (Query Analysis Object)
+
+**役割**: DSLから抽出したHopping Window情報を保持
+
+```csharp
+namespace Ksql.Linq.Query.Analysis;
+
+/// <summary>
+/// Hopping window query analysis object
+/// Parallel to TumblingQao for hopping windows
+/// </summary>
+internal class HoppingQao
+{
+    /// <summary>
+    /// Timestamp column name
+    /// </summary>
+    public string TimeKey { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Multiple window sizes (e.g., [5m, 10m, 15m])
+    /// </summary>
+    public IReadOnlyList<Timeframe> Windows { get; init; } = new List<Timeframe>();
+
+    /// <summary>
+    /// Shared hop interval for all windows
+    /// </summary>
+    public TimeSpan HopInterval { get; init; }
+
+    /// <summary>
+    /// GROUP BY keys
+    /// </summary>
+    public IReadOnlyList<string> Keys { get; init; } = new List<string>();
+
+    /// <summary>
+    /// SELECT projection
+    /// </summary>
+    public IReadOnlyList<string> Projection { get; init; } = new List<string>();
+
+    /// <summary>
+    /// POCO shape (column metadata)
+    /// </summary>
+    public IReadOnlyList<ColumnShape> PocoShape { get; init; } = new List<ColumnShape>();
+
+    /// <summary>
+    /// Grace period in seconds
+    /// </summary>
+    public int? GraceSeconds { get; init; }
+
+    /// <summary>
+    /// Per-timeframe grace overrides
+    /// </summary>
+    public Dictionary<string, int> GracePerTimeframe { get; } = new();
+}
+```
+
+#### 5.3 新クラス: `HoppingDerivationPlanner`
+
+**役割**: 複数のウィンドウサイズから派生エンティティを計画
+
+```csharp
+namespace Ksql.Linq.Query.Analysis;
+
+/// <summary>
+/// Plans derived entities for hopping windows
+/// Parallel to DerivationPlanner for tumbling windows
+/// </summary>
+internal static class HoppingDerivationPlanner
+{
+    /// <summary>
+    /// Generate one DerivedEntity per window size
+    /// </summary>
+    public static IReadOnlyList<DerivedEntity> Plan(HoppingQao qao, EntityModel model)
+    {
+        var entities = new List<DerivedEntity>();
+        var baseId = ModelNaming.GetBaseId(model);
+
+        var keyShapes = qao.Keys.Select(k =>
+        {
+            var match = qao.PocoShape.FirstOrDefault(p => p.Name == k)
+                ?? throw new InvalidOperationException($"Key property '{k}' not found");
+            return match;
+        }).ToArray();
+
+        var valueShapes = qao.PocoShape.ToArray();
+
+        // 各ウィンドウサイズごとにエンティティを生成
+        foreach (var tf in qao.Windows)
+        {
+            var tfStr = $"{tf.Value}{tf.Unit}";
+            var hopStr = FormatHopInterval(qao.HopInterval);
+            var liveId = $"{baseId}_{tfStr}_hop{hopStr}_live";
+
+            var live = new DerivedEntity
+            {
+                Id = liveId,
+                Role = Role.HoppingLive,  // 新しいRole列挙値
+                Timeframe = tf,
+                HopInterval = qao.HopInterval,  // NEW: hop間隔を保持
+                KeyShape = keyShapes,
+                ValueShape = valueShapes,
+                InputHint = null,  // Hoppingは元ストリームから直接読む
+                TimeKey = qao.TimeKey,
+                GraceSeconds = qao.GraceSeconds ?? 1
+            };
+
+            entities.Add(live);
+        }
+
+        return entities;
+    }
+
+    private static string FormatHopInterval(TimeSpan hop)
+    {
+        if (hop.TotalMinutes < 60 && hop.TotalMinutes == (int)hop.TotalMinutes)
+            return $"{(int)hop.TotalMinutes}m";
+        if (hop.TotalHours < 24 && hop.TotalHours == (int)hop.TotalHours)
+            return $"{(int)hop.TotalHours}h";
+        return $"{(int)hop.TotalDays}d";
+    }
+}
+```
+
+#### 5.4 新クラス: `DerivedHoppingPipeline`
+
+**役割**: 複数のエンティティに対してDDL実行を orchestrate
+
+```csharp
+namespace Ksql.Linq.Query.Analysis;
+
+/// <summary>
+/// Orchestrates execution of hopping window DDL statements
+/// Parallel to DerivedTumblingPipeline
+/// </summary>
+internal static class DerivedHoppingPipeline
+{
+    public static async Task<IReadOnlyList<ExecutionResult>> RunAsync(
+        HoppingQao qao,
+        EntityModel baseModel,
+        KsqlQueryModel queryModel,
+        Func<EntityModel, string, Task<KsqlDbResponse>> execute,
+        Func<string, Type> resolveType,
+        MappingRegistry mapping,
+        ConcurrentDictionary<Type, EntityModel> registry,
+        ILogger logger,
+        Func<ExecutionResult, Task>? afterExecuteAsync = null,
+        Action<EntityModel>? applyTopicSettings = null)
+    {
+        var executions = new List<ExecutionResult>();
+        var baseName = ModelNaming.GetBaseId(baseModel);
+
+        // Step 1: 派生エンティティの計画
+        var entities = HoppingDerivationPlanner.Plan(qao, baseModel);
+        var models = EntityModelAdapter.Adapt(entities);
+
+        // Step 2: 各エンティティに対してDDL実行
+        foreach (var m in models)
+        {
+            var metadata = m.GetOrCreateMetadata();
+
+            // トピック設定適用
+            if (string.IsNullOrWhiteSpace(m.TopicName) && !string.IsNullOrWhiteSpace(metadata.Identifier))
+                m.TopicName = metadata.Identifier;
+
+            applyTopicSettings?.Invoke(m);
+
+            if (m.AdditionalSettings.Count > 0)
+            {
+                var refreshed = QueryMetadataFactory.FromAdditionalSettings(m.AdditionalSettings);
+                m.SetMetadata(refreshed);
+            }
+
+            metadata = m.GetOrCreateMetadata();
+            var role = metadata.Role == "HoppingLive" ? Role.HoppingLive : Role.HoppingLive;
+            var tf = metadata.TimeframeRaw ?? "1m";
+
+            // Step 3: DDL生成
+            var (ddl, dt, ns, inputOverride, shouldExecute) =
+                HoppingEntityDdlPlanner.Build(
+                    baseName,
+                    queryModel,
+                    m,
+                    role,
+                    qao.HopInterval,  // hop間隔を渡す
+                    resolveType);
+
+            if (!shouldExecute || string.IsNullOrWhiteSpace(ddl))
+            {
+                registry[dt] = m;
+                continue;
+            }
+
+            // Step 4: DDL実行
+            logger.LogInformation("KSQL DDL (hopping {Entity}): {Sql}", m.TopicName, ddl);
+            var response = await execute(m, ddl);
+            var queryId = QueryIdUtils.ExtractQueryId(response);
+
+            // Step 5: TimeBucket型マッピング登録
+            try
+            {
+                var period = TimeframeUtils.ToPeriod(tf);
+                TimeBucketTypes.RegisterHoppingRead(
+                    baseModel.EntityType,
+                    period,
+                    qao.HopInterval,
+                    dt);
+            }
+            catch { /* best-effort */ }
+
+            // Step 6: Avro Schema Registry登録
+            if (role == Role.HoppingLive)
+            {
+                try
+                {
+                    var derivedMeta = m.GetOrCreateMetadata();
+                    var keyNames = derivedMeta.Keys.Names ?? Array.Empty<string>();
+                    var keyTypes = derivedMeta.Keys.Types ?? Array.Empty<Type>();
+                    var valNames = derivedMeta.Projection.Names ?? Array.Empty<string>();
+                    var valTypes = derivedMeta.Projection.Types ?? Array.Empty<Type>();
+
+                    // Key/Value メタデータ構築して登録
+                    var kvMapping = mapping.RegisterMeta(dt, (keyMeta, valMeta), m.TopicName,
+                        genericKey: true,
+                        genericValue: true,
+                        overrideNamespace: ns);
+                }
+                catch { }
+            }
+
+            var result = new ExecutionResult(m, role, ddl, inputOverride, response, queryId);
+            executions.Add(result);
+            registry[dt] = m;
+
+            if (afterExecuteAsync != null)
+                await afterExecuteAsync(result).ConfigureAwait(false);
+        }
+
+        return executions;
+    }
+}
+```
+
+#### 5.5 新クラス: `HoppingEntityDdlPlanner`
+
+**役割**: HOPPING構文のDDLを生成
+
+```csharp
+namespace Ksql.Linq.Query.Builders.Planners;
+
+/// <summary>
+/// Generates DDL for hopping window entities
+/// </summary>
+internal static class HoppingEntityDdlPlanner
+{
+    public static (string Ddl, Type DerivedType, string Namespace, string? InputOverride, bool ShouldExecute)
+        Build(
+            string baseName,
+            KsqlQueryModel queryModel,
+            EntityModel entityModel,
+            Role role,
+            TimeSpan hopInterval,
+            Func<string, Type> resolveType)
+    {
+        var metadata = entityModel.GetOrCreateMetadata();
+        var timeframe = metadata.TimeframeRaw ?? "1m";
+
+        // 派生型を動的生成または解決
+        var derivedType = ResolveDerivedType(entityModel, timeframe, resolveType);
+
+        // HOPPING構文のDDL生成
+        var ddl = KsqlCreateWindowedStatementBuilder.Build(
+            name: entityModel.TopicName,
+            model: queryModel,
+            timeframe: timeframe,
+            hopInterval: hopInterval,  // NEW: hop間隔を渡す
+            emitOverride: "EMIT CHANGES",
+            inputOverride: null);
+
+        return (ddl, derivedType, entityModel.Namespace, null, true);
+    }
+
+    private static Type ResolveDerivedType(EntityModel model, string timeframe, Func<string, Type> resolver)
+    {
+        // 型名の例: "Trade_5m_hop1m_live"
+        var typeName = $"{model.EntityType.Name}_{timeframe}_hop{FormatHop(model)}";
+        return resolver(typeName) ?? model.EntityType;
+    }
+}
+```
+
+#### 5.6 `Role`列挙型の拡張
+
+```csharp
+namespace Ksql.Linq.Query.Analysis;
+
+internal enum Role
+{
+    Final1sStream,    // Tumbling用: 1s hub stream
+    Live,             // Tumbling用: Live table
+    HoppingLive,      // NEW: Hopping用 live stream
+    // ... その他
+}
+```
+
+#### 5.7 `TimeBucketTypes`の拡張
+
+**既存**: Tumbling用のマッピング
+```csharp
+TimeBucketTypes.RegisterRead(baseType, period, derivedType);
+// TimeBucket<Trade>.Read(Period.Min5) → Trade_5m_live型
+```
+
+**新規**: Hopping用のマッピング
+```csharp
+namespace Ksql.Linq.Runtime;
+
+public static class TimeBucketTypes
+{
+    // NEW: Hopping用マッピング
+    public static void RegisterHoppingRead(
+        Type baseType,
+        Period period,
+        TimeSpan hopInterval,
+        Type derivedType)
+    {
+        var key = $"{baseType.FullName}:{period}:hop{FormatHop(hopInterval)}";
+        _readMappings[key] = derivedType;
+    }
+
+    // 使用例: TimeBucket<Trade>.ReadHopping(Period.Min5, TimeSpan.FromMinutes(1))
+    public static Type ResolveHoppingRead(Type baseType, Period period, TimeSpan hopInterval)
+    {
+        var key = $"{baseType.FullName}:{period}:hop{FormatHop(hopInterval)}";
+        return _readMappings.TryGetValue(key, out var type) ? type : baseType;
+    }
+}
+```
+
+#### 5.8 実行例の完全なフロー
+
+```csharp
+// ========================================
+// 1. ユーザーコード
+// ========================================
+modelBuilder.Entity<TradingStats>()
+    .ToQuery(q => q.From<Trade>()
+        .Hopping(
+            time: t => t.Timestamp,
+            windows: new HoppingWindows
+            {
+                Minutes = new[] { 5, 10, 15 },
+                HopInterval = TimeSpan.FromMinutes(1)
+            })
+        .GroupBy(t => new { t.Symbol })
+        .Select(g => new TradingStats
+        {
+            Symbol = g.Key.Symbol,
+            BucketStart = g.WindowStart(),
+            AvgPrice = g.Average(t => t.Price)
+        }));
+
+// ========================================
+// 2. C#ランタイム処理
+// ========================================
+
+// 2.1 DSL → KsqlQueryModel
+var queryModel = new KsqlQueryModel
+{
+    Windows = ["5m:hop1m", "10m:hop1m", "15m:hop1m"],
+    HoppingWindows = new HoppingWindows { ... },
+    // ...
+};
+
+// 2.2 KsqlQueryModel → HoppingQao
+var qao = new HoppingQao
+{
+    TimeKey = "Timestamp",
+    Windows = [
+        new Timeframe(5, "m"),
+        new Timeframe(10, "m"),
+        new Timeframe(15, "m")
+    ],
+    HopInterval = TimeSpan.FromMinutes(1),
+    Keys = ["Symbol"],
+    Projection = ["Symbol", "BucketStart", "AvgPrice"],
+    // ...
+};
+
+// 2.3 HoppingQao → DerivedEntity[]
+var entities = HoppingDerivationPlanner.Plan(qao, baseModel);
+// 結果:
+// - DerivedEntity { Id = "trading_stats_5m_hop1m_live", ... }
+// - DerivedEntity { Id = "trading_stats_10m_hop1m_live", ... }
+// - DerivedEntity { Id = "trading_stats_15m_hop1m_live", ... }
+
+// 2.4 DerivedEntity[] → DDL実行
+await DerivedHoppingPipeline.RunAsync(qao, baseModel, queryModel, execute, ...);
+// 実行内容:
+// - CREATE STREAM trading_stats_5m_hop1m_live AS ... WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES);
+// - CREATE STREAM trading_stats_10m_hop1m_live AS ... WINDOW HOPPING (SIZE 10 MINUTES, ADVANCE BY 1 MINUTES);
+// - CREATE STREAM trading_stats_15m_hop1m_live AS ... WINDOW HOPPING (SIZE 15 MINUTES, ADVANCE BY 1 MINUTES);
+
+// ========================================
+// 3. ksqlDB側の結果
+// ========================================
+// 3つの独立したストリームが作成される:
+// - trading_stats_5m_hop1m_live (5分ウィンドウ、1分hop)
+// - trading_stats_10m_hop1m_live (10分ウィンドウ、1分hop)
+// - trading_stats_15m_hop1m_live (15分ウィンドウ、1分hop)
+```
+
+### Phase 6: 読み取りAPI（C#消費者向け）
+
+**重要**: KSQL生成だけでなく、生成されたHoppingストリームを**C#から読み取るAPI**も必要
+
+#### 6.1 既存のTumbling読み取りAPI
+
+```csharp
+// Tumbling: TimeBucket<T>を使った読み取り
+var trades5m = await TimeBucket.Get<Trade>(_context, Period.Min5).ToListAsync();
+// → trade_5m_live ストリームから読み取り
+```
+
+**内部動作**:
+1. `Period.Min5` → `trade_5m_live`トピック名を解決
+2. `TimeBucketTypes.ResolveRead(typeof(Trade), Period.Min5)` → `Trade_5m_live`型を解決
+3. TableCacheまたはksqlDB pull queryで読み取り
+
+#### 6.2 新しいHopping読み取りAPI設計
+
+**Option A: 既存APIの拡張（推奨）**
+
+```csharp
+namespace Ksql.Linq.Runtime;
+
+public static class TimeBucket
+{
+    // 既存: Tumbling用
+    public static TimeBucket<T> Get<T>(KsqlContext ctx, Period period) where T : class
+        => new(ctx, period, hopInterval: null);
+
+    // NEW: Hopping用オーバーロード
+    public static HoppingTimeBucket<T> GetHopping<T>(
+        KsqlContext ctx,
+        Period period,
+        TimeSpan hopInterval) where T : class
+        => new(ctx, period, hopInterval);
+}
+
+/// <summary>
+/// Hopping window time bucket reader
+/// </summary>
+public sealed class HoppingTimeBucket<T> where T : class
+{
+    private readonly KsqlContext _ctx;
+    private readonly Period _period;
+    private readonly TimeSpan _hopInterval;
+    private readonly string _liveTopic;
+    private readonly Type _readType;
+
+    internal HoppingTimeBucket(KsqlContext ctx, Period period, TimeSpan hopInterval)
+    {
+        _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
+        _period = period;
+        _hopInterval = hopInterval;
+
+        // トピック名解決: trade_5m_hop1m_live
+        _liveTopic = TimeBucketTypes.GetHoppingLiveTopicName(typeof(T), period, hopInterval);
+
+        // 型解決: Trade_5m_hop1m_live
+        _readType = TimeBucketTypes.ResolveHoppingRead(typeof(T), period, hopInterval) ?? typeof(T);
+    }
+
+    /// <summary>
+    /// Read all records from the hopping window stream
+    /// </summary>
+    public async Task<List<T>> ToListAsync(CancellationToken ct = default)
+    {
+        // TableCacheから読み取り（Tumblingと同じロジック）
+        var cache = GetTableCache(_ctx, _readType);
+        var resultEnum = await cache.ToListAsync(filter: null, timeout: null);
+
+        // 型マッピングして返す
+        return MapResults(resultEnum);
+    }
+
+    /// <summary>
+    /// Read records filtered by primary key
+    /// </summary>
+    public Task<List<T>> ToListAsync(IReadOnlyList<string> pkFilter, CancellationToken ct = default)
+    {
+        // pkFilterでフィルタリングして読み取り
+        var cache = GetTableCache(_ctx, _readType);
+        return MapFilteredResults(cache, pkFilter);
+    }
+
+    /// <summary>
+    /// Read records for a specific time range
+    /// </summary>
+    public async Task<List<T>> ReadRangeAsync(
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken ct = default)
+    {
+        // WindowStart/WindowEnd でフィルタリング
+        var allRecords = await ToListAsync(ct);
+
+        return allRecords
+            .Where(r =>
+            {
+                var windowStart = GetWindowStart(r);
+                return windowStart >= startUtc && windowStart < endUtc;
+            })
+            .ToList();
+    }
+
+    private static DateTime GetWindowStart(T record)
+    {
+        // WindowStart, BucketStart などのプロパティから抽出
+        var prop = typeof(T).GetProperty("WindowStart") ?? typeof(T).GetProperty("BucketStart");
+        return prop != null ? (DateTime)prop.GetValue(record)! : DateTime.MinValue;
+    }
+}
+```
+
+#### 6.3 `TimeBucketTypes`の拡張（トピック名解決）
+
+```csharp
+namespace Ksql.Linq.Runtime;
+
+public static class TimeBucketTypes
+{
+    private static readonly Dictionary<string, string> _hoppingTopicNames = new();
+
+    /// <summary>
+    /// Get hopping live topic name (e.g., "trade_5m_hop1m_live")
+    /// </summary>
+    public static string GetHoppingLiveTopicName(Type baseType, Period period, TimeSpan hopInterval)
+    {
+        var periodStr = FormatPeriod(period);  // "5m"
+        var hopStr = FormatHop(hopInterval);    // "1m"
+        var baseId = baseType.Name.ToLowerInvariant();  // "trade"
+
+        var key = $"{baseType.FullName}:{period}:hop{hopStr}";
+
+        if (_hoppingTopicNames.TryGetValue(key, out var cached))
+            return cached;
+
+        // デフォルト命名: {base}_{period}_hop{hop}_live
+        var topicName = $"{baseId}_{periodStr}_hop{hopStr}_live";
+        _hoppingTopicNames[key] = topicName;
+        return topicName;
+    }
+
+    private static string FormatPeriod(Period period)
+    {
+        return period.Unit switch
+        {
+            PeriodUnit.Minutes => $"{period.Value}m",
+            PeriodUnit.Hours => $"{period.Value}h",
+            PeriodUnit.Days => $"{period.Value}d",
+            _ => $"{period.Value}s"
+        };
+    }
+
+    private static string FormatHop(TimeSpan hop)
+    {
+        if (hop.TotalMinutes < 60 && hop.TotalMinutes == (int)hop.TotalMinutes)
+            return $"{(int)hop.TotalMinutes}m";
+        if (hop.TotalHours < 24 && hop.TotalHours == (int)hop.TotalHours)
+            return $"{(int)hop.TotalHours}h";
+        return $"{(int)hop.TotalDays}d";
+    }
+}
+```
+
+#### 6.4 使用例: C#からHoppingストリームを読み取る
+
+```csharp
+// ========================================
+// 例1: 基本的な読み取り
+// ========================================
+
+// 5分ウィンドウ、1分hopのストリームから全件取得
+var trades5m = await TimeBucket
+    .GetHopping<Trade>(_context, Period.Min5, TimeSpan.FromMinutes(1))
+    .ToListAsync();
+
+Console.WriteLine($"Retrieved {trades5m.Count} hopping window records");
+
+// ========================================
+// 例2: プライマリキーでフィルタリング
+// ========================================
+
+// 特定のシンボルのみ取得
+var appleRecords = await TimeBucket
+    .GetHopping<Trade>(_context, Period.Min5, TimeSpan.FromMinutes(1))
+    .ToListAsync(pkFilter: new[] { "AAPL" });
+
+// ========================================
+// 例3: 時間範囲でフィルタリング
+// ========================================
+
+// 過去1時間分のHoppingウィンドウデータを取得
+var recent = await TimeBucket
+    .GetHopping<Trade>(_context, Period.Min5, TimeSpan.FromMinutes(1))
+    .ReadRangeAsync(
+        startUtc: DateTime.UtcNow.AddHours(-1),
+        endUtc: DateTime.UtcNow);
+
+// ========================================
+// 例4: 複数のウィンドウサイズを並行読み取り
+// ========================================
+
+var hop1m = TimeSpan.FromMinutes(1);
+
+var (data5m, data10m, data15m) = await (
+    TimeBucket.GetHopping<Trade>(_context, Period.Min5, hop1m).ToListAsync(),
+    TimeBucket.GetHopping<Trade>(_context, Period.Min10, hop1m).ToListAsync(),
+    TimeBucket.GetHopping<Trade>(_context, Period.Min15, hop1m).ToListAsync()
+);
+
+// 3つの異なる粒度のデータを同時取得
+Console.WriteLine($"5m: {data5m.Count}, 10m: {data10m.Count}, 15m: {data15m.Count}");
+
+// ========================================
+// 例5: リアルタイムダッシュボード
+// ========================================
+
+public class DashboardService
+{
+    private readonly KsqlContext _context;
+
+    public async Task<MultiScaleStats> GetLatestStatsAsync(string symbol)
+    {
+        var hop1m = TimeSpan.FromMinutes(1);
+        var now = DateTime.UtcNow;
+        var oneHourAgo = now.AddHours(-1);
+
+        // 複数のタイムスケールのデータを並行取得
+        var tasks = new[]
+        {
+            Period.Min1,
+            Period.Min5,
+            Period.Min15,
+            Period.Hour1
+        }.Select(period => TimeBucket
+            .GetHopping<TradingStats>(_context, period, hop1m)
+            .ReadRangeAsync(oneHourAgo, now))
+         .ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        return new MultiScaleStats
+        {
+            OneMinute = results[0].FirstOrDefault(r => r.Symbol == symbol),
+            FiveMinute = results[1].FirstOrDefault(r => r.Symbol == symbol),
+            FifteenMinute = results[2].FirstOrDefault(r => r.Symbol == symbol),
+            OneHour = results[3].FirstOrDefault(r => r.Symbol == symbol)
+        };
+    }
+}
+```
+
+#### 6.5 **Option B: 統合API（Tumbling/Hopping両対応）**
+
+```csharp
+public static class TimeBucket
+{
+    /// <summary>
+    /// Get time bucket reader (auto-detects Tumbling vs Hopping)
+    /// </summary>
+    public static ITimeBucketReader<T> Get<T>(
+        KsqlContext ctx,
+        Period period,
+        TimeSpan? hopInterval = null) where T : class
+    {
+        if (hopInterval.HasValue)
+            return new HoppingTimeBucket<T>(ctx, period, hopInterval.Value);
+        else
+            return new TumblingTimeBucket<T>(ctx, period);
+    }
+}
+
+public interface ITimeBucketReader<T>
+{
+    Task<List<T>> ToListAsync(CancellationToken ct = default);
+    Task<List<T>> ToListAsync(IReadOnlyList<string> pkFilter, CancellationToken ct = default);
+}
+```
+
+**使用例**:
+```csharp
+// Tumbling
+var tumbling = await TimeBucket.Get<Trade>(_ctx, Period.Min5).ToListAsync();
+
+// Hopping
+var hopping = await TimeBucket.Get<Trade>(_ctx, Period.Min5, hop: TimeSpan.FromMinutes(1)).ToListAsync();
+```
+
+#### 6.6 `EventSet<T>`の拡張（オプション）
+
+**ストリーミング読み取り**も追加可能:
+
+```csharp
+public class EventSet<T> where T : class
+{
+    // NEW: Hoppingストリームをリアルタイム消費
+    public IAsyncEnumerable<T> ConsumeHoppingAsync(
+        Period period,
+        TimeSpan hopInterval,
+        CancellationToken ct = default)
+    {
+        var topicName = TimeBucketTypes.GetHoppingLiveTopicName(typeof(T), period, hopInterval);
+        return ConsumeFromTopicAsync(topicName, ct);
+    }
+}
+```
+
+**使用例**:
+```csharp
+// リアルタイムでHoppingウィンドウの更新を受信
+await foreach (var trade in _context.Set<Trade>()
+    .ConsumeHoppingAsync(Period.Min5, TimeSpan.FromMinutes(1)))
+{
+    Console.WriteLine($"New 5m window: {trade.Symbol} @ {trade.AvgPrice}");
+}
+```
+
 ---
 
 ## 📝 実装計画
@@ -746,15 +1499,38 @@ var sqlMap = KsqlCreateWindowedStatementBuilder.BuildAllHopping(
 - [ ] SQL生成テスト作成（単一＋複数サイズ）
 - [ ] Tumbling `BuildAll()`との一貫性確認
 
-#### **Milestone 5: 統合テスト** (Week 5-6)
+#### **Milestone 5: ランタイムパイプライン** (Week 5-6)
+- [ ] `HoppingQao`クラス実装
+- [ ] `HoppingDerivationPlanner`実装（複数エンティティ計画）
+- [ ] `DerivedHoppingPipeline`実装（DDL実行オーケストレーション）
+- [ ] `HoppingEntityDdlPlanner`実装
+- [ ] `Role.HoppingLive`列挙値追加
+- [ ] `TimeBucketTypes.RegisterHoppingRead()`実装
+- [ ] パイプライン統合テスト作成
+
+#### **Milestone 6: 読み取りAPI** (Week 6-7)
+- [ ] `HoppingTimeBucket<T>`クラス実装
+- [ ] `TimeBucket.GetHopping()`メソッド追加
+- [ ] `TimeBucketTypes.GetHoppingLiveTopicName()`実装
+- [ ] `ReadRangeAsync()`時間範囲フィルタリング実装
+- [ ] `EventSet<T>.ConsumeHoppingAsync()`実装（オプション）
+- [ ] 読み取りAPIユニットテスト作成
+
+#### **Milestone 7: 統合テスト** (Week 7-8)
 - [ ] End-to-end統合テスト作成
 - [ ] Kafkaとの統合テスト
 - [ ] ksqlDBとの統合テスト
+- [ ] 複数時間帯の並行読み取りテスト
+- [ ] リアルタイムストリーミング消費テスト
 
-#### **Milestone 6: ドキュメントとサンプル** (Week 6-7)
+#### **Milestone 8: ドキュメントとサンプル** (Week 8-9)
 - [ ] API documentation作成
 - [ ] サンプルプロジェクト作成（`examples/hopping-windows/`）
+  - [ ] 基本的なHopping例
+  - [ ] 複数時間帯のダッシュボード例
+  - [ ] リアルタイム移動平均例
 - [ ] README更新
+- [ ] リリースノート作成
 
 ---
 
