@@ -101,12 +101,12 @@ public class KsqlQueryModel
 
     public bool HasGroupBy() => GroupByExpression != null;
 
-    public bool HasTumbling() => Windows.Count > 0;
-
     public bool HasHopping() =>
         Extras.TryGetValue("WindowType", out var windowType) &&
         windowType is string wt &&
         wt == "HOPPING";
+
+    public bool HasTumbling() => Windows.Count > 0 && !HasHopping();
 
     public bool HasAggregates()
     {
