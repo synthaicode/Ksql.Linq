@@ -1,0 +1,732 @@
+# Hopping Windowsサポート提案書
+## Ksql.Linq OSS Enhancement Proposal
+
+---
+
+## 📋 概要 (Overview)
+
+**目的**: Ksql.LinqにHopping Windows（ホッピングウィンドウ）のサポートを追加し、重複するウィンドウベースのストリーム処理を可能にする
+
+**現状**: 現在、Ksql.LinqはTumbling Windows（固定サイズ・非重複ウィンドウ）のみをサポート
+
+**提案**: Hopping Windowsを追加実装し、より柔軟なウィンドウ処理パターンを提供
+
+---
+
+## 🎯 Hopping Windowsとは
+
+### 定義
+Hopping Windowsは、固定サイズのウィンドウが指定された間隔（hop）で前進するウィンドウ型です。
+
+### 特徴
+- **固定ウィンドウサイズ**: ウィンドウの長さは一定
+- **可変Hop間隔**: ウィンドウが進む間隔を指定可能
+- **重複可能**: hop < window size の場合、ウィンドウが重複
+- **非重複も可能**: hop = window size の場合、Tumbling Windowと同等
+
+### ユースケース
+
+#### 1. スライディング移動平均
+```
+ウィンドウサイズ: 5分
+Hop間隔: 1分
+→ 1分ごとに過去5分間のデータで集計
+```
+
+#### 2. 重複する異常検知
+```
+ウィンドウサイズ: 1時間
+Hop間隔: 15分
+→ 15分ごとに過去1時間のパターンを監視
+```
+
+#### 3. リアルタイムダッシュボード
+```
+ウィンドウサイズ: 10分
+Hop間隔: 1分
+→ 毎分更新される10分間の統計
+```
+
+---
+
+## 📊 Tumbling vs Hopping 比較
+
+```
+Tumbling (5分ウィンドウ):
+|--W1--|--W2--|--W3--|--W4--|
+0     5     10    15    20 (分)
+
+Hopping (5分ウィンドウ, 2分Hop):
+|--W1--|
+  |--W2--|
+    |--W3--|
+      |--W4--|
+        |--W5--|
+0  2  4  6  8  10 (分)
+```
+
+---
+
+## 🏗️ 現在のアーキテクチャ分析
+
+### 既存のTumbling Windows実装
+
+#### 1. **DSL層** (`/src/Query/Dsl/KsqlQueryable.cs:64-87`)
+```csharp
+public KsqlQueryable<T1> Tumbling(
+    Expression<Func<T1, DateTime>> time,
+    Windows windows,
+    int baseUnitSeconds = 10,
+    TimeSpan? grace = null,
+    bool continuation = false)
+```
+
+**分析**:
+- ✅ Windowsオブジェクトで複数のウィンドウサイズを指定可能
+- ✅ Grace period対応
+- ✅ Continuation mode（空ウィンドウ出力）
+- ❌ Hop間隔の指定なし（常にwindow size = hop）
+
+#### 2. **Window管理** (`/src/Window/WindowManager.cs`)
+```csharp
+internal sealed class WindowManager<TSource, TKey>
+{
+    private readonly TimeSpan _windowSize;
+    private readonly TimeSpan _gracePeriod;
+    private readonly Dictionary<DateTime, WindowBucket> _openWindows;
+}
+```
+
+**分析**:
+- ✅ ウィンドウの開閉管理
+- ✅ Grace period後のシール処理
+- ✅ 重複排除機能
+- ❌ 重複ウィンドウの管理機能なし（1メッセージ = 1ウィンドウ前提）
+
+#### 3. **SQL生成** (`/src/Query/Builders/Statements/KsqlCreateWindowedStatementBuilder.cs:67-90`)
+```csharp
+private static string FormatWindow(string timeframe)
+{
+    return unit switch
+    {
+        's' => $"WINDOW TUMBLING (SIZE {val} SECONDS)",
+        'm' => $"WINDOW TUMBLING (SIZE {val} MINUTES)",
+        ...
+    };
+}
+```
+
+**分析**:
+- ✅ KSQL構文生成
+- ❌ HOPPING構文未対応（`WINDOW HOPPING (SIZE ..., ADVANCE BY ...)`が必要）
+
+---
+
+## 🚀 提案する実装設計
+
+### Phase 1: データ構造拡張
+
+#### 1.1 `Windows`クラスの拡張
+
+**現在** (`/src/Query/Dsl/Windows.cs`):
+```csharp
+public class Windows
+{
+    public int[]? Minutes { get; set; }
+    public int[]? Hours { get; set; }
+    public int[]? Days { get; set; }
+    public int[]? Months { get; set; }
+}
+```
+
+**提案**:
+```csharp
+public class Windows
+{
+    public int[]? Minutes { get; set; }
+    public int[]? Hours { get; set; }
+    public int[]? Days { get; set; }
+    public int[]? Months { get; set; }
+
+    // NEW: Hopping間隔（未指定の場合はTumbling）
+    public TimeSpan? HopInterval { get; set; }
+}
+```
+
+#### 1.2 新しい`HoppingWindows`クラス（代替案）
+
+```csharp
+namespace Ksql.Linq.Query.Dsl;
+
+/// <summary>
+/// Hopping window specification with size and hop interval
+/// </summary>
+public class HoppingWindows
+{
+    public TimeSpan Size { get; set; }
+    public TimeSpan HopInterval { get; set; }
+
+    public static HoppingWindows Create(TimeSpan size, TimeSpan hop)
+    {
+        if (hop > size)
+            throw new ArgumentException("Hop interval cannot exceed window size");
+        if (hop <= TimeSpan.Zero)
+            throw new ArgumentException("Hop interval must be positive");
+
+        return new HoppingWindows { Size = size, HopInterval = hop };
+    }
+}
+```
+
+### Phase 2: DSL API拡張
+
+#### 2.1 `KsqlQueryable<T1>`への新メソッド追加
+
+**Option A: 既存Tumblingメソッドの拡張**
+```csharp
+public KsqlQueryable<T1> Tumbling(
+    Expression<Func<T1, DateTime>> time,
+    Windows windows,
+    int baseUnitSeconds = 10,
+    TimeSpan? grace = null,
+    bool continuation = false,
+    TimeSpan? hopInterval = null)  // NEW parameter
+{
+    _model.Extras["HasTumblingWindow"] = true;
+    _model.HopInterval = hopInterval;  // NULL = Tumbling, 指定 = Hopping
+    // ... 既存の処理
+}
+```
+
+**Option B: 新しいHoppingメソッド（推奨）**
+```csharp
+/// <summary>
+/// Apply hopping window with specified size and hop interval
+/// </summary>
+public KsqlQueryable<T1> Hopping(
+    Expression<Func<T1, DateTime>> time,
+    TimeSpan windowSize,
+    TimeSpan hopInterval,
+    TimeSpan? grace = null,
+    bool continuation = false)
+{
+    if (hopInterval > windowSize)
+        throw new ArgumentException("Hop interval cannot exceed window size");
+
+    _model.Extras["WindowType"] = "HOPPING";
+    _model.HoppingWindowSize = windowSize;
+    _model.HoppingHopInterval = hopInterval;
+    _model.Continuation = continuation;
+
+    if (time.Body is MemberExpression me)
+        _model.TimeKey = me.Member.Name;
+
+    if (grace.HasValue)
+        _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
+
+    _stage = QueryBuildStage.Window;
+    return this;
+}
+```
+
+#### 2.2 使用例
+
+```csharp
+// 5分ウィンドウ、1分ごとに移動
+context.Set<Trade>()
+    .Hopping(
+        time: t => t.Timestamp,
+        windowSize: TimeSpan.FromMinutes(5),
+        hopInterval: TimeSpan.FromMinutes(1),
+        grace: TimeSpan.FromSeconds(30))
+    .GroupBy(t => t.Symbol)
+    .Select(g => new
+    {
+        Symbol = g.Key,
+        WindowStart = g.WindowStart(),
+        WindowEnd = g.WindowEnd(),
+        AvgPrice = g.Average(t => t.Price),
+        Volume = g.Sum(t => t.Quantity)
+    });
+```
+
+### Phase 3: ウィンドウ管理ロジック
+
+#### 3.1 `HoppingWindowManager<TSource, TKey>` 新規実装
+
+```csharp
+namespace Ksql.Linq.Window;
+
+/// <summary>
+/// Manages overlapping hopping windows with grace period support
+/// </summary>
+internal sealed class HoppingWindowManager<TSource, TKey>
+{
+    private readonly TKey _key;
+    private readonly TimeSpan _windowSize;
+    private readonly TimeSpan _hopInterval;
+    private readonly TimeSpan _gracePeriod;
+    private readonly Func<TSource, object?>? _deduplicationKeySelector;
+    private readonly object _sync = new();
+
+    // 複数の重複ウィンドウを管理
+    private readonly Dictionary<DateTime, HoppingWindowBucket> _openWindows = new();
+    private readonly HashSet<DateTime> _sealedWindows = new();
+
+    public HoppingWindowManager(
+        TKey key,
+        TimeSpan windowSize,
+        TimeSpan hopInterval,
+        TimeSpan gracePeriod,
+        DateTime initialUtc,
+        Func<TSource, object?>? deduplicationKeySelector)
+    {
+        _key = key;
+        _windowSize = windowSize;
+        _hopInterval = hopInterval;
+        _gracePeriod = gracePeriod;
+        _deduplicationKeySelector = deduplicationKeySelector;
+    }
+
+    /// <summary>
+    /// 1つのメッセージを複数の重複ウィンドウに追加
+    /// </summary>
+    public HoppingAppendStatus AddMessage(DateTime messageTimestamp, TSource message, DateTime nowUtc)
+    {
+        lock (_sync)
+        {
+            var affectedWindows = CalculateAffectedWindows(messageTimestamp);
+            int appendedCount = 0;
+
+            foreach (var windowStart in affectedWindows)
+            {
+                if (_sealedWindows.Contains(windowStart))
+                    continue;
+
+                if (!_openWindows.TryGetValue(windowStart, out var bucket))
+                {
+                    bucket = new HoppingWindowBucket();
+                    _openWindows[windowStart] = bucket;
+                }
+
+                // 重複排除はウィンドウごとに管理
+                if (_deduplicationKeySelector != null)
+                {
+                    var dedupKey = _deduplicationKeySelector(message);
+                    if (!bucket.TryAddKey(dedupKey))
+                        continue; // このウィンドウには既に存在
+                }
+
+                bucket.Messages.Add(message);
+                appendedCount++;
+            }
+
+            return appendedCount > 0
+                ? HoppingAppendStatus.Appended
+                : HoppingAppendStatus.AllDuplicate;
+        }
+    }
+
+    /// <summary>
+    /// メッセージが含まれるべきウィンドウの開始時刻を計算
+    /// </summary>
+    private List<DateTime> CalculateAffectedWindows(DateTime messageTimestamp)
+    {
+        var windows = new List<DateTime>();
+
+        // メッセージが含まれる最初のウィンドウ開始時刻を計算
+        var hopTicks = _hopInterval.Ticks;
+        var ticksSinceEpoch = messageTimestamp.Ticks;
+        var alignedTicks = (ticksSinceEpoch / hopTicks) * hopTicks;
+        var alignedTime = new DateTime(alignedTicks, DateTimeKind.Utc);
+
+        // このメッセージが含まれる全てのウィンドウを列挙
+        var candidate = alignedTime;
+        while (candidate + _windowSize > messageTimestamp && candidate <= messageTimestamp)
+        {
+            windows.Add(candidate);
+            candidate -= _hopInterval;
+        }
+
+        windows.Reverse(); // 古い順にソート
+        return windows;
+    }
+
+    public IReadOnlyList<WindowGrouping<TKey, TSource>> CollectClosedWindows(DateTime nowUtc)
+    {
+        List<(DateTime WindowStart, HoppingWindowBucket Bucket)>? closed = null;
+
+        lock (_sync)
+        {
+            foreach (var kvp in _openWindows.ToArray())
+            {
+                var windowEnd = kvp.Key + _windowSize;
+                if (nowUtc >= windowEnd + _gracePeriod && kvp.Value.Messages.Count > 0)
+                {
+                    closed ??= new();
+                    closed.Add((kvp.Key, kvp.Value));
+                    _openWindows.Remove(kvp.Key);
+                    SealWindow(kvp.Key);
+                }
+            }
+        }
+
+        if (closed is null)
+            return Array.Empty<WindowGrouping<TKey, TSource>>();
+
+        return closed.Select(tuple =>
+                new WindowGrouping<TKey, TSource>(
+                    _key,
+                    tuple.WindowStart,
+                    tuple.WindowStart + _windowSize,
+                    tuple.Bucket.Messages))
+            .ToArray();
+    }
+
+    private void SealWindow(DateTime windowStartUtc)
+    {
+        _sealedWindows.Add(windowStartUtc);
+        // TODO: メモリ管理のため、古いsealedウィンドウを削除
+    }
+
+    private sealed class HoppingWindowBucket
+    {
+        public List<TSource> Messages { get; } = new();
+        private HashSet<object?>? _keys;
+
+        public bool TryAddKey(object? key)
+        {
+            _keys ??= new HashSet<object?>();
+            return _keys.Add(key);
+        }
+    }
+}
+
+public enum HoppingAppendStatus
+{
+    Appended,
+    AllDuplicate,
+    LateDrop
+}
+```
+
+### Phase 4: SQL生成拡張
+
+#### 4.1 `KsqlCreateWindowedStatementBuilder`の拡張
+
+**変更箇所** (`/src/Query/Builders/Statements/KsqlCreateWindowedStatementBuilder.cs`):
+
+```csharp
+public static string Build(
+    string name,
+    KsqlQueryModel model,
+    string timeframe,
+    string? emitOverride = null,
+    string? inputOverride = null,
+    RenderOptions? options = null,
+    TimeSpan? hopInterval = null)  // NEW parameter
+{
+    // ... 既存の処理
+
+    var window = hopInterval.HasValue
+        ? FormatHoppingWindow(timeframe, hopInterval.Value)
+        : FormatWindow(timeframe);
+
+    var sql = InjectWindowAfterFrom(baseSql, window);
+    return sql;
+}
+
+private static string FormatHoppingWindow(string timeframe, TimeSpan hop)
+{
+    var windowSize = ParseTimeframe(timeframe);
+    var hopFormatted = FormatTimeSpan(hop);
+
+    // KSQL構文: WINDOW HOPPING (SIZE <size>, ADVANCE BY <hop>)
+    return $"WINDOW HOPPING (SIZE {windowSize}, ADVANCE BY {hopFormatted})";
+}
+
+private static string FormatTimeSpan(TimeSpan ts)
+{
+    if (ts.TotalSeconds < 60)
+        return $"{(int)ts.TotalSeconds} SECONDS";
+    if (ts.TotalMinutes < 60)
+        return $"{(int)ts.TotalMinutes} MINUTES";
+    if (ts.TotalHours < 24)
+        return $"{(int)ts.TotalHours} HOURS";
+    return $"{(int)ts.TotalDays} DAYS";
+}
+
+private static string ParseTimeframe(string timeframe)
+{
+    // 既存のFormatWindow()ロジックから抽出
+    var unit = timeframe[^1];
+    if (!int.TryParse(timeframe[..^1], out var val)) val = 1;
+    return unit switch
+    {
+        's' => $"{val} SECONDS",
+        'm' => $"{val} MINUTES",
+        'h' => $"{val} HOURS",
+        'd' => $"{val} DAYS",
+        _ => $"{val} MINUTES"
+    };
+}
+```
+
+---
+
+## 📝 実装計画
+
+### マイルストーン
+
+#### **Milestone 1: 基盤整備** (Week 1-2)
+- [ ] `Windows`クラスに`HopInterval`プロパティ追加
+- [ ] `KsqlQueryModel`に`HoppingWindowSize`と`HoppingHopInterval`フィールド追加
+- [ ] ユニットテスト作成
+
+#### **Milestone 2: DSL拡張** (Week 2-3)
+- [ ] `KsqlQueryable<T1>.Hopping()`メソッド実装
+- [ ] パラメータバリデーション実装
+- [ ] DSLユニットテスト作成
+
+#### **Milestone 3: ウィンドウ管理** (Week 3-4)
+- [ ] `HoppingWindowManager<TSource, TKey>`実装
+- [ ] 重複ウィンドウ計算ロジック実装
+- [ ] Grace period処理実装
+- [ ] ウィンドウ管理ユニットテスト作成
+
+#### **Milestone 4: SQL生成** (Week 4-5)
+- [ ] `KsqlCreateWindowedStatementBuilder`拡張
+- [ ] `FormatHoppingWindow()`実装
+- [ ] SQL生成テスト作成
+
+#### **Milestone 5: 統合テスト** (Week 5-6)
+- [ ] End-to-end統合テスト作成
+- [ ] Kafkaとの統合テスト
+- [ ] ksqlDBとの統合テスト
+
+#### **Milestone 6: ドキュメントとサンプル** (Week 6-7)
+- [ ] API documentation作成
+- [ ] サンプルプロジェクト作成（`examples/hopping-windows/`）
+- [ ] README更新
+
+---
+
+## 🧪 テスト戦略
+
+### ユニットテスト
+
+#### 1. ウィンドウ計算テスト
+```csharp
+[Test]
+public void CalculateAffectedWindows_5MinWindow_1MinHop_ReturnsCorrectWindows()
+{
+    // 5分ウィンドウ、1分Hop
+    var manager = new HoppingWindowManager<Trade, string>(
+        key: "AAPL",
+        windowSize: TimeSpan.FromMinutes(5),
+        hopInterval: TimeSpan.FromMinutes(1),
+        gracePeriod: TimeSpan.Zero,
+        initialUtc: DateTime.UtcNow,
+        deduplicationKeySelector: null);
+
+    // 10:03のメッセージは、以下のウィンドウに含まれるべき:
+    // 09:59-10:04, 10:00-10:05, 10:01-10:06, 10:02-10:07, 10:03-10:08
+    var timestamp = new DateTime(2025, 1, 1, 10, 3, 0, DateTimeKind.Utc);
+    var windows = manager.CalculateAffectedWindows(timestamp);
+
+    Assert.That(windows.Count, Is.EqualTo(5));
+    Assert.That(windows[0], Is.EqualTo(new DateTime(2025, 1, 1, 9, 59, 0, DateTimeKind.Utc)));
+    Assert.That(windows[4], Is.EqualTo(new DateTime(2025, 1, 1, 10, 3, 0, DateTimeKind.Utc)));
+}
+```
+
+#### 2. SQL生成テスト
+```csharp
+[Test]
+public void FormatHoppingWindow_5MinWindow_1MinHop_GeneratesCorrectSql()
+{
+    var sql = KsqlCreateWindowedStatementBuilder.FormatHoppingWindow("5m", TimeSpan.FromMinutes(1));
+
+    Assert.That(sql, Is.EqualTo("WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES)"));
+}
+```
+
+### 統合テスト
+
+#### 物理テスト（`physicalTests/OssSamples/HoppingWindowTests.cs`）
+```csharp
+[TestFixture]
+public class HoppingWindowTests
+{
+    [Test]
+    public async Task HoppingWindow_TradeStream_ProducesOverlappingAggregations()
+    {
+        var context = new MyKsqlContext();
+
+        var query = context.Set<Trade>()
+            .Hopping(
+                time: t => t.Timestamp,
+                windowSize: TimeSpan.FromMinutes(5),
+                hopInterval: TimeSpan.FromMinutes(1))
+            .GroupBy(t => t.Symbol)
+            .Select(g => new
+            {
+                Symbol = g.Key,
+                WindowStart = g.WindowStart(),
+                AvgPrice = g.Average(t => t.Price)
+            });
+
+        var results = await query.ToListAsync();
+
+        // 重複ウィンドウが存在することを確認
+        Assert.That(results.Count, Is.GreaterThan(0));
+    }
+}
+```
+
+---
+
+## 📚 ドキュメント計画
+
+### 1. API Documentation
+- XMLドキュメントコメント追加
+- IntelliSense対応
+
+### 2. サンプルプロジェクト
+`examples/hopping-windows/`を作成:
+- **シナリオ1**: リアルタイム移動平均（株価データ）
+- **シナリオ2**: 異常検知（重複する時間窓でパターン監視）
+- **シナリオ3**: ダッシュボード更新（頻繁に更新される長期統計）
+
+### 3. README更新
+```markdown
+## Windowing Support
+
+Ksql.Linq supports multiple windowing strategies:
+
+### Tumbling Windows
+Non-overlapping, fixed-size windows:
+```csharp
+context.Set<Trade>()
+    .Tumbling(t => t.Timestamp, new Windows { Minutes = new[] { 5 } })
+    .GroupBy(t => t.Symbol)
+    .Select(g => new { Symbol = g.Key, Avg = g.Average(t => t.Price) });
+```
+
+### Hopping Windows (NEW)
+Overlapping, fixed-size windows with configurable hop interval:
+```csharp
+context.Set<Trade>()
+    .Hopping(t => t.Timestamp,
+             windowSize: TimeSpan.FromMinutes(5),
+             hopInterval: TimeSpan.FromMinutes(1))
+    .GroupBy(t => t.Symbol)
+    .Select(g => new { Symbol = g.Key, Avg = g.Average(t => t.Price) });
+```
+```
+
+---
+
+## ⚠️ 考慮事項とリスク
+
+### パフォーマンス影響
+
+#### 1. メモリ使用量
+**問題**: 重複ウィンドウにより、同一メッセージが複数のウィンドウに保持される
+
+**対策**:
+- 参照共有による重複排除（同一メッセージへのポインタを複数ウィンドウで共有）
+- Sealed windowの積極的なガベージコレクション
+- メモリ使用量の監視メトリクス追加
+
+#### 2. 計算負荷
+**問題**: 1メッセージあたりの処理が増加（重複ウィンドウ数 × 集計処理）
+
+**対策**:
+- Hop間隔の最小値制限（例: 1秒未満は禁止）
+- 並列処理の最適化
+- ksqlDB側での処理（可能な限りDBに委譲）
+
+### 互換性
+
+#### 既存コードへの影響
+- ✅ 既存の`Tumbling()`メソッドは変更なし
+- ✅ 新しい`Hopping()`メソッドは追加のみ
+- ✅ 後方互換性維持
+
+### ksqlDB互換性
+- ✅ ksqlDB 0.8+でHOPPING WINDOW構文サポート
+- ⚠️ 古いksqlDBバージョンではエラー（バージョンチェック必要）
+
+---
+
+## 🎓 参考資料
+
+### ksqlDB公式ドキュメント
+- [Windowing](https://docs.ksqldb.io/en/latest/concepts/time-and-windows-in-ksqldb-queries/#hopping-window)
+- [HOPPING WINDOW Syntax](https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/select-push-query/#hopping-window)
+
+### Kafka Streams
+- [Hopping Time Windows](https://kafka.apache.org/documentation/streams/developer-guide/dsl-api.html#hopping-time-windows)
+
+### 学術文献
+- "The Dataflow Model: A Practical Approach to Balancing Correctness, Latency, and Cost in Massive-Scale, Unbounded, Out-of-Order Data Processing" (Google, 2015)
+
+---
+
+## ✅ 成功基準
+
+1. **機能完全性**
+   - [ ] 5分ウィンドウ/1分Hopの基本シナリオが動作
+   - [ ] Grace period処理が正常動作
+   - [ ] 重複排除が各ウィンドウごとに機能
+
+2. **パフォーマンス**
+   - [ ] Tumbling比でメモリ使用量が2倍以内
+   - [ ] スループット劣化が20%以内
+
+3. **品質**
+   - [ ] ユニットテストカバレッジ90%以上
+   - [ ] 統合テストで実際のKafka/ksqlDBと動作確認
+
+4. **ドキュメント**
+   - [ ] 動作するサンプルプロジェクト3つ以上
+   - [ ] API docsが完備
+
+---
+
+## 📅 リリース計画
+
+### v1.0 (MVP)
+- 基本的なHopping Window機能
+- 単一ウィンドウサイズ/Hop間隔
+- Grace period対応
+
+### v1.1 (拡張)
+- 複数ウィンドウサイズの同時サポート（Tumblingと同様）
+- パフォーマンス最適化
+- 追加のサンプルとドキュメント
+
+### v2.0 (将来)
+- Session Windows対応
+- カスタムウィンドウ戦略対応
+
+---
+
+## 👥 貢献者向けガイド
+
+この提案の実装に参加したい場合:
+
+1. **Issue作成**: GitHub Issueで「Hopping Windows Support」を作成
+2. **ブランチ戦略**: `feature/hopping-windows`ブランチで開発
+3. **PR要件**:
+   - ユニットテスト含む
+   - XMLドキュメントコメント付き
+   - CHANGELOG.md更新
+
+---
+
+**提案者**: Claude AI (Anthropic)
+**日付**: 2025-11-22
+**バージョン**: 1.0
+**ステータス**: 提案中 (Proposal)
