@@ -153,18 +153,9 @@ public class HoppingWindowBasicTests
             Console.WriteLine("\n=== Waiting for TEST_TRADES stream (auto-created by EventSet) ===");
             await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
             Console.WriteLine("✓ TEST_TRADES stream is ready");
+            Console.WriteLine("✓ Hopping window type mapping auto-registered by OnModelCreating");
 
-            // === STEP 2: Register hopping window type mapping ===
-            const string hoppingTableName = "tradestats_5m_hop1m_live";
-
-            // Register hopping window type mapping
-            Runtime.TimeBucketTypes.RegisterHoppingRead(
-                typeof(Trade),
-                Period.Minutes(5),
-                TimeSpan.FromMinutes(1),
-                typeof(TradeStats));
-
-            // === STEP 3: NOW produce test data ===
+            // === STEP 2: NOW produce test data ===
             // Both TEST_TRADES stream and hopping table are ready to consume
             // Use timestamps in the recent PAST so ksqlDB processes them immediately
             // All timestamps within a 3-minute window to ensure they're in the same hopping windows
@@ -228,7 +219,7 @@ public class HoppingWindowBasicTests
             var timespanMinutes = (baseTime.AddSeconds(130) - baseTime.AddSeconds(10)).TotalMinutes;
             Console.WriteLine($"Time span: {timespanMinutes:F1} minutes (fits in 5-minute hopping windows)");
 
-            // === STEP 4: Wait for data to flow through both streams ===
+            // === STEP 3: Wait for data to flow through both streams ===
             Console.WriteLine("\nWaiting 30 seconds for Kafka flush and hopping window processing...");
             await Task.Delay(TimeSpan.FromSeconds(30));
             Console.WriteLine("✓ Data should have flowed through TEST_TRADES → TRADESTATS_5M_HOP1M_LIVE");
