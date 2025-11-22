@@ -56,7 +56,7 @@ public class HoppingWindowBasicTests
             KsqlDbUrl = "http://127.0.0.1:18088"
         }, _loggerFactory) { }
 
-        protected override bool SkipSchemaRegistration => true;  // Skip to avoid schema compatibility issues
+        protected override bool SkipSchemaRegistration => false;  // Allow SchemaRegistrar to create streams/tables
 
         public EventSet<Trade> Trades { get; set; } = null!;
 
