@@ -5,8 +5,6 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Confluent.Kafka.Admin;
-using Confluent.Kafka;
 using Ksql.Linq;
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Abstractions;
@@ -148,19 +146,6 @@ public class HoppingWindowBasicTests
 
         await using var ctx = new TestContext();
 
-        // Create test topic
-        using (var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = "127.0.0.1:39092" }).Build())
-        {
-            try
-            {
-                await admin.CreateTopicsAsync(new[]
-                {
-                    new TopicSpecification { Name = "test_trades", NumPartitions = 1, ReplicationFactor = 1 }
-                });
-            }
-            catch { /* Already exists */ }
-        }
-
         try
         {
             // === STEP 1: Wait for auto-created stream to be ready ===
@@ -169,15 +154,8 @@ public class HoppingWindowBasicTests
             await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
             Console.WriteLine("✓ TEST_TRADES stream is ready");
 
-            // === STEP 2: Wait for hopping table (auto-created from OnModelCreating) ===
-            Console.WriteLine("\n=== Waiting for hopping window table ===");
+            // === STEP 2: Register hopping window type mapping ===
             const string hoppingTableName = "tradestats_5m_hop1m_live";
-
-            // OnModelCreating defines the hopping table via ToQuery
-            // Wait for it to be created and running
-            await Task.Delay(TimeSpan.FromSeconds(5)); // Give time for DDL execution
-            await WaitForQueryRunningAsync("http://127.0.0.1:18088", hoppingTableName, TimeSpan.FromSeconds(60));
-            Console.WriteLine($"✓ Query is RUNNING for {hoppingTableName}");
 
             // Register hopping window type mapping
             Runtime.TimeBucketTypes.RegisterHoppingRead(
