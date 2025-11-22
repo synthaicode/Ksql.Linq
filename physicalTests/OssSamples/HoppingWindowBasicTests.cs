@@ -241,31 +241,28 @@ public class HoppingWindowBasicTests
             Console.WriteLine("Push queries return future data, would timeout on historical data");
             Console.WriteLine("Using pull queries instead to verify state store contents");
 
-            // === Test 1: Pull Query to snapshot windows ===
-            // Pull queries return current state from materialized state store
-            // This should contain aggregated window results from our 4 trades
-            Console.WriteLine("\n=== Test 1: Pull Query with PullRowsAsync ===");
-            Console.WriteLine("Pull queries read from state store (historical data OK)");
-            List<object?[]>? pullSnapshot = null;
+            // === Test 1: TimeBucket.GetHopping() Read API ===
+            // This tests the high-level read API which internally uses pull queries
+            Console.WriteLine("\n=== Test 1: TimeBucket.GetHopping() Read API ===");
+            var hop = TimeSpan.FromMinutes(1);
+            List<TradeStats>? windows = null;
             for (var attempt = 1; attempt <= 5; attempt++)
             {
                 try
                 {
-                    Console.WriteLine($"Pull query attempt {attempt}/5...");
-                    pullSnapshot = await ctx.PullRowsAsync(
-                        "TRADESTATS_5M_HOP1M_LIVE",
-                        limit: 20,
-                        timeout: TimeSpan.FromSeconds(30));
-                    Console.WriteLine($"  Returned {pullSnapshot?.Count ?? 0} rows");
-                    if (pullSnapshot != null && pullSnapshot.Count > 0)
+                    Console.WriteLine($"TimeBucket.GetHopping attempt {attempt}/5...");
+                    var tb = Ksql.Linq.Runtime.TimeBucket.GetHopping<TradeStats>(ctx, Period.Minutes(5), hop);
+                    windows = await tb.ToListAsync();
+                    Console.WriteLine($"  Returned {windows?.Count ?? 0} window(s)");
+                    if (windows != null && windows.Count > 0)
                     {
-                        Console.WriteLine($"✓ Pull query SUCCESS - got {pullSnapshot.Count} window(s)");
+                        Console.WriteLine($"✓ TimeBucket.GetHopping SUCCESS - got {windows.Count} window(s)");
                         break;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"  Pull attempt {attempt} error: {ex.Message}");
+                    Console.WriteLine($"  Attempt {attempt} error: {ex.Message}");
                 }
                 if (attempt < 5)
                 {
@@ -274,9 +271,9 @@ public class HoppingWindowBasicTests
                 }
             }
 
-            if (pullSnapshot == null || pullSnapshot.Count == 0)
+            if (windows == null || windows.Count == 0)
             {
-                Console.WriteLine("\n✗ CRITICAL: Pull query returned 0 rows after 5 attempts");
+                Console.WriteLine("\n✗ CRITICAL: TimeBucket.GetHopping returned 0 windows after 5 attempts");
                 Console.WriteLine("This means:");
                 Console.WriteLine("  1. Hopping table exists and is RUNNING (verified earlier)");
                 Console.WriteLine("  2. But state store has no data");
@@ -286,31 +283,18 @@ public class HoppingWindowBasicTests
                 Console.WriteLine("     - State store not yet materialized (need more wait time)");
             }
 
-            Assert.NotNull(pullSnapshot);
-            Assert.NotEmpty(pullSnapshot);
+            Assert.NotNull(windows);
+            Assert.NotEmpty(windows);
 
-            // === Test 2: TimeBucket.GetHopping() Read API ===
-            Console.WriteLine("=== Test 2: TimeBucket.GetHopping() Read API ===");
-            var hop = TimeSpan.FromMinutes(1);
-            try
+            var aapl = windows.Where(w => w.Symbol == "AAPL").ToList();
+            Console.WriteLine($"AAPL-filtered windows: {aapl.Count}");
+            foreach (var w in aapl.Take(5))
             {
-                var tb = Ksql.Linq.Runtime.TimeBucket.GetHopping<TradeStats>(ctx, Period.Minutes(5), hop);
-                var windows = await tb.ToListAsync();
-                Console.WriteLine($"TimeBucket.ToListAsync() returned {windows.Count} windows");
-                var aapl = windows.Where(w => w.Symbol == "AAPL").ToList();
-                Console.WriteLine($"AAPL-filtered windows: {aapl.Count}");
-                foreach (var w in aapl.Take(5))
-                {
-                    Console.WriteLine($"  AAPL Window: Start={w.BucketStart:o}, Avg={w.AvgPrice}, Vol={w.TotalVolume}, Count={w.Count}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"TimeBucket.GetHopping() unavailable: {ex.Message}");
+                Console.WriteLine($"  AAPL Window: Start={w.BucketStart:o}, Avg={w.AvgPrice}, Vol={w.TotalVolume}, Count={w.Count}");
             }
 
-            // === Test 3: Pull Query with PullRowsAsync ===
-            Console.WriteLine("=== Test 3: Pull Query with PullRowsAsync ===");
+            // === Test 2: Pull Query with PullRowsAsync ===
+            Console.WriteLine("=== Test 2: Pull Query with PullRowsAsync ===");
             var pullSql = "SELECT * FROM TRADESTATS_5M_HOP1M_LIVE WHERE SYMBOL='AAPL';";
             var pullRows = await ctx.PullRowsAsync(pullSql, timeout: TimeSpan.FromSeconds(30));
             Console.WriteLine($"PullRowsAsync returned {pullRows.Count} rows for AAPL");
