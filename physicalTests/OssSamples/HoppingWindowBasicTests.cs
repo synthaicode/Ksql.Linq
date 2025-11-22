@@ -193,6 +193,14 @@ public class HoppingWindowBasicTests
             var ddlResult = await ctx.ExecuteStatementAsync(ddl);
             Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
 
+            // Register hopping window type mapping (required for TimeBucket.GetHopping())
+            // This mapping allows TimeBucket.GetHopping<TradeStats>() to resolve to the correct table
+            Runtime.TimeBucketTypes.RegisterHoppingRead(
+                typeof(Trade),               // Base type
+                Period.Minutes(5),           // Window size
+                TimeSpan.FromMinutes(1),     // Hop interval
+                typeof(TradeStats));         // Concrete read type
+
             // Produce test data: multiple trades within a 5-minute window
             var baseTime = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
 
