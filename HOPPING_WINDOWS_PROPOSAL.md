@@ -709,9 +709,9 @@ var sqlMap = KsqlCreateWindowedStatementBuilder.BuildAllHopping(
     nameFormatter: (size, hop) => $"trade_avg_{size}_hop{(int)hop.TotalMinutes}m_live");
 
 // 結果:
-// sqlMap["5m:hop1m"]  = "CREATE STREAM trade_avg_5m_hop1m_live ... WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES)"
-// sqlMap["10m:hop1m"] = "CREATE STREAM trade_avg_10m_hop1m_live ... WINDOW HOPPING (SIZE 10 MINUTES, ADVANCE BY 1 MINUTES)"
-// sqlMap["15m:hop1m"] = "CREATE STREAM trade_avg_15m_hop1m_live ... WINDOW HOPPING (SIZE 15 MINUTES, ADVANCE BY 1 MINUTES)"
+// sqlMap["5m:hop1m"]  = "CREATE TABLE trade_avg_5m_hop1m_live ... WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES)"
+// sqlMap["10m:hop1m"] = "CREATE TABLE trade_avg_10m_hop1m_live ... WINDOW HOPPING (SIZE 10 MINUTES, ADVANCE BY 1 MINUTES)"
+// sqlMap["15m:hop1m"] = "CREATE TABLE trade_avg_15m_hop1m_live ... WINDOW HOPPING (SIZE 15 MINUTES, ADVANCE BY 1 MINUTES)"
 ```
 
 ### Phase 5: ランタイムパイプライン（複数時間帯処理）
@@ -733,10 +733,12 @@ HoppingDerivationPlanner.Plan() ← 複数のDerivedEntity生成
     ↓
 DerivedHoppingPipeline.RunAsync() ← 各エンティティのDDL実行
     ↓
-3つの独立したKSQLストリームが作成される:
-- trade_bar_5m_hop1m_live
-- trade_bar_10m_hop1m_live
-- trade_bar_15m_hop1m_live
+3つの独立したksqlDB TABLEが作成される:
+- trade_bar_5m_hop1m_live (TABLE)
+- trade_bar_10m_hop1m_live (TABLE)
+- trade_bar_15m_hop1m_live (TABLE)
+
+**注**: WINDOW句を使った集計は、ksqlDBでは常にTABLE
 ```
 
 #### 5.2 新クラス: `HoppingQao` (Query Analysis Object)
@@ -1037,7 +1039,7 @@ internal enum Role
 {
     Final1sStream,    // Tumbling用: 1s hub stream
     Live,             // Tumbling用: Live table
-    HoppingLive,      // NEW: Hopping用 live stream
+    HoppingLive,      // NEW: Hopping用 live TABLE (aggregateクエリはTABLEになる)
     // ... その他
 }
 ```
@@ -1136,17 +1138,17 @@ var entities = HoppingDerivationPlanner.Plan(qao, baseModel);
 // 2.4 DerivedEntity[] → DDL実行
 await DerivedHoppingPipeline.RunAsync(qao, baseModel, queryModel, execute, ...);
 // 実行内容:
-// - CREATE STREAM trading_stats_5m_hop1m_live AS ... WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES);
-// - CREATE STREAM trading_stats_10m_hop1m_live AS ... WINDOW HOPPING (SIZE 10 MINUTES, ADVANCE BY 1 MINUTES);
-// - CREATE STREAM trading_stats_15m_hop1m_live AS ... WINDOW HOPPING (SIZE 15 MINUTES, ADVANCE BY 1 MINUTES);
+// - CREATE TABLE trading_stats_5m_hop1m_live AS ... WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTES);
+// - CREATE TABLE trading_stats_10m_hop1m_live AS ... WINDOW HOPPING (SIZE 10 MINUTES, ADVANCE BY 1 MINUTES);
+// - CREATE TABLE trading_stats_15m_hop1m_live AS ... WINDOW HOPPING (SIZE 15 MINUTES, ADVANCE BY 1 MINUTES);
 
 // ========================================
 // 3. ksqlDB側の結果
 // ========================================
-// 3つの独立したストリームが作成される:
-// - trading_stats_5m_hop1m_live (5分ウィンドウ、1分hop)
-// - trading_stats_10m_hop1m_live (10分ウィンドウ、1分hop)
-// - trading_stats_15m_hop1m_live (15分ウィンドウ、1分hop)
+// 3つの独立したTABLEが作成される:
+// - trading_stats_5m_hop1m_live (TABLE: 5分ウィンドウ、1分hop)
+// - trading_stats_10m_hop1m_live (TABLE: 10分ウィンドウ、1分hop)
+// - trading_stats_15m_hop1m_live (TABLE: 15分ウィンドウ、1分hop)
 ```
 
 ### Phase 6: 読み取りAPI（C#消費者向け）
