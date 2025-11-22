@@ -74,7 +74,7 @@ public class HoppingWindowBasicTests
                   .Select(g => new TradeStats
                   {
                       Symbol = g.Key,
-                      BucketStart = g.WindowStart(),
+                      // BucketStart is auto-populated from window key, not from SELECT
                       AvgPrice = g.Average(x => x.Price),
                       TotalVolume = g.Sum(x => x.Volume),
                       Count = g.Count()
@@ -98,7 +98,7 @@ public class HoppingWindowBasicTests
             .Select(g => new TradeStats
             {
                 Symbol = g.Key,
-                BucketStart = g.WindowStart(),
+                // BucketStart is auto-populated from window key, not from SELECT
                 AvgPrice = g.Average(x => x.Price),
                 TotalVolume = g.Sum(x => x.Volume),
                 Count = g.Count()
