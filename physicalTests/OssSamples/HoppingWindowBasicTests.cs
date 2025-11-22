@@ -222,51 +222,89 @@ public class HoppingWindowBasicTests
                 typeof(TradeStats));         // Concrete read type
 
             // Produce test data: multiple trades within a 5-minute window
-            // CRITICAL: Use slightly future time to ensure events are within active window
-            // ksqlDB hopping windows process events based on event time with GRACE PERIOD
-            // Setting timestamps a few seconds in the future ensures they're accepted
+            // CRITICAL: Use recent past timestamps to ensure immediate processing
+            // ksqlDB processes events when wall-clock time >= event time
+            // Using past timestamps (within GRACE PERIOD) ensures immediate processing
+            // Future timestamps cause ksqlDB to wait until wall-clock catches up
             var now = DateTime.UtcNow;
-            var baseTime = now.AddSeconds(10); // Start 10 seconds from now
+            var baseTime = now.AddSeconds(-30); // 30 seconds in the past (well within 5-min grace)
             Console.WriteLine($"Using base time: {baseTime:O} (current: {now:O})");
 
-            await ctx.Trades.AddAsync(new Trade
+            var trade1 = new Trade
             {
                 Symbol = "AAPL",
                 Timestamp = baseTime.AddSeconds(10),
                 Price = 150.00,
                 Volume = 100
-            });
+            };
+            await ctx.Trades.AddAsync(trade1);
+            Console.WriteLine($"  Produced trade 1: {trade1.Symbol} @ {trade1.Timestamp:O}, Price={trade1.Price}, Vol={trade1.Volume}");
 
-            await ctx.Trades.AddAsync(new Trade
+            var trade2 = new Trade
             {
                 Symbol = "AAPL",
                 Timestamp = baseTime.AddSeconds(70),  // 1:10
                 Price = 151.00,
                 Volume = 200
-            });
+            };
+            await ctx.Trades.AddAsync(trade2);
+            Console.WriteLine($"  Produced trade 2: {trade2.Symbol} @ {trade2.Timestamp:O}, Price={trade2.Price}, Vol={trade2.Volume}");
 
-            await ctx.Trades.AddAsync(new Trade
+            var trade3 = new Trade
             {
                 Symbol = "AAPL",
                 Timestamp = baseTime.AddSeconds(130), // 2:10
                 Price = 152.00,
                 Volume = 150
-            });
+            };
+            await ctx.Trades.AddAsync(trade3);
+            Console.WriteLine($"  Produced trade 3: {trade3.Symbol} @ {trade3.Timestamp:O}, Price={trade3.Price}, Vol={trade3.Volume}");
 
-            await ctx.Trades.AddAsync(new Trade
+            var trade4 = new Trade
             {
                 Symbol = "GOOGL",
                 Timestamp = baseTime.AddSeconds(20),
                 Price = 2800.00,
                 Volume = 50
-            });
+            };
+            await ctx.Trades.AddAsync(trade4);
+            Console.WriteLine($"  Produced trade 4: {trade4.Symbol} @ {trade4.Timestamp:O}, Price={trade4.Price}, Vol={trade4.Volume}");
 
-            Console.WriteLine($"Produced 4 test trades at base time {baseTime:O}");
+            Console.WriteLine($"\nProduced 4 test trades. Timestamps range: {baseTime.AddSeconds(10):O} to {baseTime.AddSeconds(130):O}");
 
             // Wait for Kafka producer to flush and ksqlDB to start processing
             // This ensures data is committed to Kafka before we query
-            Console.WriteLine("\nWaiting 15 seconds for data ingestion and initial processing...");
-            await Task.Delay(TimeSpan.FromSeconds(15));
+            Console.WriteLine("\nWaiting 10 seconds for Kafka producer flush...");
+            await Task.Delay(TimeSpan.FromSeconds(10));
+
+            // === Test -1: Verify source data arrived in Kafka ===
+            Console.WriteLine("\n=== Test -1: Source Stream verification ===");
+            try
+            {
+                var sourceSql = "SELECT * FROM TEST_TRADES EMIT CHANGES LIMIT 4;";
+                Console.WriteLine($"Executing: {sourceSql}");
+                var sourceRows = await ctx.QueryRowsAsync(sourceSql, TimeSpan.FromSeconds(30));
+                Console.WriteLine($"Source stream returned {sourceRows?.Count ?? 0} rows");
+                if (sourceRows != null && sourceRows.Any())
+                {
+                    Console.WriteLine($"✓ Source data is in Kafka");
+                    foreach (var row in sourceRows.Take(2))
+                    {
+                        Console.WriteLine($"  Source row: {string.Join(", ", row.Select(v => v?.ToString() ?? "null"))}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("⚠ WARNING: Source stream has no data - data production may have failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠ Source stream query error: {ex.Message}");
+            }
+
+            Console.WriteLine("\nWaiting 10 seconds for hopping window processing...");
+            await Task.Delay(TimeSpan.FromSeconds(10));
 
             // === Test 0: Verify data flows through query with Push Query (EMIT CHANGES) ===
             Console.WriteLine("\n=== Test 0: Push Query verification (EMIT CHANGES) ===");
