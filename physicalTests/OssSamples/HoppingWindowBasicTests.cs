@@ -177,8 +177,56 @@ public class HoppingWindowBasicTests
             await ctx.WaitForEntityReadyAsync<Trade>(TimeSpan.FromSeconds(60));
             Console.WriteLine("✓ TEST_TRADES stream is ready and consuming from topic");
 
-            // === STEP 2: Produce test data to Kafka AFTER stream is ready ===
-            // Stream is already consuming, so it will read this data
+            // === STEP 2: Create hopping table BEFORE producing data ===
+            // This ensures the hopping table's query is running when data arrives
+            Console.WriteLine("\n=== Creating hopping window table ===");
+            const string hoppingTableName = "tradestats_5m_hop1m_live";
+            var model = new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
+                .From<Trade>()
+                .Hopping(
+                    time: t => t.Timestamp,
+                    windowSize: TimeSpan.FromMinutes(5),
+                    hopInterval: TimeSpan.FromMinutes(1),
+                    grace: TimeSpan.FromMinutes(5))
+                .GroupBy(t => t.Symbol)
+                .Select(g => new TradeStats
+                {
+                    Symbol = g.Key,
+                    BucketStart = g.WindowStart(),
+                    AvgPrice = g.Average(x => x.Price),
+                    TotalVolume = g.Sum(x => x.Volume),
+                    Count = g.Count()
+                })
+                .Build();
+
+            var ddl = KsqlCreateWindowedStatementBuilder.Build(
+                name: hoppingTableName,
+                model: model,
+                timeframe: "5m",
+                hopInterval: TimeSpan.FromMinutes(1),
+                emitOverride: "EMIT CHANGES");
+
+            Console.WriteLine("\n=== Generated DDL ===");
+            Console.WriteLine(ddl);
+            Console.WriteLine("=== End DDL ===\n");
+
+            var ddlResult = await ctx.ExecuteStatementAsync(ddl);
+            Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
+            Console.WriteLine($"✓ DDL executed successfully: {hoppingTableName}");
+
+            // Wait for query to be RUNNING
+            await WaitForQueryRunningAsync("http://127.0.0.1:18088", hoppingTableName, TimeSpan.FromSeconds(60));
+            Console.WriteLine($"✓ Query is RUNNING for {hoppingTableName}");
+
+            // Register hopping window type mapping
+            Runtime.TimeBucketTypes.RegisterHoppingRead(
+                typeof(Trade),
+                Period.Minutes(5),
+                TimeSpan.FromMinutes(1),
+                typeof(TradeStats));
+
+            // === STEP 3: NOW produce test data ===
+            // Both TEST_TRADES stream and hopping table are ready to consume
             // CRITICAL: Use recent past timestamps to ensure immediate processing
             var now = DateTime.UtcNow;
             var baseTime = now.AddSeconds(-30); // 30 seconds in the past (well within 5-min grace)
@@ -235,61 +283,10 @@ public class HoppingWindowBasicTests
 
             Console.WriteLine($"\nProduced 4 test trades. Timestamps range: {baseTime.AddSeconds(10):O} to {baseTime.AddSeconds(130):O}");
 
-            // === STEP 3: Wait for data to flow through stream ===
-            Console.WriteLine("\nWaiting 20 seconds for Kafka producer flush and stream consumption...");
-            await Task.Delay(TimeSpan.FromSeconds(20));
-            Console.WriteLine("✓ Data should have flowed through TEST_TRADES stream");
-
-            // === STEP 4: Create hopping table ===
-            Console.WriteLine("\n=== Creating hopping window table ===");
-            const string hoppingTableName = "tradestats_5m_hop1m_live";
-            var model = new Ksql.Linq.Query.Dsl.KsqlQueryRoot()
-                .From<Trade>()
-                .Hopping(
-                    time: t => t.Timestamp,
-                    windowSize: TimeSpan.FromMinutes(5),
-                    hopInterval: TimeSpan.FromMinutes(1),
-                    grace: TimeSpan.FromMinutes(5))
-                .GroupBy(t => t.Symbol)
-                .Select(g => new TradeStats
-                {
-                    Symbol = g.Key,
-                    BucketStart = g.WindowStart(),
-                    AvgPrice = g.Average(x => x.Price),
-                    TotalVolume = g.Sum(x => x.Volume),
-                    Count = g.Count()
-                })
-                .Build();
-
-            var ddl = KsqlCreateWindowedStatementBuilder.Build(
-                name: hoppingTableName,
-                model: model,
-                timeframe: "5m",
-                hopInterval: TimeSpan.FromMinutes(1),
-                emitOverride: "EMIT CHANGES");
-
-            Console.WriteLine("\n=== Generated DDL ===");
-            Console.WriteLine(ddl);
-            Console.WriteLine("=== End DDL ===\n");
-
-            var ddlResult = await ctx.ExecuteStatementAsync(ddl);
-            Assert.True(ddlResult.IsSuccess, $"DDL failed: {ddlResult.Message}");
-            Console.WriteLine($"✓ DDL executed successfully: {hoppingTableName}");
-
-            // Wait for query to be RUNNING
-            await WaitForQueryRunningAsync("http://127.0.0.1:18088", hoppingTableName, TimeSpan.FromSeconds(60));
-            Console.WriteLine($"✓ Query is RUNNING for {hoppingTableName}");
-
-            // Register hopping window type mapping
-            Runtime.TimeBucketTypes.RegisterHoppingRead(
-                typeof(Trade),
-                Period.Minutes(5),
-                TimeSpan.FromMinutes(1),
-                typeof(TradeStats));
-
-            // === STEP 5: Wait for hopping window processing ===
-            Console.WriteLine("\nWaiting 20 seconds for hopping window to process data...");
-            await Task.Delay(TimeSpan.FromSeconds(20));
+            // === STEP 4: Wait for data to flow through both streams ===
+            Console.WriteLine("\nWaiting 30 seconds for Kafka flush and hopping window processing...");
+            await Task.Delay(TimeSpan.FromSeconds(30));
+            Console.WriteLine("✓ Data should have flowed through TEST_TRADES → TRADESTATS_5M_HOP1M_LIVE");
 
             // === Test -1: SKIPPED - Source Stream verification ===
             // NOTE: Push queries (EMIT CHANGES) return FUTURE data, not historical data
