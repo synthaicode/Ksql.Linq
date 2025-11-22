@@ -141,9 +141,10 @@ public class HoppingWindowBasicTests
             TimeSpan.FromSeconds(60),
             graceMs: 2000);
 
-        // Cleanup test artifacts
-        await CleanupTestArtifactsAsync();
-
+        // NOTE: No pre-test cleanup to avoid "Unknown topic or partition" errors
+        // when RowMonitor tries to commit to a just-deleted topic.
+        // Cleanup only happens in finally block after test completes.
+        // If needed, manually run: docker compose down -v && docker compose up -d
         await using var ctx = new TestContext();
 
         try
