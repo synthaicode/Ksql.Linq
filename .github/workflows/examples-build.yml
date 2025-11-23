@@ -34,12 +34,15 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Create NuGet.config for GitHub Packages (Ksql.Linq from GitHub, others from nuget.org)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
         run: |
-          cat > NuGet.config <<'XML'
+          cat > NuGet.config <<XML
           <?xml version="1.0" encoding="utf-8"?>
           <configuration>
             <packageSources>
-              <add key="github" value="https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" />
+              <add key="github" value="https://nuget.pkg.github.com/${GITHUB_OWNER}/index.json" />
               <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
             </packageSources>
             <packageSourceCredentials>
