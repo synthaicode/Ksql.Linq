@@ -1,6 +1,12 @@
-# ksql.linq SQL制約違反パターン集 (100パターン)
+# ksqlDB 制約違反パターン集 with Ksql.Linq (100パターン)
 
-ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコードを書くための包括的なガイド。
+**Ksql.Linq** は、Kafka/ksqlDB 操作のための C# LINQ ライブラリです。このドキュメントは、**ksqlDB（バックエンドストリーム処理エンジン）** の制約と **LINQ to Objects** の違いを理解し、Ksql.Linq で正しいコードを書くための包括的なガイドです。
+
+## このドキュメントについて
+
+- **対象**: ksqlDB のストリーム処理制約（JOIN、集約、ウィンドウ等）
+- **役割**: Ksql.Linq はこれらの制約を**設計時・実行時に検出**し、開発者にガイダンスを提供
+- **目的**: LINQ to Objects とは異なる ksqlDB の制約を事前に把握し、エラーを回避
 
 ## 目次
 1. [JOIN制約違反 (12パターン)](#join制約違反)
@@ -19,8 +25,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## JOIN制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: ストリーム処理では最大2テーブルまでのJOINをサポート。FULL OUTER、RIGHT、CROSS、GROUP JOINは非サポート。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 1 | `orders.Join(customers, ...).Join(products, ...)` (3テーブル結合) | `StreamProcessingException: Stream processing supports maximum 2 table joins. Found 3 tables. Consider data denormalization or use batch processing for complex relationships.` | マテリアライズドビューを使用: `var enriched = orders.Join(customers, ...); await CreateMaterializedView(enriched); var result = enriched.Join(products, ...);` |
 | 2 | `orders.GroupJoin(customers, ...)` | `StreamProcessingException: Unsupported join patterns detected: GROUP JOIN (use regular JOIN with GROUP BY instead). Supported: INNER, LEFT OUTER joins with co-partitioned data.` | `orders.Join(customers, ...).GroupBy(x => x.CustomerId)` |
 | 3 | `stream1.FullOuterJoin(stream2, ...)` | `StreamProcessingException: Unsupported join patterns detected: FULL OUTER JOIN (not supported in KSQL)` | `stream1.LeftJoin(stream2, ...).Union(stream2.LeftJoin(stream1, ...).Where(x => x.Left == null))` (2クエリで代替) |
@@ -38,8 +46,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## WHERE句制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: WHERE句では集約関数とサブクエリは使用不可。集約が必要な場合はHAVING句を使用。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 13 | `.Where(e => new[] { e.A, e.B }.Sum() > 0)` (集約関数を使用) | `InvalidOperationException: Aggregate functions are not allowed in WHERE clause. Use HAVING clause instead.` | `.GroupBy(e => e.Id).Where(g => g.Sum(x => x.A + x.B) > 0)` (HAVINGとして実装) |
 | 14 | `.Where(e => e.Orders.Count() > 5)` (ナビゲーションプロパティでの集約) | `InvalidOperationException: Aggregate functions are not allowed in WHERE clause. Use HAVING clause instead.` | `.GroupBy(e => e.CustomerId).Where(g => g.Count() > 5)` |
 | 15 | `.Where(e => db.Orders.Any(o => o.CustomerId == e.Id))` (サブクエリ) | `InvalidOperationException: Subqueries are not supported in WHERE clause in KSQL` | JOIN を使用: `customers.Join(orders, c => c.Id, o => o.CustomerId, ...)` |
@@ -57,8 +67,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## HAVING句制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: HAVING句では集約関数またはGROUP BY列のみ参照可能。ネストされた集約は非サポート。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 25 | `.GroupBy(e => e.Category).Where(g => g.First().Price > 100)` (GROUP BY列以外を参照) | `InvalidOperationException: HAVING clause can only reference aggregate functions or columns in GROUP BY clause` | `.GroupBy(e => e.Category).Where(g => g.Max(x => x.Price) > 100)` (集約関数を使用) |
 | 26 | `.GroupBy(e => e.Category).Where(g => g.Sum(x => g.Count() * x.Price) > 1000)` (ネストされた集約) | `NotSupportedException: Nested aggregate functions are not supported` | `.GroupBy(e => e.Category).Select(g => new { Cat = g.Key, Total = g.Sum(x => x.Price), Cnt = g.Count() }).Where(x => x.Total * x.Cnt > 1000)` |
 | 27 | `.GroupBy(e => e.Id).Where(g => g.Select(x => x.Amount).Sum() > 100)` (SELECT + 集約) | 実行時エラー (スタイル問題) | `.GroupBy(e => e.Id).Where(g => g.Sum(x => x.Amount) > 100)` (簡潔に) |
@@ -74,8 +86,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## GROUP BY句制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: GROUP BY句では集約関数は使用不可。最大10キーまで推奨（パフォーマンス最適化）。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 35 | `.GroupBy(e => e.Items.Sum(i => i.Price))` (集約関数を使用) | `InvalidOperationException: Aggregate functions are not allowed in GROUP BY clause` | 先にSELECTで計算: `.Select(e => new { e, Total = e.Items.Sum(i => i.Price) }).GroupBy(x => x.Total)` (注: ksqlDBではサポートされない可能性あり) |
 | 36 | `.GroupBy(e => e.Prices.Max())` (配列メソッドで集約) | `InvalidOperationException: Aggregate functions are not allowed in GROUP BY clause` | マテリアライズド列を作成してからGROUP BY |
 | 37 | `.GroupBy(e => new { e.A, e.B, e.C, e.D, e.E, e.F, e.G, e.H, e.I, e.J, e.K })` (11キー) | `InvalidOperationException: GROUP BY supports maximum 10 keys for optimal performance. Found 11 keys. Consider using composite keys or data denormalization.` | 複合キーを1つに: `.GroupBy(e => $"{e.A}_{e.B}_{e.C}...")` または非正規化 |
@@ -91,8 +105,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## ORDER BY句制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: ORDER BYはプルクエリでのみサポート。単純な列参照のみ可能。最大5列まで推奨。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 45 | `.OrderBy(e => e.Price * 1.1 + e.Tax)` (複雑な式) | `InvalidOperationException: ORDER BY in KSQL should use simple column references. Complex expressions in ORDER BY may not be supported.` | SELECTで計算してから並び替え: `.Select(e => new { e, Total = e.Price * 1.1 + e.Tax }).OrderBy(x => x.Total)` |
 | 46 | `.OrderBy(e => e.F1).ThenBy(e => e.F2).ThenBy(e => e.F3).ThenBy(e => e.F4).ThenBy(e => e.F5).ThenBy(e => e.F6)` (6列) | `InvalidOperationException: ORDER BY supports maximum 5 columns for optimal performance. Found 6 columns. Consider reducing sort columns.` | 最も重要な5列に削減 |
 | 47 | `stream.OrderBy(e => e.Timestamp)` (プッシュクエリで使用) | `[KSQL-LINQ INFO] ORDER BY in KSQL is limited to Pull Queries and specific scenarios. Push Queries (streaming) do not guarantee order due to distributed processing.` | プルクエリに変更またはクライアント側で並び替え |
@@ -108,8 +124,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## SELECT句制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: GROUP BYなしで集約関数と非集約列を混在させることは不可。ネストされた集約は非サポート。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 55 | `.Select(e => new { e.Name, Total = e.Items.Sum(i => i.Price) })` (GROUP BY なしで集約と非集約を混在) | `InvalidOperationException: SELECT clause cannot mix aggregate functions with non-aggregate columns without GROUP BY` | `.GroupBy(e => e.Name).Select(g => new { Name = g.Key, Total = g.Sum(x => x.Items.Sum(i => i.Price)) })` |
 | 56 | `.Select(e => new { e.Id, AvgPrice = e.Prices.Average() })` (配列メソッドで集約、GROUP BYなし) | `InvalidOperationException: SELECT clause cannot mix aggregate functions with non-aggregate columns without GROUP BY` | データをフラット化してGROUP BY |
 | 57 | `.GroupBy(e => e.Category).Select(g => g.Sum(x => g.Average(y => y.Price)))` (ネストされた集約) | `NotSupportedException: Nested aggregate functions are not supported` | 2段階に分割: `.GroupBy(e => e.Category).Select(g => new { Sum = g.Sum(x => x.Price), Avg = g.Average(x => x.Price) })` |
@@ -125,8 +143,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## ウィンドウ操作制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: ウィンドウサイズは60秒の約数、または60の倍数である必要がある。基本単位の整合性が必要。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 65 | `.WindowByTumbling(TimeSpan.FromSeconds(7))` (60で割り切れない) | `InvalidOperationException: Base unit must divide 60 seconds.` | `.WindowByTumbling(TimeSpan.FromSeconds(5))` または `.WindowByTumbling(TimeSpan.FromSeconds(10))` |
 | 66 | `.WindowByTumbling(TimeSpan.FromSeconds(90))` (≥60秒だが60の倍数でない) | `InvalidOperationException: Windows ≥ 1 minute must be whole-minute multiples.` | `.WindowByTumbling(TimeSpan.FromMinutes(1))` または `.WindowByTumbling(TimeSpan.FromSeconds(60))` |
 | 67 | `.WindowByTumbling(TimeSpan.FromSeconds(5)).WindowByTumbling(TimeSpan.FromSeconds(17))` (ネストされたウィンドウ、内側が基本単位の倍数でない) | `InvalidOperationException: Window 17s must be a multiple of base 5s.` | `.WindowByTumbling(TimeSpan.FromSeconds(5)).WindowByTumbling(TimeSpan.FromSeconds(15))` |
@@ -142,8 +162,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## 式の深さ・複雑さ制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **Ksql.Linq の制約**: パフォーマンスとスタックオーバーフロー防止のため、式の深さは最大50、ノード数は最大1000に制限。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|----------------------------|---------------------|
 | 75 | `Expression.Not(Expression.Not(...))` (55回ネスト) | `InvalidOperationException: Expression depth exceeds maximum allowed depth of 50. Consider simplifying the expression or breaking it into multiple operations.` | 論理を簡素化: 奇数回のNotは1つのNotに、偶数回は無しに |
 | 76 | `e => (((e.A + e.B) * e.C) / e.D) + (((e.E - e.F) * e.G) / e.H) + ...` (1001ノード) | `InvalidOperationException: Expression complexity exceeds maximum allowed nodes of 1000. Current expression has 1001 nodes.` | 複数のステップに分割: 中間変数を使用 |
 | 77 | `e => e.A ? (e.B ? (e.C ? ... : ...) : ...) : ...` (深くネストされた三項演算子、51レベル) | `InvalidOperationException: Expression depth exceeds maximum allowed depth of 50.` | switch文やディクショナリルックアップにリファクタ |
@@ -157,8 +179,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## Stream vs Table操作制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: Streamは無限データソース、Tableはマテリアライズドビュー。操作方法が異なる。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 83 | `await ctx.MyStream.ToListAsync()` (ストリームでToListAsync) | `InvalidOperationException: ToListAsync() is not supported on a Stream source. Use ForEachAsync for streaming consumption or convert to a Table via materialization.` | `await ctx.MyStream.ForEachAsync(item => { /* process */ });` |
 | 84 | `await ctx.MyStream.FirstOrDefaultAsync()` (ストリームで単一要素取得) | 実行時エラーまたはタイムアウト (ストリームは無限) | プルクエリに変換: テーブルにマテリアライズしてから取得 |
 | 85 | `ctx.MyTable.ForEachAsync(item => ...)` (テーブルでストリーミング消費) | 実行時警告: テーブルはスナップショット | `await ctx.MyTable.ToListAsync()` (バッチ取得) |
@@ -174,8 +198,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## 関数使用制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: ksqlDBがサポートする関数セットのみ使用可能。.NETライブラリ関数やUDFは事前登録が必要。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 93 | `.GroupBy(e => e.Name.Substring(0, e.Name.IndexOf('@')))` (GROUP BYで複雑な文字列操作) | `InvalidOperationException: Aggregate functions are not allowed in GROUP BY clause` (または関数サポートエラー) | SELECTで事前計算: `.Select(e => new { e, Domain = e.Name.Substring(0, e.Name.IndexOf('@')) }).GroupBy(x => x.Domain)` |
 | 94 | `.Where(e => MyCustomFunction(e.Value) > 100)` (UDF使用、ksqlDBに未登録) | 実行時エラー: `Unknown function: MyCustomFunction` | ksqlDBにUDFを登録するか、式を展開 |
 | 95 | `.Select(e => new { e.Id, Json = JsonConvert.SerializeObject(e) })` (サポートされないライブラリ関数) | 実行時エラー: 関数が変換できない | ksqlDBのネイティブJSON関数を使用またはクライアント側で処理 |
@@ -189,8 +215,10 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## 型・データ制約違反
 
-| No. | 違反パターン (LINQ to Objects) | ksqlDBエラーメッセージ | 正しいksql.linqコード |
-|-----|-------------------------------|----------------------|---------------------|
+> **ksqlDB の制約**: 型の一貫性、NULL セマンティクス、DECIMAL精度等、SQLに準拠したデータ型制約。
+
+| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
+|-----|-------------------------------|--------------------------------------|---------------------|
 | 101 | `.Select(e => e.Status ? e.IntValue : e.StringValue)` (CASE式で型不一致) | `NotSupportedException: CASE expression type mismatch: System.Int32 and System.String` | 型を統一: `.Select(e => e.Status ? e.IntValue.ToString() : e.StringValue)` |
 | 102 | `orders.Join(customers, o => o.CustomerId.ToString(), c => c.Id, ...)` (JOINキー型不一致) | `StreamProcessingException: JOIN key types must match. Outer key: String, Inner key: Int32.` | 型を統一: `o => o.CustomerId` (両方int) |
 | 103 | `.Where(e => e.Price == null)` (NULL比較、NULLセマンティクスの違い) | 実行時警告: ksqlDBのNULLは特殊 | `.Where(e => e.Price == null || !e.Price.HasValue)` (Nullable型対応) |
@@ -205,7 +233,7 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 ## 使用方法
 
 ### パターンの探し方
-1. **エラーメッセージで検索**: ksqlDBから返されたエラーメッセージをこのドキュメントで検索
+1. **エラーメッセージで検索**: Ksql.Linq または ksqlDB から返されたエラーメッセージをこのドキュメントで検索
 2. **カテゴリから探す**: 使用している句 (WHERE, GROUP BY等) のセクションを参照
 3. **コードパターンで探す**: 自分のLINQコードと似たパターンを検索
 
@@ -213,13 +241,14 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 1. **早期フィルタリング**: WHERE句はできるだけ単純に、集約が必要なら先にGROUP BY
 2. **計算の分離**: 複雑な計算はSELECT句で事前に行い、後続の句では単純な列参照を使用
 3. **マテリアライズドビュー**: 複雑なJOINや集約は中間結果をマテリアライズ
-4. **非正規化**: ストリーム処理では正規化よりも非正規化が効率的
+4. **非正規化**: ksqlDB のストリーム処理では正規化よりも非正規化が効率的
 5. **型の統一**: JOIN/CASE等では必ず型を統一
 
 ### 追加リソース
-- [ksql.linq 公式ドキュメント](../README.md)
-- [ksqlDB 制約リファレンス](https://docs.ksqldb.io/)
+- [Ksql.Linq 公式ドキュメント](../README.md)
+- [ksqlDB 公式ドキュメント](https://docs.ksqldb.io/)
 - [サンプルコード](../examples/)
+- [Ksql.Linq Wiki](https://github.com/synthaicode/Ksql.Linq/wiki)
 
 ---
 
@@ -229,4 +258,4 @@ ksqlDBとLINQ to Objectsの制約の違いを理解し、正しいksql.linqコ�
 
 ## ライセンス
 
-このドキュメントはKsql.Linqプロジェクトの一部として、同じライセンスの下で提供されています。
+このドキュメントは Ksql.Linq プロジェクトの一部として、[MIT License](../LICENSE) の下で提供されています。
