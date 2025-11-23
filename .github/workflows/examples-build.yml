@@ -6,6 +6,11 @@ on:
       packageVersion:
         description: "Ksql.Linq package version to consume (e.g., 0.9.0-preview.1 or 0.9.0-preview.1-ci.42). If omitted, floating 0.9.0-preview.* will resolve to latest."
         required: false
+  workflow_call:
+    inputs:
+      packageVersion:
+        required: false
+        type: string
   schedule:
     - cron: '0 3 * * *'  # daily at 03:00 UTC
 

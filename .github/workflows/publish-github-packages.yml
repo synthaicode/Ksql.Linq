@@ -12,6 +12,8 @@ permissions:
 jobs:
   rc_publish:
     runs-on: ubuntu-latest
+    outputs:
+      packageVersion: ${{ steps.compute_version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,10 +26,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Compute version from tag
+        id: compute_version
         shell: bash
         run: |
-          echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "Version=$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Restore
         run: dotnet restore src/Ksql.Linq.csproj
@@ -49,3 +54,10 @@ jobs:
             -s "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
             -k "$NUGET_AUTH_TOKEN" \
             --skip-duplicate
+
+  build_examples:
+    needs: rc_publish
+    uses: ./.github/workflows/examples-build.yml
+    with:
+      packageVersion: ${{ needs.rc_publish.outputs.packageVersion }}
+    secrets: inherit
