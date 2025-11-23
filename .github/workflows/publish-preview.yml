@@ -6,9 +6,6 @@ on:
       versionSuffix:
         description: "Pre-release suffix (e.g., preview.1-ci.<run>)"
         required: false
-  push:
-    branches:
-      - release/**
 
 jobs:
   pack-and-publish:
@@ -46,7 +43,6 @@ jobs:
       - name: Pack (PackageVersion override)
         run: |
           dotnet pack src/Ksql.Linq.csproj -c Release -o ./.artifacts/nuget \
-            -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg \
             -p:PackageVersion=${{ steps.ver.outputs.pkg }}
 
       - name: Create NuGet.config for GitHub Packages
@@ -71,4 +67,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dotnet nuget push ./.artifacts/nuget/*.nupkg --skip-duplicate --source github --api-key $GITHUB_TOKEN
-          dotnet nuget push ./.artifacts/nuget/*.snupkg --skip-duplicate --source github --api-key $GITHUB_TOKEN
