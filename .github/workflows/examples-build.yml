@@ -70,12 +70,15 @@ jobs:
         shell: pwsh
         run: |
           $ver='${{ inputs.packageVersion }}'
-          # Update central reference in examples/Directory.Build.props if present
+          # Update central Ksql.Linq reference in examples/Directory.Build.props if present
           $p = 'examples/Directory.Build.props'
           if (Test-Path $p) {
-            $xml = Get-Content $p -Raw
-            $xml = $xml -replace '(<PackageReference Include="Ksql\.Linq" Version=")([^"]+)("\s*/>)',("`$1" + $ver + "`$3")
-            Set-Content -Path $p -Value $xml -Encoding UTF8
+            [xml]$doc = Get-Content $p
+            $pkg = $doc.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq 'Ksql.Linq' }
+            if ($pkg) {
+              $pkg.Version = $ver
+              $doc.Save($p)
+            }
           }
 
       - name: Restore & build examples
