@@ -43,8 +43,25 @@ jobs:
       - name: Test (exclude Integration)
         run: dotnet test tests/Ksql.Linq.Tests.csproj -c Release --no-build --filter "TestCategory!=Integration"
 
+      - name: Build AI_ASSISTANT_GUIDE.md from section docs
+        run: |
+          cat docs/ai_guide_intro_and_workflows.md \
+              docs/ai_guide_conversation_patterns.md \
+              docs/ai_guide_technical_sections.md > AI_ASSISTANT_GUIDE.md
+
       - name: Pack
         run: dotnet pack src/Ksql.Linq.csproj -c Release --no-build -p:PackageVersion=${{ env.VERSION }} -o ./artifacts
+
+      - name: Verify AI_ASSISTANT_GUIDE.md is packaged
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkg="$(ls ./artifacts/*.nupkg | head -n 1)"
+          echo "Checking package: $pkg"
+          if ! unzip -l "$pkg" | grep -q 'AI_ASSISTANT_GUIDE.md'; then
+            echo "AI_ASSISTANT_GUIDE.md is missing from package" >&2
+            exit 1
+          fi
 
       - name: Push to GitHub Packages
         env:

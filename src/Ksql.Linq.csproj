@@ -81,6 +81,7 @@
   <ItemGroup>
     <None Include="KsqlLinq-icon-128.png" Pack="true" PackagePath="" />
     <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="..\AI_ASSISTANT_GUIDE.md" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="2.12.0" />
