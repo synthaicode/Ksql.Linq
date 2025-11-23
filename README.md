@@ -1,5 +1,4 @@
-# <img src="docs/assets/ksqllinq-logo.png" alt="LinqKsql" width="100" height="100" style="vertical-align:middle;margin-right:8px;"/> &nbsp;
-&nbsp; Ksql.Linq &nbsp;&nbsp;<img src="docs/assets/experimental.png" alt="Experimental"  height="30" style="vertical-align:middle;margin-right:8px;"/>
+# <img src="docs/assets/ksqllinq-logo.png" alt="LinqKsql" width="100" height="100" style="vertical-align:middle;margin-right:8px;"/> &nbsp; Ksql.Linq
 
 > LINQ-style C# DSL for type-safe Kafka/ksqlDB operations.
 
@@ -30,6 +29,25 @@ See practical usage examples in the
 ## 📚 Documentation
 Full guides, design notes, and examples are available in the
 👉 [Ksql.Linq Wiki](https://github.com/synthaicode/Ksql.Linq/wiki).  
+
+---
+
+## 🤖 AI-Assisted Development
+
+Using AI coding assistants (Cursor, GitHub Copilot, Claude, ChatGPT)? This package includes an **AI Assistant Guide** (`AI_ASSISTANT_GUIDE.md`) — a comprehensive guide designed for AI agents to provide expert design support for Ksql.Linq projects.
+
+**Quick Start**: Tell your AI assistant:
+```text
+Please read AI_ASSISTANT_GUIDE.md from the Ksql.Linq package and help me design my stream processing solution.
+```
+
+The AI will provide:
+- ✅ Structured design consultations (Prerequisites → Options → Recommendations)
+- ✅ Pattern-based architecture proposals
+- ✅ Trade-off analysis and decision support
+- ✅ Best practice validation
+
+See `AI_ASSISTANT_GUIDE.md` for full details on AI-assisted workflows.
 
 ---
 
