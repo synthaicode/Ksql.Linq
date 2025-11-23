@@ -1,5 +1,7 @@
 using System.CommandLine;
 using System.Diagnostics;
+using System.Globalization;
+using System.Net.Http;
 using System.Text;
 
 namespace Ksql.Linq.Cli.Commands;
@@ -27,22 +29,10 @@ public static class AiAssistCommand
                 return;
             }
 
-            var header = """
-            # How to use this text with your AI assistant
+            var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
 
-            Copy this entire output and paste it into your AI assistant, or save it as a file and ask:
-
-            "Read this Ksql.Linq AI Assistant Guide and act as a design support AI for my Ksql.Linq project."
-
-            ---
-
-            """;
-
-            var footer = """
-
-            ---
-            Note: This guide is specific to your installed Ksql.Linq version. When you upgrade Ksql.Linq, rerun `dotnet ksql ai-assist` and share the new output with your AI assistant.
-            """;
+            var header = await GetHeaderAsync(culture);
+            var footer = await GetFooterAsync(culture);
 
             var guide = await File.ReadAllTextAsync(guidePath, Encoding.UTF8);
             var fullText = header + guide + footer;
@@ -141,6 +131,66 @@ public static class AiAssistCommand
         catch
         {
             return false;
+        }
+    }
+
+    private const string EnglishHeader = """
+    # How to use this text with your AI assistant
+
+    Copy this entire output and paste it into your AI assistant, or save it as a file and ask:
+
+    "Read this Ksql.Linq AI Assistant Guide and act as a design support AI for my Ksql.Linq project."
+
+    ---
+
+    """;
+
+    private const string EnglishFooter = """
+
+    ---
+    Note: This guide is specific to your installed Ksql.Linq version. When you upgrade Ksql.Linq, rerun `dotnet ksql ai-assist` and share the new output with your AI assistant.
+    """;
+
+    private static async Task<string> GetHeaderAsync(string culture)
+    {
+        if (culture == "en")
+        {
+            return EnglishHeader;
+        }
+
+        var localized = await TryFetchLocaleAsync("ai_assist_header", culture);
+        return localized ?? EnglishHeader;
+    }
+
+    private static async Task<string> GetFooterAsync(string culture)
+    {
+        if (culture == "en")
+        {
+            return EnglishFooter;
+        }
+
+        var localized = await TryFetchLocaleAsync("ai_assist_footer", culture);
+        return localized ?? EnglishFooter;
+    }
+
+    private static async Task<string?> TryFetchLocaleAsync(string baseName, string culture)
+    {
+        try
+        {
+            using var client = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(1)
+            };
+
+            var url =
+                $"https://raw.githubusercontent.com/synthaicode/Ksql.Linq/main/docs/ai_support_cli/messages/{baseName}_{culture}.txt";
+
+            var content = await client.GetStringAsync(url).ConfigureAwait(false);
+            return string.IsNullOrWhiteSpace(content) ? null : content;
+        }
+        catch
+        {
+            return null;
         }
     }
 }
