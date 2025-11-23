@@ -7,10 +7,11 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var rootCommand = new RootCommand("Ksql.Linq design-time tools for KSQL script and Avro schema generation");
+        var rootCommand = new RootCommand("Ksql.Linq design-time tools and AI assistant guide commands");
 
         rootCommand.AddCommand(ScriptCommand.Create());
         rootCommand.AddCommand(AvroCommand.Create());
+        rootCommand.AddCommand(AiAssistCommand.Create());
 
         return await rootCommand.InvokeAsync(args);
     }
