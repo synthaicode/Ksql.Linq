@@ -6,6 +6,12 @@ on:
   push:
     tags:
       - 'cli-v*.*.*-rc.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name to publish (e.g., cli-v1.0.0-rc2)'
+        required: false
+        type: string
 
 permissions:
   contents: read
