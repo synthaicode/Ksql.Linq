@@ -21,7 +21,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>KsqlLinq-icon-128.png</PackageIcon>
-    <PackageReleaseNotes>Maintenance release: runtime tuning options externalized and release automation improved. See docs/releases/release_v0_9_6.md for details.</PackageReleaseNotes>
+    <PackageReleaseNotes>KsqlDslOptions wait settings and defaults unified; DeserializationErrorPolicy and ReadFromFinalTopicByDefault are now init-only; PublicAPI baseline rolled into Shipped. See https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v0_9_7.md for details.</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
