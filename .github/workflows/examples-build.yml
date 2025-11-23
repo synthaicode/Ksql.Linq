@@ -28,26 +28,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure local artifacts folder exists
-        run: mkdir -p .artifacts/nuget
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Create NuGet.config (Local Ksql.Linq + nuget.org)
+      - name: Create NuGet.config for GitHub Packages (Ksql.Linq from GitHub, others from nuget.org)
         run: |
           cat > NuGet.config <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <configuration>
             <packageSources>
-              <add key="LocalPackages" value=".artifacts/nuget" />
+              <add key="github" value="https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" />
               <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
             </packageSources>
+            <packageSourceCredentials>
+              <github>
+                <add key="Username" value="${GITHUB_ACTOR}" />
+                <add key="ClearTextPassword" value="${GITHUB_TOKEN}" />
+              </github>
+            </packageSourceCredentials>
             <packageSourceMapping>
-              <packageSource key="LocalPackages">
+              <packageSource key="github">
                 <package pattern="Ksql.Linq" />
+                <package pattern="Ksql.Linq.*" />
               </packageSource>
               <packageSource key="nuget.org">
                 <package pattern="*" />
@@ -55,17 +59,6 @@ jobs:
             </packageSourceMapping>
           </configuration>
           XML
-
-      - name: Prefetch Ksql.Linq into local feed (from GitHub Packages)
-        if: inputs.packageVersion != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          dotnet nuget install Ksql.Linq \
-            --version "${{ inputs.packageVersion }}" \
-            --output .artifacts/nuget \
-            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
-            --api-key "$GITHUB_TOKEN"
 
       - name: Override version (optional)
         if: inputs.packageVersion != ''
