@@ -1,6 +1,0 @@
-# Cum să folosești acest text cu asistentul tău AI
-
-Copiază întregul output și lipește-l în asistentul tău AI, sau salvează-l într-un fișier și cere:
-
-«Citește acest Ksql.Linq AI Assistant Guide și acționează ca asistent de proiectare pentru proiectul meu Ksql.Linq.»
-

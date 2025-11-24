@@ -34,7 +34,6 @@ public class Bar
 {
     [KsqlKey(1)] public string Broker { get; set; } = string.Empty;
     [KsqlKey(2)] public string Symbol { get; set; } = string.Empty;
-    [KsqlKey(3)] public DateTime BucketStart { get; set; }
     public decimal Open { get; set; }
     public decimal High { get; set; }
     public decimal Low { get; set; }
@@ -61,7 +60,6 @@ public sealed class SampleContext : KsqlContext
                 {
                     Broker = g.Key.Broker,
                     Symbol = g.Key.Symbol,
-                    BucketStart = g.WindowStart(),
                     Open = g.EarliestByOffset(x => x.Bid),
                     High = g.Max(x => x.Bid),
                     Low = g.Min(x => x.Bid),
@@ -94,12 +92,12 @@ class Program
         var rows5m = await Ksql.Linq.TimeBucket.ReadAsync<Bar>(ctx, Period.Minutes(5), new[] { broker, symbol }, CancellationToken.None);
 
         Console.WriteLine($"1m rows: {rows1m.Count}");
-        foreach (var b in rows1m.OrderBy(x => x.BucketStart))
-            Console.WriteLine($"{b.BucketStart:HH:mm} O:{b.Open} H:{b.High} L:{b.Low} C:{b.Close}");
+        foreach (var b in rows1m)
+            Console.WriteLine($"1m O:{b.Open} H:{b.High} L:{b.Low} C:{b.Close}");
 
         Console.WriteLine($"5m rows: {rows5m.Count}");
-        foreach (var b in rows5m.OrderBy(x => x.BucketStart))
-            Console.WriteLine($"[5m] {b.BucketStart:HH:mm} O:{b.Open} H:{b.High} L:{b.Low} C:{b.Close}");
+        foreach (var b in rows5m)
+            Console.WriteLine($"[5m] O:{b.Open} H:{b.High} L:{b.Low} C:{b.Close}");
     }
 
     private static async Task WaitForAvailableAsync(KsqlContext ctx, Period p, string broker, string symbol, TimeSpan timeout)

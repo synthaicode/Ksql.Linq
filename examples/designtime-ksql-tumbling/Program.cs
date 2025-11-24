@@ -24,7 +24,6 @@ public class Tick
 public class MinuteBar
 {
     public string Symbol { get; set; } = string.Empty;
-    public DateTime BucketStart { get; set; }
     public decimal Open { get; set; }
     public decimal High { get; set; }
     public decimal Low { get; set; }
@@ -56,7 +55,6 @@ public sealed class TumblingKsqlContext : KsqlContext
             .Select(g => new MinuteBar
             {
                 Symbol = g.Key,
-                BucketStart = g.WindowStart(),
                 Open = g.EarliestByOffset(x => x.Price),
                 High = g.Max(x => x.Price),
                 Low = g.Min(x => x.Price),

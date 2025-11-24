@@ -1,3 +1,0 @@
-Observação: Este guia é específico para a versão do Ksql.Linq que você tem instalada.
-Quando atualizar o Ksql.Linq, execute novamente "dotnet ksql ai-assist" e compartilhe a nova saída com o seu assistente de IA.
-

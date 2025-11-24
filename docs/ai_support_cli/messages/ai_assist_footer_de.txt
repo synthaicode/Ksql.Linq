@@ -1,3 +1,0 @@
-Hinweis: Dieser Leitfaden ist speziell für die installierte Ksql.Linq-Version.
-Wenn du Ksql.Linq aktualisierst, führe erneut „dotnet ksql ai-assist“ aus und teile die neue Ausgabe mit deinem KI-Assistenten.
-

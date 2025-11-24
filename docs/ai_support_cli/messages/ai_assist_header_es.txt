@@ -1,6 +1,0 @@
-# Cómo usar este texto con tu asistente de IA
-
-Copia toda esta salida y pégala en tu asistente de IA, o guárdala en un archivo y pídele:
-
-«Lee esta Ksql.Linq AI Assistant Guide y actúa como asistente de diseño para mi proyecto Ksql.Linq».
-

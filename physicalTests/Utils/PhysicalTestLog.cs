@@ -35,6 +35,8 @@ public static class PhysicalTestLog
             builder.SetMinimumLevel(minimumLevel);
             builder.AddConsole();
             builder.AddProvider(_fileProvider!);
+            // Default: capture Streamiz logs, but suppress noisy Processor-level debug output
+            builder.AddFilter("Streamiz.Kafka.Net.Processors", LogLevel.Information);
             builder.AddFilter("Streamiz.Kafka.Net", LogLevel.Debug);
             builder.AddFilter("Streamiz", LogLevel.Debug);
             configure?.Invoke(builder);

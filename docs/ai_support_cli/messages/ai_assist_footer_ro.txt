@@ -1,3 +1,0 @@
-Notă: Acest ghid este specific versiunii de Ksql.Linq instalate.
-Când actualizezi Ksql.Linq, rulează din nou „dotnet ksql ai-assist” și partajează noul output cu asistentul tău AI.
-

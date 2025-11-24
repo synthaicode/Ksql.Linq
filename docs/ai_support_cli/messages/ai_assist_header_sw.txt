@@ -1,6 +1,0 @@
-# Jinsi ya kutumia maandishi haya na msaidizi wako wa AI
-
-Nakili matokeo haya yote na uyaweke kwenye msaidizi wako wa AI, au yaweke kwenye faili kisha uombe:
-
-“Soma mwongozo huu wa Ksql.Linq AI Assistant Guide na ufanye kazi kama msaidizi wa usanifu kwa mradi wangu wa Ksql.Linq.”
-

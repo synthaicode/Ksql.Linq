@@ -47,7 +47,7 @@ This folder lines up sample projects so ordinary developers can jump straight to
 ## Windowing (time windows & aggregation | unified)
 - `windowing`: Adds live aggregation (Push) and a 1-minute → 5-minute roll-up atop TUMBLING basics.
   - Unified from `examples/tumbling-live-consumer` and `examples/rollup-1m-5m-verify`.
-- `continuation-schedule`: Continuation-based scheduling sample (use Tumbling(..., continuation: true) and include WindowStart() once in Select).
+- `continuation-schedule`: Continuation-based scheduling sample (use Tumbling(..., continuation: true) over a market schedule).
  - `bar-1m-live-consumer`: Monitor `bar_1m_live` directly with a dedicated POCO.
 
 ## Error Handling (operations & reprocessing)

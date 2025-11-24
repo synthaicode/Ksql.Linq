@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.8
+- Fixed DLQ defaults for appsettings-lite scenarios: `GetDlqTopicName()` and `KafkaAdminService.EnsureDlqTopicExistsAsync()` now fall back to `dead_letter_queue` when `DlqTopicName` is unset (e.g., when `appsettings.json` is not loaded or does not define `DlqTopicName`).
+- Corrected physical Tumbling+TimeBucket tests to avoid double timestamp semantics: `TranslationsTimeBucketTests` now uses `BucketStart` as a logical column without `[KsqlTimestamp]`.
+- Cleaned up examples to avoid recommending `WindowStart()` as a projected value column for Tumbling windows; examples now focus on OHLC and continuation semantics instead.
+- Clarified OssSamples physical test scope by moving non-active tests into `OssSamples/Archive` and documenting the three active physical tests.
+
 ## v0.9.7
 - Simplified KsqlDslOptions defaults: dropped DefaultValue attributes, rely on initializers.
 - Wait settings now use KsqlDslOptions; removed KSQL_QUERY_RUNNING_* env fallbacks.

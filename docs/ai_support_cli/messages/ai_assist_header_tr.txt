@@ -1,6 +1,0 @@
-# Bu metni yapay zeka asistanınızla nasıl kullanırsınız
-
-Bu çıktının tamamını kopyalayıp yapay zeka asistanınıza yapıştırın veya bir dosyaya kaydedip şöyle isteyin:
-
-“Bu Ksql.Linq AI Assistant Guide belgesini oku ve Ksql.Linq projem için tasarım asistanı olarak hareket et.”
-

@@ -1,6 +1,0 @@
-# Cara menggunakan teks ini dengan asisten AI Anda
-
-Salin seluruh output ini dan tempelkan ke asisten AI Anda, atau simpan sebagai file lalu minta:
-
-“Baca Ksql.Linq AI Assistant Guide ini dan bertindak sebagai asisten desain untuk proyek Ksql.Linq saya.”
-

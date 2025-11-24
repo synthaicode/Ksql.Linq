@@ -44,7 +44,6 @@ public class TranslationsTimeBucketTests
         [KsqlKey(1)] public string Broker { get; set; } = string.Empty;
         [KsqlKey(2)] public string Symbol { get; set; } = string.Empty;
         [KsqlKey(3)]
-        [KsqlTimestamp]
         public DateTime BucketStart { get; set; }
 
         public long? WindowStartRaw { get; set; }
@@ -255,5 +254,4 @@ public class TranslationsTimeBucketTests
         }
     }
 }
-
 

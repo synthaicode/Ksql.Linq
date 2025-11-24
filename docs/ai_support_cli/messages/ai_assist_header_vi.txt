@@ -1,6 +1,0 @@
-# Cách sử dụng văn bản này với trợ lý AI của bạn
-
-Sao chép toàn bộ phần output này và dán vào trợ lý AI của bạn, hoặc lưu vào một tệp rồi yêu cầu:
-
-“Hãy đọc hướng dẫn Ksql.Linq AI Assistant Guide này và đóng vai trò là trợ lý thiết kế cho dự án Ksql.Linq của tôi.”
-

@@ -218,9 +218,11 @@ public abstract partial class KsqlContext
         }
     }
     public string GetDlqTopicName()
-    {
-        return _dslOptions.DlqTopicName;
-    }
+      {
+          if (string.IsNullOrWhiteSpace(_dslOptions.DlqTopicName))
+              return "dead_letter_queue";
+          return _dslOptions.DlqTopicName;
+      }
     /// <summary>
     /// Kafka connectivity validation.
     /// </summary>
