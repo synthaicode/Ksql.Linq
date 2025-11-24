@@ -29,8 +29,20 @@ class Program
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         await using var ctx = new CacheContext(cfg, LoggerFactory.Create(b => b.AddConsole()));
 
+        // Snapshot the TABLE-backed cache
         var rows = await ctx.RefDatas.ToListAsync();
         Console.WriteLine($"Rows: {rows.Count}");
+
+        // Key-based lookup (filter by primary key, then use normal LINQ)
+        var key = "ref-001";
+        var row = rows.Find(r => r.Key == key);
+        if (row != null)
+        {
+            Console.WriteLine($"Lookup {key}: {row.Value}");
+        }
+        else
+        {
+            Console.WriteLine($"Lookup {key}: not found");
+        }
     }
 }
-
