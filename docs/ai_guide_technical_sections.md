@@ -1004,7 +1004,7 @@ dotnet ksql script --assembly bin/Debug/net8.0/MyApp.dll
 
 ---
 
-**License**: MIT
+**License**: CC BY 4.0
 **Maintained by**: SynthAICode with AI-human collaboration
 
 ---
