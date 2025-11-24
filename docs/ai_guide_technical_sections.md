@@ -422,11 +422,14 @@ var bars = ctx.Trades
 using var ctx = new TradingContext(configuration);
 
 // Snapshot current state of a TABLE-backed entity set
-var topUsers = await ctx.UserStats
+var allStats = await ctx.UserStats.ToListAsync();
+
+// Apply additional filtering and ordering in memory
+var topUsers = allStats
     .Where(s => s.Score > 1000)
     .OrderByDescending(s => s.Score)
     .Take(10)
-    .ToListAsync();  // Pull-style query over a TABLE
+    .ToList();  // Pull-style query over a TABLE, filtered client-side
 ```
 
 **Push vs Pull (conceptual):**
