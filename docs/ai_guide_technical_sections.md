@@ -973,7 +973,7 @@ dotnet ksql script --assembly bin/Debug/net8.0/MyApp.dll
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | `Topic not found` | Topic not auto-created | Set `auto.topic.create.enable: true` or pre-create |
-| `Schema not compatible` | Breaking schema change | Use compatible evolution or new topic |
+| `Schema not compatible` | Breaking schema change | Avoid breaking changes; if required, create a new topic (e.g., `<name>-v2`) |
 | `Consumer lag growing` | Processing too slow | Scale consumers, optimize handler |
 | `Null key messages` | Missing `[KsqlKey]` | Add attribute to key property |
 | `Timestamp out of order` | Late arrivals | Configure grace period |
