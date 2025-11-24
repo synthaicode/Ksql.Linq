@@ -698,7 +698,6 @@ await ctx.Dlq.ForEachAsync(record =>
 |--------|---------|------|
 | `AddAsync(entity)` | Produce single message | Producer |
 | `ForEachAsync(handler)` | Consume with callback | Consumer |
-| `Subscribe(observer)` | Rx.NET observable pattern | Consumer |
 | `Where(predicate)` | Filter query | Query |
 | `Select(projection)` | Transform query | Query |
 | `Join(...)` | Join streams/tables | Query |
