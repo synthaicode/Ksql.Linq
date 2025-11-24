@@ -644,6 +644,7 @@ public class SensorReading
     public long Timestamp { get; set; }
 }
 
+// 1. Main pipeline with DLQ
 await ctx.SensorReadings
     .OnError(ErrorAction.DLQ)  // Failed messages → DLQ topic
     .ForEachAsync(async reading =>
@@ -655,6 +656,14 @@ await ctx.SensorReadings
         // Process
         await timeseriesDb.WriteAsync(reading);
     });
+
+// 2. DLQ inspection / replay lane
+await ctx.Dlq.ForEachAsync(record =>
+{
+    Console.WriteLine($"DLQ: {record.RawText}");
+    // Optional: parse, fix, and route to a repair topic
+    return Task.CompletedTask;
+});
 ```
 
 ---
