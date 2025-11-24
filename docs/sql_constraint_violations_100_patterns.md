@@ -11,7 +11,7 @@
 > **Status (Ksql.Linq v1.0.0)**  
 > - 本書の 100 パターンは、ksqlDB 制約の「設計チェックリスト」です。  
 > - Ksql.Linq v1.0.0 が **全パターンを検出することは保証されません**。  
-> - 特に、`.WindowByTumbling(...)` / `.WindowByHopping(...)` / `.WindowBySession(...)` / `.FullOuterJoin(...)` / `.RightJoin(...)` などのメソッド名は **疑似コード** であり、現行の Ksql.Linq 公開 API とは一致しません。  
+> - 本書中の一部メソッド名は **疑似コード** であり、現行の Ksql.Linq 公開 API とは一致しない場合があります。  
 > - v1.0.0 時点でライブラリ側に実装されている代表的な検証ロジックの例:  
 >   - 式の深さ・ノード数制限（パターン 75–82 相当 / `BuilderValidation.ValidateExpression(...)`）。  
 >   - `ToListAsync()` の使用制限（DLQ や Stream での禁止 / パターン 83 など）。  
@@ -42,16 +42,13 @@
 |-----|-------------------------------|--------------------------------------|---------------------|
 | 1 | `orders.Join(customers, ...).Join(products, ...)` (3テーブル結合) | `StreamProcessingException: Stream processing supports maximum 2 table joins. Found 3 tables. Consider data denormalization or use batch processing for complex relationships.` | マテリアライズドビューを使用: `var enriched = orders.Join(customers, ...); await CreateMaterializedView(enriched); var result = enriched.Join(products, ...);` |
 | 2 | `orders.GroupJoin(customers, ...)` | `StreamProcessingException: Unsupported join patterns detected: GROUP JOIN (use regular JOIN with GROUP BY instead). Supported: INNER, LEFT OUTER joins with co-partitioned data.` | `orders.Join(customers, ...).GroupBy(x => x.CustomerId)` |
-| 3 | `stream1.FullOuterJoin(stream2, ...)` | `StreamProcessingException: Unsupported join patterns detected: FULL OUTER JOIN (not supported in KSQL)` | `stream1.LeftJoin(stream2, ...).Union(stream2.LeftJoin(stream1, ...).Where(x => x.Left == null))` (2クエリで代替) |
 | 4 | `orders.Join(customers, o => o.Name, c => c.Id, ...)` (異なるキー型) | `StreamProcessingException: JOIN key types must match. Outer key: String, Inner key: Int32. Ensure both tables are partitioned by the same key type for optimal performance.` | キーを同じ型に変換: `orders.Join(customers, o => o.CustomerId, c => c.Id, ...)` |
 | 5 | `orders.CrossJoin(products)` | `StreamProcessingException: Unsupported join patterns detected: CROSS JOIN (performance risk in streaming)` | 明示的なキーで結合: `orders.Join(products, _ => true, _ => true, ...)` (非推奨、パフォーマンス問題あり) |
 | 6 | `stream1.Join(stream2, ...).Join(stream3, ...).Join(stream4, ...)` (4テーブル結合) | `StreamProcessingException: Stream processing supports maximum 2 table joins. Found 4 tables. Alternative: Create materialized views or use event sourcing patterns.` | イベントソーシングパターンで非正規化データを作成 |
-| 7 | `orders.RightJoin(customers, ...)` | `StreamProcessingException: Unsupported join patterns detected: RIGHT JOIN (use LEFT JOIN with swapped operands)` | `customers.LeftJoin(orders, ...)` (オペランドを入れ替え) |
 | 8 | `orders.Join(customers.Join(products, ...), ...)` (ネストされたJOIN) | `StreamProcessingException: Stream processing supports maximum 2 table joins. Found 3 tables.` | フラットな構造に変更: 中間マテリアライズドビューを作成 |
 | 9 | `orders.Join(customers, o => new { o.Id, o.Type }, c => new { c.Id, c.Type }, ...)` (複合キー結合、パーティション不一致) | `[KSQL-LINQ WARNING] JOIN performance optimization: Ensure topics 'orders' and 'customers' have same partition count and key distribution.` | 単一キーに統一またはリパーティション: `orders.Join(customers, o => o.Id, c => c.Id, ...)` |
 | 10 | `stream1.Where(x => x.Id > 0).Join(stream2.Where(y => y.Active), ...)` (JOIN前に複雑なフィルタ) | パフォーマンス警告: フィルタがパーティション分布を変更 | JOIN後にフィルタ: `stream1.Join(stream2, ...).Where(x => x.Left.Id > 0 && x.Right.Active)` |
 | 11 | `orders.Join(customers, o => o.CustomerId.ToString(), c => c.Id.ToString(), ...)` (JOIN キーでの変換) | `StreamProcessingException: JOIN key types must match. Complex transformations in join keys may affect partitioning.` | ソーストピックレベルでキー型を統一 |
-| 12 | `stream1.LeftJoin(stream2, ..., (a, b) => b == null ? a : b)` (NULL処理が複雑) | 実行時エラー: 複雑なJOIN結果処理 | 明示的なNULL処理: `.Select(x => x.Right ?? x.Left)` |
 
 ---
 
@@ -162,27 +159,6 @@
 
 ---
 
-## ウィンドウ操作制約違反
-
-> **Status (v1.0.0)**: 概念リスト。ここで用いている `.WindowByTumbling` / `.WindowByHopping` / `.WindowBySession` は疑似 API であり、現行 Ksql.Linq には存在しません。ウィンドウ設計の考え方のみ参考にしてください。
-
-> **ksqlDB の制約**: ウィンドウサイズは60秒の約数、または60の倍数である必要がある。基本単位の整合性が必要。
-
-| No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
-|-----|-------------------------------|--------------------------------------|---------------------|
-| 65 | `.WindowByTumbling(TimeSpan.FromSeconds(7))` (60で割り切れない) | `InvalidOperationException: Base unit must divide 60 seconds.` | `.WindowByTumbling(TimeSpan.FromSeconds(5))` または `.WindowByTumbling(TimeSpan.FromSeconds(10))` |
-| 66 | `.WindowByTumbling(TimeSpan.FromSeconds(90))` (≥60秒だが60の倍数でない) | `InvalidOperationException: Windows ≥ 1 minute must be whole-minute multiples.` | `.WindowByTumbling(TimeSpan.FromMinutes(1))` または `.WindowByTumbling(TimeSpan.FromSeconds(60))` |
-| 67 | `.WindowByTumbling(TimeSpan.FromSeconds(5)).WindowByTumbling(TimeSpan.FromSeconds(17))` (ネストされたウィンドウ、内側が基本単位の倍数でない) | `InvalidOperationException: Window 17s must be a multiple of base 5s.` | `.WindowByTumbling(TimeSpan.FromSeconds(5)).WindowByTumbling(TimeSpan.FromSeconds(15))` |
-| 68 | `.WindowByHopping(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(7))` (ホップが60の約数でない) | `InvalidOperationException: Base unit must divide 60 seconds.` | `.WindowByHopping(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(5))` |
-| 69 | `.WindowBySession(TimeSpan.FromMinutes(5), grace: TimeSpan.FromSeconds(10))` (グレース期間の設定ミス) | `InvalidOperationException: Window 5m grace must be parent grace + 1s.` (内部実装による) | デフォルトのグレース期間を使用: `.WindowBySession(TimeSpan.FromMinutes(5))` |
-| 70 | `.WindowByTumbling(TimeSpan.FromSeconds(13))` (素数秒、60で割り切れない) | `InvalidOperationException: Base unit must divide 60 seconds.` | `.WindowByTumbling(TimeSpan.FromSeconds(10))` または `.WindowByTumbling(TimeSpan.FromSeconds(15))` |
-| 71 | `.WindowByTumbling(TimeSpan.FromMinutes(3.5))` (小数分) | `InvalidOperationException: Windows ≥ 1 minute must be whole-minute multiples.` | `.WindowByTumbling(TimeSpan.FromMinutes(3))` または `.WindowByTumbling(TimeSpan.FromSeconds(180))` |
-| 72 | `events.GroupBy(e => e.UserId).WindowByTumbling(...)` (GROUP BY後にWindow) | 実行時エラー: ウィンドウはグループ化の前に適用すべき | `.WindowByTumbling(...).GroupBy(e => e.UserId)` (順序を逆に) |
-| 73 | `.WindowByTumbling(TimeSpan.Zero)` (ゼロ秒ウィンドウ) | `InvalidOperationException: Base unit must divide 60 seconds.` (ゼロは無効) | 最小単位を使用: `.WindowByTumbling(TimeSpan.FromSeconds(1))` |
-| 74 | `.WindowByHopping(size: TimeSpan.FromSeconds(5), advance: TimeSpan.FromSeconds(10))` (advanceがsizeより大きい) | データの欠落 (エラーではないが意図しない動作) | `.WindowByHopping(size: TimeSpan.FromSeconds(10), advance: TimeSpan.FromSeconds(5))` (サイズ ≥ アドバンス) |
-
----
-
 ## 式の深さ・複雑さ制約違反
 
 > **Status (v1.0.0)**: **実装済みロジックと対応**。`BuilderValidation.ValidateExpression(...)` により、深さ 50 / ノード数 1000 を超える式には `InvalidOperationException` が実際に投げられます（メッセージも概ねここに記載のとおり）。
@@ -211,13 +187,11 @@
 | No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
 |-----|-------------------------------|--------------------------------------|---------------------|
 | 83 | `await ctx.MyStream.ToListAsync()` (ストリームでToListAsync) | `InvalidOperationException: ToListAsync() is not supported on a Stream source. Use ForEachAsync for streaming consumption or convert to a Table via materialization.` | `await ctx.MyStream.ForEachAsync(item => { /* process */ });` |
-| 84 | `await ctx.MyStream.FirstOrDefaultAsync()` (ストリームで単一要素取得) | 実行時エラーまたはタイムアウト (ストリームは無限) | プルクエリに変換: テーブルにマテリアライズしてから取得 |
 | 85 | `ctx.MyTable.ForEachAsync(item => ...)` (テーブルでストリーミング消費) | 実行時警告: テーブルはスナップショット | `await ctx.MyTable.ToListAsync()` (バッチ取得) |
 | 86 | `ctx.MyStream.Count()` (ストリームで同期Count) | デッドロック: ストリームは無限なので終了しない | `.GroupBy(_ => 1).Select(g => g.Count())` (継続的な集約として) |
 | 87 | `await ctx.MyStream.ToArrayAsync()` (ストリームで配列化) | タイムアウト: 無限ストリームを配列化できない | `.Take(100).ToArrayAsync()` (件数制限) または `ForEachAsync` 使用 |
 | 88 | `ctx.MyStream.Last()` (ストリームで最後の要素) | 無限待機: ストリームに「最後」はない | ウィンドウ集約で最新値を追跡 |
 | 89 | `var list = ctx.MyStream.ToList()` (同期ToList) | デッドロック | `await ctx.MyStream.Take(N).ToListAsync()` (非同期 + 制限) |
-| 90 | `ctx.MyStream.ElementAt(10)` (ストリームでインデックスアクセス) | 実行時エラーまたは非効率 | `.Skip(10).Take(1).FirstOrDefaultAsync()` (但しストリームには非推奨) |
 | 91 | `await ctx.MyTable.Take(10).ForEachAsync(...)` (テーブルでストリーミング処理) | パフォーマンス警告 | `await ctx.MyTable.Take(10).ToListAsync()` 後にforeachで処理 |
 | 92 | `ctx.MyStream.Sum(e => e.Amount)` (ストリームで同期集約) | デッドロック | `.GroupBy(_ => 1).Select(g => g.Sum(x => x.Amount))` (継続集約) |
 
