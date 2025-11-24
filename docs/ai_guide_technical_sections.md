@@ -677,8 +677,6 @@ await ctx.Dlq.ForEachAsync(record =>
 
 | Method | Purpose | Example |
 |--------|---------|---------|
-| `SaveChangesAsync()` | Flush pending produce operations | `await ctx.SaveChangesAsync();` |
-| `DisposeAsync()` | Clean up resources | `await ctx.DisposeAsync();` |
 
 ### EventSet<T> Methods
 
