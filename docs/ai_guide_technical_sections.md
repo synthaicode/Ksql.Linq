@@ -408,6 +408,19 @@ var bars = ctx.Trades
 ### Pattern 8: Pull-style Queries over TABLEs
 
 ```csharp
+// Prerequisites:
+// - UserStat is a TABLE-backed entity:
+//   [KsqlTopic("user-stats")]
+//   [KsqlTable]
+//   public class UserStat
+//   {
+//       [KsqlKey] public string UserId { get; set; } = "";
+//       public long Score { get; set; }
+//   }
+// - TradingContext registers the entity in OnModelCreating via builder.Entity<UserStat>()
+// - The underlying TABLE has been materialized by a persistent query
+using var ctx = new TradingContext(configuration);
+
 // Snapshot current state of a TABLE-backed entity set
 var topUsers = await ctx.UserStats
     .Where(s => s.Score > 1000)
@@ -418,7 +431,7 @@ var topUsers = await ctx.UserStats
 
 **Push vs Pull (conceptual):**
 - **Push Query**: Continuous stream of updates (`.ForEachAsync()`, `.Subscribe()`)
-- **Pull-style Query**: One-time snapshot over a TABLE (`.ToListAsync()` on `IEntitySet<T>` / table-backed sets)
+- **Pull-style Query**: One-time snapshot over a TABLE (`.ToListAsync()` on table-backed `EventSet<T>` / `IEntitySet<T>`)
 
 ---
 
