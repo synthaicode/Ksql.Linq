@@ -414,34 +414,10 @@ var bars = ctx.Trades
     })
     ;
 
-// Hopping window (overlapping) – planned (conceptual example; not yet supported in current runtime)
-// var rollingAvg = ctx.Trades
-//     .GroupBy(t => t.Symbol)
-//     .Hopping(windowSize: TimeSpan.FromMinutes(5), advance: TimeSpan.FromMinutes(1))
-//     .Select(g => new
-//     {
-//         Symbol = g.Key,
-//         AvgPrice = g.Average(t => t.Price),
-//         TradeCount = g.Count()
-//     });
-
-// Session window (gap-based) – planned (conceptual example; not yet supported in current runtime)
-// var sessions = ctx.UserEvents
-//     .GroupBy(e => e.UserId)
-//     .Session(inactivityGap: TimeSpan.FromMinutes(30))
-//     .Select(g => new
-//     {
-//         UserId = g.Key,
-//         EventCount = g.Count(),
-//         SessionStart = g.Min(e => e.EventTime),
-//         SessionEnd = g.Max(e => e.EventTime)
-//     });
 ```
 
-**Window Types (current + planned):**
+**Window Types (current):**
 - **Tumbling**: Fixed-size, non-overlapping (e.g., 1-minute bars) – **implemented**
-- **Hopping**: Fixed-size, overlapping (e.g., 5-min window, 1-min advance) – **planned**
-- **Session**: Variable-size, gap-based (e.g., user sessions) – **planned**
 
 ---
 
