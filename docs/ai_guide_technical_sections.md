@@ -67,7 +67,7 @@ When a developer asks "What can you do?", treat it as two questions:
 KsqlContext (DbContext-like)
   ├── EventSet<T> (DbSet-like)
   │     ├── Producer operations (Add, AddRange)
-  │     ├── Consumer operations (ForEach, Subscribe)
+  │     ├── Consumer operations (ForEach)
   │     └── Query operations (Where, Select, GroupBy, Join)
   ├── Schema Registry Client
   ├── Streamiz Topology Builder
@@ -433,7 +433,7 @@ var topUsers = allStats
 ```
 
 **Push vs Pull (conceptual):**
-- **Push Query**: Continuous stream of updates (`.ForEachAsync()`, `.Subscribe()`)
+- **Push Query**: Continuous stream of updates (`.ForEachAsync()`)
 - **Pull-style Query**: One-time snapshot over a TABLE (`.ToListAsync()` on table-backed `EventSet<T>` / `IEntitySet<T>`)
 
 ---
@@ -787,7 +787,7 @@ Is the data a changelog (updates/deletes)?
 
 ```
 Do I need continuous updates?
-├─ Yes → Push query (.ForEachAsync(), .Subscribe())
+├─ Yes → Push query (.ForEachAsync())
 │   Example: Real-time alerts, dashboards
 │
 └─ No → Pull query (.FirstOrDefaultAsync(), .ToListAsync())
