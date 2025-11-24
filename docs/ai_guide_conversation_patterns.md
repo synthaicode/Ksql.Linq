@@ -204,7 +204,7 @@ var bars = ctx.Trades
 - [ ] Confirm partition count for `trades` topic (recommend 6-12)
 - [ ] Define retention for output topic (e.g., 7 days for 1m bars)
 - [ ] Decide on late arrival handling (grace period?)
-- [ ] Consider rollup pattern (1m → 5m → 1h) per examples/windowing
+- [ ] Consider rollup pattern (1m -> 5m -> 1h) per examples/windowing
 ```
 
 ---

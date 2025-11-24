@@ -36,7 +36,7 @@ This file is included in the **Ksql.Linq** NuGet package, and is also exposed vi
 - **GitHub**: https://github.com/synthaicode/Ksql.Linq/blob/main/AI_ASSISTANT_GUIDE.md
 - **NuGet Cache** (Windows): `%userprofile%\.nuget\packages\ksql.linq\<version>\AI_ASSISTANT_GUIDE.md`
 - **NuGet Cache** (macOS/Linux): `~/.nuget/packages/ksql.linq/<version>/AI_ASSISTANT_GUIDE.md`
-- **Visual Studio/Rider**: Right-click package → "Open Folder in File Explorer" → look for `AI_ASSISTANT_GUIDE.md`
+- **Visual Studio/Rider**: Right-click package -> "Open Folder in File Explorer" -> look for `AI_ASSISTANT_GUIDE.md`
 - **CLI**: `dotnet ksql ai-assist` prints this guide to standard output; `dotnet ksql ai-assist --copy` also copies the text to the clipboard (where supported).
 
 ### Quick Start: Share This Document with Your AI

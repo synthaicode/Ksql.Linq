@@ -174,7 +174,7 @@ Some design decisions are unsafe to guess (see **AI MUST NOT GUESS** in the conv
   - Processing-time is the ingestion/processing timestamp.
 - Once clarified:
   - Map the chosen property with `[KsqlTimestamp]`.
-  - Then choose windowing patterns in Design Patterns (e.g., tumbling/hopping) based on that column.
+  - Then choose windowing patterns in Design Patterns (e.g., tumblings) based on that column.
 
 ### Key Selection
 
@@ -395,9 +395,7 @@ var bars = ctx.Trades
         High = g.Max(t => t.Price),
         Low = g.Min(t => t.Price),
         Close = g.Last().Price,
-        Volume = g.Sum(t => t.Quantity),
-        WindowStart = g.WindowStart(),  // Include for continuation mode
-        WindowEnd = g.WindowEnd()
+        Volume = g.Sum(t => t.Quantity)
     })
     ;
 
@@ -444,9 +442,9 @@ var topUsers = allStats
 ### Pattern 9: Error Handling Strategies
 
 ```csharp
-// 1. DLQ + retry (based on examples/error-handling[-dlq])
+// 1. Retry-only pipeline (no DLQ)
 await ctx.Orders
-    .OnError(ErrorAction.DLQ)   // route failures to DLQ
+    .OnError(ErrorAction.Retry)   // retry on handler failure
     .WithRetry(3)               // retry transient failures
     .ForEachAsync(order =>
     {
@@ -458,8 +456,22 @@ await ctx.Orders
         Console.WriteLine($"Processed order {order.Id}: {order.Amount}");
         return Task.CompletedTask;
     });
+// 2. Skip-only pipeline (skip failures and continue)
+await ctx.Orders
+    .OnError(ErrorAction.Skip)    // skip failed records, continue
+    .ForEachAsync(order =>
+    {
+        if (order.Amount < 0)
+        {
+            // This record is skipped; processing continues with the next message
+            throw new InvalidOperationException("Amount cannot be negative");
+        }
 
-// 2. DLQ-only pipeline (validate → send bad records to DLQ)
+        Console.WriteLine($"Processed order {order.Id}: {order.Amount}");
+        return Task.CompletedTask;
+    });
+
+// 3. DLQ-only pipeline (validate  send bad records to DLQ)
 await ctx.SensorReadings
     .OnError(ErrorAction.DLQ)
     .ForEachAsync(reading =>
@@ -472,7 +484,7 @@ await ctx.SensorReadings
         return timeseriesDb.WriteAsync(reading);
     });
 
-// 3. DLQ inspection / replay lane
+// 4. DLQ inspection / replay lane
 await ctx.Dlq.ForEachAsync(record =>
 {
     Console.WriteLine($"DLQ: {record.RawText}");
@@ -480,7 +492,7 @@ await ctx.Dlq.ForEachAsync(record =>
     return Task.CompletedTask;
 });
 
-// 4. Manual commit with error handling
+// 5. Manual commit with error handling
 await ctx.Trades.ForEachAsync(
     (trade, headers, meta) =>
     {
@@ -541,7 +553,7 @@ dotnet ksql script --project MyProject.csproj --output schema.sql
 dotnet ksql avro --project MyProject.csproj --output-dir ./schemas
 
 # From compiled DLL
-dotnet ksql script --assembly bin/Debug/net8.0/MyApp.dll
+dotnet ksql script --project bin/Debug/net8.0/MyApp.dll
 ```
 
 ---
@@ -571,43 +583,72 @@ public class ClickstreamContext : KsqlContext
     // ... constructor ...
 }
 
-// Consumer
-await ctx.Clicks
-    .Where(c => c.PageUrl.Contains("/checkout"))
-    .ForEachAsync(async click =>
-    {
-        await analyticsService.TrackCheckoutView(click.UserId);
-    });
+// Consumer (filter inside handler; ForEachAsync consumes the stream)
+await ctx.Clicks.ForEachAsync(async click =>
+{
+    if (!click.PageUrl.Contains("/checkout"))
+        return;
+
+    await analyticsService.TrackCheckoutView(click.UserId);
+});
 ```
 
 ---
 
 ### Use Case 2: Stream Enrichment (Join)
 
-**Scenario**: Enrich order events with customer data
+**Scenario**: Enrich order events with customer data using a ToQuery-based view
 
 ```csharp
-[KsqlTopic("orders")] public class Order { /* ... */ }
-[KsqlTopic("customers")] [KsqlTable] public class Customer { /* ... */ }
+[KsqlTopic("orders")] public class Order 
+{ 
+    public int OrderId { get; set; }
+    public int CustomerId { get; set; } 
+    public decimal Amount { get; set; } 
+}
 
-var enrichedOrders = ctx.Orders
-    .Join(
-        ctx.Customers,
-        order => order.CustomerId,
-        customer => customer.CustomerId,
-        (order, customer) => new
-        {
-            order.OrderId,
-            order.Amount,
-            customer.Name,
-            customer.Tier
-        }
-    )
-    ;
+[KsqlTopic("customers")] [KsqlTable] public class Customer 
+{ 
+    public int CustomerId { get; set; } 
+    public string Name { get; set; } = string.Empty; 
+    public string Tier { get; set; } = string.Empty;
+}
 
-await enrichedOrders.ForEachAsync(async e =>
+public class EnrichedOrder 
 {
-    if (e.Tier == "Premium" && e.Amount > 1000)
+    public int OrderId { get; set; }
+    public decimal Amount { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
+    public string CustomerTier { get; set; } = string.Empty;
+}
+
+public class OrdersContext : KsqlContext
+{
+    public EventSet<Order> Orders { get; set; } = null!;
+    public EventSet<Customer> Customers { get; set; } = null!;
+    public EventSet<EnrichedOrder> EnrichedOrders { get; set; } = null!;
+
+    protected override void OnModelCreating(IModelBuilder b)
+    {
+        b.Entity<Order>();
+        b.Entity<Customer>();
+        b.Entity<EnrichedOrder>().ToQuery(q => q
+            .From<Order>()
+            .Join<Customer>((o, c) => o.CustomerId == c.CustomerId)
+            .Select((o, c) => new EnrichedOrder
+            {
+                OrderId = o.OrderId,
+                Amount = o.Amount,
+                CustomerName = c.Name,
+                CustomerTier = c.Tier
+            }));
+    }
+}
+
+// Consumer: read from the materialized view
+await ctx.EnrichedOrders.ForEachAsync(async e =>
+{
+    if (e.CustomerTier == "Premium" && e.Amount > 1000)
         await notificationService.SendVIPAlert(e);
 });
 ```
@@ -660,43 +701,67 @@ var bars = ctx.Trades
 
 ---
 
-### Use Case 5: Data Pipeline with DLQ
+### Use Case 4: Stream-Stream Join with Time Window
 
-**Scenario**: Process IoT sensor data with fault tolerance
+**Scenario**: Join orders and payments streams within a 5-minute window
 
 ```csharp
-[KsqlTopic("sensor-readings")]
-public class SensorReading
+[KsqlTopic("orders")]
+public class Order
 {
-    [KsqlKey] public string DeviceId { get; set; } = "";
-    public double Temperature { get; set; }
-    public double Humidity { get; set; }
-    public long Timestamp { get; set; }
+    [KsqlKey] public string OrderId { get; set; } = "";
+    [KsqlTimestamp] public DateTime OrderTime { get; set; }
+    public decimal Amount { get; set; }
 }
 
-// 1. Main pipeline with DLQ
-await ctx.SensorReadings
-    .OnError(ErrorAction.DLQ)  // Failed messages → DLQ topic
-    .ForEachAsync(async reading =>
-    {
-        // Validate
-        if (reading.Temperature < -50 || reading.Temperature > 150)
-            throw new ValidationException("Temperature out of range");
-
-        // Process
-        await timeseriesDb.WriteAsync(reading);
-    });
-
-// 2. DLQ inspection / replay lane
-await ctx.Dlq.ForEachAsync(record =>
+[KsqlTopic("payments")]
+public class Payment
 {
-    Console.WriteLine($"DLQ: {record.RawText}");
-    // Optional: parse, fix, and route to a repair topic
+    [KsqlKey] public string OrderId { get; set; } = "";
+    [KsqlTimestamp] public DateTime PaymentTime { get; set; }
+    public decimal Paid { get; set; }
+}
+
+public class OrderWithPayment
+{
+    public string OrderId { get; set; } = "";
+    public decimal Amount { get; set; }
+    public decimal Paid { get; set; }
+}
+
+public class StreamingJoinContext : KsqlContext
+{
+    public EventSet<Order> Orders { get; set; } = null!;
+    public EventSet<Payment> Payments { get; set; } = null!;
+    public EventSet<OrderWithPayment> OrderWithPayments { get; set; } = null!;
+
+    protected override void OnModelCreating(IModelBuilder b)
+    {
+        b.Entity<Order>();
+        b.Entity<Payment>();
+        b.Entity<OrderWithPayment>().ToQuery(q => q
+            .From<Order>()
+            .Join<Payment>((o, p) => o.OrderId == p.OrderId)
+            .Within(TimeSpan.FromMinutes(5))
+            .Select((o, p) => new OrderWithPayment
+            {
+                OrderId = o.OrderId,
+                Amount = o.Amount,
+                Paid = p.Paid
+            }));
+    }
+}
+
+// Consumer: read the stream-stream join view
+await ctx.OrderWithPayments.ForEachAsync(joined =>
+{
+    Console.WriteLine($"{joined.OrderId}: Amount={joined.Amount}, Paid={joined.Paid}");
     return Task.CompletedTask;
 });
 ```
 
 ---
+
 
 ## API Reference Quick Start
 
@@ -752,7 +817,7 @@ Ksql.Linq includes 30+ working examples. Key categories:
 - `pull-query`: Materialized view queries
 
 ### Windowing
-- `windowing`: Tumbling/hopping aggregation
+- `windowing`: Tumbling aggregation
 - `bar-1m-live-consumer`: OHLCV bar consumer
 - `continuation-schedule`: Continuation-based windowing
 
@@ -977,7 +1042,7 @@ dotnet ksql script --project MyApp.csproj --output schema.sql
 dotnet ksql avro --project MyApp.csproj --output-dir ./schemas
 
 # From DLL
-dotnet ksql script --assembly bin/Debug/net8.0/MyApp.dll
+dotnet ksql script --project bin/Debug/net8.0/MyApp.dll
 ```
 
 ---
