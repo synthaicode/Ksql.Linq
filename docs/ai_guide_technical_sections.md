@@ -216,24 +216,10 @@ public class TradingContext : KsqlContext
 
     protected override void OnModelCreating(IModelBuilder builder)
     {
-        // Configure entities
-        builder.Entity<Trade>(e =>
-        {
-            e.HasKey(t => t.TradeId);
-            e.Property(t => t.Price).HasPrecision(18, 8);
-        });
-
-        builder.Entity<Quote>(e =>
-        {
-            e.HasKey(q => q.Symbol);
-        });
-
-        // Configure windowed aggregation
-        builder.Entity<OHLCV>(e =>
-        {
-            e.HasKey(b => b.Symbol);
-            e.ToTable("ohlcv_1m");  // Override topic name
-        });
+        // Register entities so that attributes ([KsqlTopic], [KsqlKey], etc.) are inspected
+        builder.Entity<Trade>();
+        builder.Entity<Quote>();
+        builder.Entity<OHLCV>();
     }
 }
 ```
