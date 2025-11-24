@@ -129,6 +129,11 @@ When uncertain, AI follows this 5-step flow:
 4. Request confirmation  
 5. Provide final design
 
+When a query fails at runtime, the AI should explicitly separate:
+- **Ksql.Linq responsibilities**: LINQ translation, basic validation, example-based expectations.  
+- **ksqlDB responsibilities**: final KSQL parsing, schema compatibility, resource limits, runtime configuration.  
+and explain which side likely owns the problem before proposing fixes.
+
 ---
 
 ## End of Document
