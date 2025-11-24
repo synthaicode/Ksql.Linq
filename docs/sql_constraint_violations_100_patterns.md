@@ -40,7 +40,7 @@
 
 | No. | 違反パターン (LINQ to Objects) | Ksql.Linq / ksqlDB エラーメッセージ | 正しい Ksql.Linq コード |
 |-----|-------------------------------|--------------------------------------|---------------------|
-| 1 | `orders.Join(customers, ...).Join(products, ...)` (3テーブル結合) | `StreamProcessingException: Stream processing supports maximum 2 table joins. Found 3 tables. Consider data denormalization or use batch processing for complex relationships.` | マテリアライズドビューを使用: `var enriched = orders.Join(customers, ...); await CreateMaterializedView(enriched); var result = enriched.Join(products, ...);` |
+| 1 | `orders.Join(customers, ...).Join(products, ...)` (3テーブル結合) | `StreamProcessingException: Stream processing supports maximum 2 table joins. Found 3 tables. Consider data denormalization or use batch processing for complex relationships.` | 中間マテリアライズドビューや非正規化トピックを設計し、2テーブルずつに分割して処理する |
 | 2 | `orders.GroupJoin(customers, ...)` | `StreamProcessingException: Unsupported join patterns detected: GROUP JOIN (use regular JOIN with GROUP BY instead). Supported: INNER, LEFT OUTER joins with co-partitioned data.` | `orders.Join(customers, ...).GroupBy(x => x.CustomerId)` |
 | 4 | `orders.Join(customers, o => o.Name, c => c.Id, ...)` (異なるキー型) | `StreamProcessingException: JOIN key types must match. Outer key: String, Inner key: Int32. Ensure both tables are partitioned by the same key type for optimal performance.` | キーを同じ型に変換: `orders.Join(customers, o => o.CustomerId, c => c.Id, ...)` |
 | 5 | `orders.CrossJoin(products)` | `StreamProcessingException: Unsupported join patterns detected: CROSS JOIN (performance risk in streaming)` | 明示的なキーで結合: `orders.Join(products, _ => true, _ => true, ...)` (非推奨、パフォーマンス問題あり) |
