@@ -290,10 +290,6 @@ await ctx.Trades.AddAsync(new Trade
     Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
 });
 
-// Batch messages
-var trades = new List<Trade> { /* ... */ };
-await ctx.Trades.AddRangeAsync(trades);
-
 // With headers
 await ctx.Trades.AddAsync(trade, headers: new Dictionary<string, byte[]>
 {
@@ -669,7 +665,6 @@ await ctx.Dlq.ForEachAsync(record =>
 | Method | Purpose | Type |
 |--------|---------|------|
 | `AddAsync(entity)` | Produce single message | Producer |
-| `AddRangeAsync(entities)` | Produce batch | Producer |
 | `ForEachAsync(handler)` | Consume with callback | Consumer |
 | `Subscribe(observer)` | Rx.NET observable pattern | Consumer |
 | `Where(predicate)` | Filter query | Query |
@@ -820,7 +815,6 @@ What should happen on failure?
 ### 3. Performance
 
 ✅ **DO:**
-- Use `AddRangeAsync()` for batch produce
 - Enable producer idempotence (`EnableIdempotence: true`)
 - Set appropriate partitions (6-12 per broker)
 - Use compression (`CompressionType: "gzip"`)
