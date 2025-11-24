@@ -36,6 +36,9 @@ Ksql.Linq is a **LINQ-based DSL** for Kafka/ksqlDB stream processing in C#/.NET.
 - **Self-healing persistent queries** (CTAS/CSAS) with retry logic
 - **Market-schedule-aware OHLC bar generation** for financial data
 
+> **Execution responsibility**  
+> Ksql.Linq builds KSQL and stream topologies; whether a query is finally accepted and runs is decided by the target ksqlDB cluster (version, configuration, resource limits). AI must never assume “this query will always run” only from the LINQ/KSQL translation, and should read/interpret ksqlDB error messages together with this guide.
+
 ### Key Value Propositions
 
 1. **No raw KSQL strings**: Define queries in C# LINQ, generate KSQL automatically
