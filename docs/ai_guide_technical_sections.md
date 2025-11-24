@@ -333,6 +333,12 @@ await ctx.Trades.ForEachAsync(
 ### Pattern 6: LINQ Queries (Push)
 
 ```csharp
+// Prerequisite:
+// - TradingContext is configured as in Pattern 2
+// - Entities (Trade, Quote, etc.) are registered in OnModelCreating via builder.Entity<T>()
+// - Topics exist and are wired to the corresponding entities
+using var ctx = new TradingContext(configuration);
+
 // Filter
 var view = ctx.Trades
     .Where(t => t.Symbol == "AAPL" && t.Price > 100)
