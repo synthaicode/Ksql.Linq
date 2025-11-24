@@ -607,7 +607,6 @@ public class OHLCV
     public decimal Low { get; set; }
     public decimal Close { get; set; }
     public long Volume { get; set; }
-    public long WindowStart { get; set; }
 }
 
 var bars = ctx.Trades
@@ -620,8 +619,7 @@ var bars = ctx.Trades
         High = g.Max(t => t.Price),
         Low = g.Min(t => t.Price),
         Close = g.Last().Price,
-        Volume = g.Sum(t => t.Quantity),
-        WindowStart = g.WindowStart()
+        Volume = g.Sum(t => t.Quantity)
     })
     ;
 
