@@ -630,32 +630,6 @@ var bars = ctx.Trades
 
 ---
 
-### Use Case 4: Anomaly Detection (Stateful Processing)
-
-**Scenario**: Detect sudden price spikes
-
-```csharp
-var priceAlerts = ctx.Trades
-    .GroupBy(t => t.Symbol)
-    .Hopping(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(1))
-    .Select(g => new
-    {
-        Symbol = g.Key,
-        AvgPrice = g.Average(t => t.Price),
-        MaxPrice = g.Max(t => t.Price),
-        MinPrice = g.Min(t => t.Price)
-    })
-    .Where(agg => (agg.MaxPrice - agg.MinPrice) / agg.AvgPrice > 0.05m)  // 5% swing
-    ;
-
-await priceAlerts.ForEachAsync(async alert =>
-{
-    await alertService.SendPriceAlert(alert.Symbol, alert.MaxPrice, alert.MinPrice);
-});
-```
-
----
-
 ### Use Case 5: Data Pipeline with DLQ
 
 **Scenario**: Process IoT sensor data with fault tolerance
