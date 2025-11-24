@@ -21,7 +21,7 @@ This guide is designed to be read by **AI coding assistants** (like Claude, Curs
 > **Implementation status note (for both AI and humans)**  
 > This guide is intended to describe **currently implemented capabilities** of Ksql.Linq for the given version.  
 > When in doubt, AI assistants should:
-> - Confirm the caller’s **Ksql.Linq version** and deployment environment.
+> - Confirm the caller's **Ksql.Linq version** and deployment environment.
 > - Treat any behavior mentioned only in roadmap / design documents as **not yet available** unless the user explicitly confirms otherwise.
 > - Prefer concrete, released APIs and patterns from the **API Reference**, **Examples**, and versioned docs under `docs/`.
 >
