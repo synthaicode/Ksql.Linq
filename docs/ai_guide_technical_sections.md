@@ -438,31 +438,41 @@ var topUsers = await ctx.UserStats
 ### Pattern 9: Error Handling Strategies
 
 ```csharp
-// 1. Dead Letter Queue (DLQ): send failures to DLQ topic
-await ctx.Trades
-    .OnError(ErrorAction.DLQ)
-    .ForEachAsync(trade => ProcessTrade(trade));
-
-// 2. Retry policy (configured via appsettings)
-await ctx.Trades
-    .OnError(ErrorAction.Retry)
-    .ForEachAsync(trade => ProcessTrade(trade));
-
-// 3. Custom error handler
-await ctx.Trades.ForEachAsync(
-    async trade =>
+// 1. DLQ + retry (based on examples/error-handling[-dlq])
+await ctx.Orders
+    .OnError(ErrorAction.DLQ)   // route failures to DLQ
+    .WithRetry(3)               // retry transient failures
+    .ForEachAsync(order =>
     {
-        try
+        if (order.Amount < 0)
         {
-            await ProcessTrade(trade);
+            throw new InvalidOperationException("Amount cannot be negative");
         }
-        catch (Exception ex)
+
+        Console.WriteLine($"Processed order {order.Id}: {order.Amount}");
+        return Task.CompletedTask;
+    });
+
+// 2. DLQ-only pipeline (validate → send bad records to DLQ)
+await ctx.SensorReadings
+    .OnError(ErrorAction.DLQ)
+    .ForEachAsync(reading =>
+    {
+        if (reading.Temperature < -50 || reading.Temperature > 150)
         {
-            logger.LogError(ex, "Failed to process trade {TradeId}", trade.TradeId);
-            // Custom logic: alert, metrics, etc.
+            throw new ValidationException("Temperature out of range");
         }
-    }
-);
+
+        return timeseriesDb.WriteAsync(reading);
+    });
+
+// 3. DLQ inspection / replay lane
+await ctx.Dlq.ForEachAsync(record =>
+{
+    Console.WriteLine($"DLQ: {record.RawText}");
+    // Optional: parse, fix, and route to a repair topic
+    return Task.CompletedTask;
+});
 
 // 4. Manual commit with error handling
 await ctx.Trades.ForEachAsync(
