@@ -326,14 +326,6 @@ await ctx.Trades.ForEachAsync(async trade =>
     Console.WriteLine($"{trade.Symbol}: {trade.Price}");
 });
 
-// With error handling
-await ctx.Trades
-    .OnError(ErrorAction.Retry, maxRetries: 3)
-    .ForEachAsync(async trade =>
-    {
-        await ProcessTradeAsync(trade);
-    });
-
 // With DLQ (Dead Letter Queue)
 await ctx.Trades
     .OnError(ErrorAction.DLQ)
@@ -344,10 +336,14 @@ await ctx.Trades
 
 // Manual commit control
 await ctx.Trades.ForEachAsync(
-    async trade => { /* process */ },
-    autoCommit: false,
-    onCommit: async () => Console.WriteLine("Committed")
-);
+    (trade, headers, meta) =>
+    {
+        Console.WriteLine($"{meta.Topic}:{meta.Offset}");
+        ctx.Trades.Commit(trade);
+        return Task.CompletedTask;
+    },
+    timeout: TimeSpan.FromSeconds(10),
+    autoCommit: false);
 ```
 
 ---
@@ -441,15 +437,15 @@ var topUsers = await ctx.UserStats
 ### Pattern 9: Error Handling Strategies
 
 ```csharp
-// 1. Retry with exponential backoff
+// 1. Dead Letter Queue (DLQ): send failures to DLQ topic
 await ctx.Trades
-    .OnError(ErrorAction.Retry, maxRetries: 5)
-    .ForEachAsync(ProcessTrade);
+    .OnError(ErrorAction.DLQ)
+    .ForEachAsync(trade => ProcessTrade(trade));
 
-// 2. Dead Letter Queue (DLQ)
+// 2. Retry policy (configured via appsettings)
 await ctx.Trades
-    .OnError(ErrorAction.DLQ)  // Sends failures to DLQ topic
-    .ForEachAsync(ProcessTrade);
+    .OnError(ErrorAction.Retry)
+    .ForEachAsync(trade => ProcessTrade(trade));
 
 // 3. Custom error handler
 await ctx.Trades.ForEachAsync(
@@ -469,10 +465,22 @@ await ctx.Trades.ForEachAsync(
 
 // 4. Manual commit with error handling
 await ctx.Trades.ForEachAsync(
-    async trade => await ProcessTrade(trade),
-    autoCommit: false,
-    onCommit: async () => { /* commit callback */ }
-);
+    (trade, headers, meta) =>
+    {
+        try
+        {
+            ProcessTrade(trade);
+            ctx.Trades.Commit(trade);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to process trade {TradeId}", trade.TradeId);
+        }
+
+        return Task.CompletedTask;
+    },
+    timeout: TimeSpan.FromSeconds(10),
+    autoCommit: false);
 ```
 
 ---
