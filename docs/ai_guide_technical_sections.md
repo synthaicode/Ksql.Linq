@@ -489,6 +489,19 @@ await ctx.Trades.ForEachAsync(
 ### Pattern 10: Design-Time Code Generation
 
 ```csharp
+// Entity with timestamp and decimal attributes
+[KsqlTopic("orders")]
+public class Order
+{
+    [KsqlKey] public int Id { get; set; }
+
+    [KsqlTimestamp]
+    public DateTime CreatedAt { get; set; }
+
+    [KsqlDecimal(precision: 18, scale: 4)]
+    public decimal Amount { get; set; }
+}
+
 // IDesignTimeKsqlContextFactory for CLI tooling
 public sealed class TradingContextFactory : IDesignTimeKsqlContextFactory
 {
