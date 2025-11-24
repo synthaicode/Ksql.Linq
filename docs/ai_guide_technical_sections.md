@@ -490,9 +490,9 @@ await ctx.Trades.ForEachAsync(
 
 ```csharp
 // IDesignTimeKsqlContextFactory for CLI tooling
-public class TradingContextFactory : IDesignTimeKsqlContextFactory
+public sealed class TradingContextFactory : IDesignTimeKsqlContextFactory
 {
-    public KsqlContext CreateDbContext(string[] args)
+    public KsqlContext CreateDesignTimeContext()
     {
         var config = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
