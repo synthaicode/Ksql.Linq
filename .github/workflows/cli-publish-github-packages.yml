@@ -35,12 +35,6 @@ jobs:
       - name: Restore CLI project
         run: dotnet restore src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj
 
-      - name: Build AI_ASSISTANT_GUIDE.md from section docs
-        run: |
-          cat docs/ai_guide_intro_and_workflows.md \
-              docs/ai_guide_conversation_patterns.md \
-              docs/ai_guide_technical_sections.md > AI_ASSISTANT_GUIDE.md
-
       - name: Pack CLI tool
         run: dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o ./artifacts/cli
 
