@@ -132,7 +132,7 @@ internal class KsqlDbClient : IKsqlDbClient, IDisposable
         await using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
         using var reader = new StreamReader(stream, Encoding.UTF8);
         int count = 0;
-        while (!reader.EndOfStream && !cts.IsCancellationRequested)
+        while (!cts.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync();
             if (line == null) break;
@@ -191,9 +191,11 @@ internal class KsqlDbClient : IKsqlDbClient, IDisposable
         var rows = new System.Collections.Generic.List<object?[]>();
         using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
         using var reader = new StreamReader(stream, Encoding.UTF8);
-        while (!reader.EndOfStream && !cts.IsCancellationRequested)
+        while (!cts.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync();
+            if (line is null)
+                break;
             if (string.IsNullOrWhiteSpace(line))
                 continue;
             if (KsqlJsonUtils.TryParseRowLine(line, out var cols) && cols is not null)
