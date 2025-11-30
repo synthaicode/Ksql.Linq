@@ -41,7 +41,9 @@ internal class KafkaAdminService : IDisposable
     /// </summary>
     public async Task EnsureDlqTopicExistsAsync(CancellationToken cancellationToken = default)
     {
-        var dlqTopicName = _options.DlqTopicName;
+        var dlqTopicName = string.IsNullOrWhiteSpace(_options.DlqTopicName)
+            ? "dead_letter_queue"
+            : _options.DlqTopicName;
 
         try
         {

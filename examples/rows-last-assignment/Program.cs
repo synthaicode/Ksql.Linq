@@ -21,7 +21,7 @@ public class Bar
 {
     [KsqlKey(1)] public string Broker { get; set; } = string.Empty;
     [KsqlKey(2)] public string Symbol { get; set; } = string.Empty;
-    [KsqlKey(3)] [KsqlTimestamp] public DateTime BucketStart { get; set; }
+    
     public double Open { get; set; }
     public double High { get; set; }
     public double Low { get; set; }
@@ -51,7 +51,7 @@ public sealed class RowsLastAssignmentContext : KsqlContext
                 {
                     Broker = g.Key.Broker,
                     Symbol = g.Key.Symbol,
-                    BucketStart = g.WindowStart(),
+                    
                     Open = g.EarliestByOffset(x => x.Bid),
                     High = g.Max(x => x.Bid),
                     Low = g.Min(x => x.Bid),

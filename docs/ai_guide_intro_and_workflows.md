@@ -14,7 +14,7 @@
 
 ---
 
-## 👨‍💻 For Developers: How to Use This Guide with Your AI Assistant
+## For Developers: How to Use This Guide with Your AI Assistant
 
 This guide is designed to be read by **AI coding assistants** (like Claude, Cursor, GitHub Copilot, ChatGPT, etc.) to provide expert design support for your Ksql.Linq projects.
 
@@ -44,14 +44,14 @@ This file is included in the **Ksql.Linq** NuGet package, and is also exposed vi
 When starting a new Ksql.Linq project or seeking design advice, give your AI assistant one of these prompts:
 
 **If your AI can access URLs:**
-```
+```text
 Please read https://github.com/synthaicode/Ksql.Linq/blob/main/AI_ASSISTANT_GUIDE.md
 and act as a Ksql.Linq Design Support AI.
 Help me design my Kafka/ksqlDB stream processing solution following the AI Profile in that document.
 ```
 
 **If your AI needs a local file path:**
-```
+```text
 I'm working on a Kafka/ksqlDB stream processing project using Ksql.Linq.
 Please read the file at <path>/AI_ASSISTANT_GUIDE.md and act as a Ksql.Linq Design Support AI.
 Follow the AI Profile guidelines in that document to help me design my solution.
@@ -59,7 +59,7 @@ Follow the AI Profile guidelines in that document to help me design my solution.
 (Replace `<path>` with the actual file location from above)
 
 **If your AI cannot access files directly but you have the CLI installed:**
-```
+```text
 dotnet ksql ai-assist --copy
 ```
 Then paste the copied text into your AI assistant and ask it to act as a Ksql.Linq design support AI.
@@ -68,7 +68,7 @@ Then paste the copied text into your AI assistant and ask it to act as a Ksql.Li
 
 #### 1. **Initial Design Consultation**
 
-```
+```text
 I need to design a stream processing solution for [describe your use case].
 Please review AI_ASSISTANT_GUIDE.md and help me:
 1. Identify the right design patterns
@@ -77,13 +77,14 @@ Please review AI_ASSISTANT_GUIDE.md and help me:
 4. Recommend error handling strategies
 ```
 
-**Expected Output**: The AI will follow the 6-step conversation flow (Prerequisites → Summary → Principles → Options → Recommendation → Next Steps).
+**Expected Output**: The AI will follow the 6-step conversation flow  
+`Prerequisites -> Summary -> Principles -> Options -> Recommendation -> Next Steps`.
 
 ---
 
 #### 2. **Architecture Review**
 
-```
+```text
 I've drafted this Ksql.Linq context [paste your code].
 Please review it against the best practices in AI_ASSISTANT_GUIDE.md and suggest improvements.
 ```
@@ -94,7 +95,7 @@ Please review it against the best practices in AI_ASSISTANT_GUIDE.md and suggest
 
 #### 3. **Decision Support**
 
-```
+```text
 I'm deciding between [Option A] and [Option B] for [specific feature].
 Based on AI_ASSISTANT_GUIDE.md Decision Trees, which approach do you recommend?
 ```
@@ -105,7 +106,7 @@ Based on AI_ASSISTANT_GUIDE.md Decision Trees, which approach do you recommend?
 
 #### 4. **Implementation Guidance**
 
-```
+```text
 I want to implement [specific pattern, e.g., windowed aggregation].
 Please show me the Design Pattern from AI_ASSISTANT_GUIDE.md and adapt it to my scenario.
 ```
@@ -118,20 +119,14 @@ Please show me the Design Pattern from AI_ASSISTANT_GUIDE.md and adapt it to my 
 
 After reading this document, your AI will:
 
-✅ **Ask clarifying questions** before proposing solutions
-✅ **Present multiple options** with pros/cons analysis
-✅ **Reference specific patterns** from this guide (e.g., "This matches Pattern 7")
-✅ **Provide structured responses** using the Output Format template
-✅ **Explain trade-offs** clearly and honestly
-✅ **Identify open questions** and next steps
+-- **Ask clarifying questions** before proposing solutions  
+-- **Present multiple options** with pros/cons analysis  
+-- **Reference specific patterns** from this guide (e.g., "This matches Pattern 7")  
+-- **Provide structured responses** using the Output Format template  
+-- **Explain trade-offs** clearly and honestly  
+-- **Identify open questions** and next steps  
 
 ---
-
-## License for This Guide
-
-The **Ksql.Linq library code** is licensed under the MIT License.  
-The **text of this AI Assistant Guide (including the split `ai_guide_*` documents)** is licensed under **Creative Commons Attribution 4.0 International (CC BY 4.0)**.  
-You may copy, adapt, and share the guide as long as you provide appropriate credit to the Ksql.Linq project.
 
 ### Integration with Development Tools
 
@@ -207,5 +202,3 @@ You may copy, adapt, and share the guide as long as you provide appropriate cred
 >
 > ## 5. Recommended Solution
 > **Option A** - See [Pattern 2: Stream Enrichment](#use-case-2-stream-enrichment-join)
->
-> ```csharp

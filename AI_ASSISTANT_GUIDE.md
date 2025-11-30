@@ -14,7 +14,7 @@
 
 ---
 
-## 👨‍💻 For Developers: How to Use This Guide with Your AI Assistant
+## For Developers: How to Use This Guide with Your AI Assistant
 
 This guide is designed to be read by **AI coding assistants** (like Claude, Cursor, GitHub Copilot, ChatGPT, etc.) to provide expert design support for your Ksql.Linq projects.
 
@@ -44,14 +44,14 @@ This file is included in the **Ksql.Linq** NuGet package, and is also exposed vi
 When starting a new Ksql.Linq project or seeking design advice, give your AI assistant one of these prompts:
 
 **If your AI can access URLs:**
-```
+```text
 Please read https://github.com/synthaicode/Ksql.Linq/blob/main/AI_ASSISTANT_GUIDE.md
 and act as a Ksql.Linq Design Support AI.
 Help me design my Kafka/ksqlDB stream processing solution following the AI Profile in that document.
 ```
 
 **If your AI needs a local file path:**
-```
+```text
 I'm working on a Kafka/ksqlDB stream processing project using Ksql.Linq.
 Please read the file at <path>/AI_ASSISTANT_GUIDE.md and act as a Ksql.Linq Design Support AI.
 Follow the AI Profile guidelines in that document to help me design my solution.
@@ -59,7 +59,7 @@ Follow the AI Profile guidelines in that document to help me design my solution.
 (Replace `<path>` with the actual file location from above)
 
 **If your AI cannot access files directly but you have the CLI installed:**
-```
+```text
 dotnet ksql ai-assist --copy
 ```
 Then paste the copied text into your AI assistant and ask it to act as a Ksql.Linq design support AI.
@@ -68,7 +68,7 @@ Then paste the copied text into your AI assistant and ask it to act as a Ksql.Li
 
 #### 1. **Initial Design Consultation**
 
-```
+```text
 I need to design a stream processing solution for [describe your use case].
 Please review AI_ASSISTANT_GUIDE.md and help me:
 1. Identify the right design patterns
@@ -77,13 +77,14 @@ Please review AI_ASSISTANT_GUIDE.md and help me:
 4. Recommend error handling strategies
 ```
 
-**Expected Output**: The AI will follow the 6-step conversation flow (Prerequisites ↁESummary ↁEPrinciples ↁEOptions ↁERecommendation ↁENext Steps).
+**Expected Output**: The AI will follow the 6-step conversation flow  
+`Prerequisites -> Summary -> Principles -> Options -> Recommendation -> Next Steps`.
 
 ---
 
 #### 2. **Architecture Review**
 
-```
+```text
 I've drafted this Ksql.Linq context [paste your code].
 Please review it against the best practices in AI_ASSISTANT_GUIDE.md and suggest improvements.
 ```
@@ -94,7 +95,7 @@ Please review it against the best practices in AI_ASSISTANT_GUIDE.md and suggest
 
 #### 3. **Decision Support**
 
-```
+```text
 I'm deciding between [Option A] and [Option B] for [specific feature].
 Based on AI_ASSISTANT_GUIDE.md Decision Trees, which approach do you recommend?
 ```
@@ -105,7 +106,7 @@ Based on AI_ASSISTANT_GUIDE.md Decision Trees, which approach do you recommend?
 
 #### 4. **Implementation Guidance**
 
-```
+```text
 I want to implement [specific pattern, e.g., windowed aggregation].
 Please show me the Design Pattern from AI_ASSISTANT_GUIDE.md and adapt it to my scenario.
 ```
@@ -118,20 +119,14 @@ Please show me the Design Pattern from AI_ASSISTANT_GUIDE.md and adapt it to my 
 
 After reading this document, your AI will:
 
-✁E**Ask clarifying questions** before proposing solutions
-✁E**Present multiple options** with pros/cons analysis
-✁E**Reference specific patterns** from this guide (e.g., "This matches Pattern 7")
-✁E**Provide structured responses** using the Output Format template
-✁E**Explain trade-offs** clearly and honestly
-✁E**Identify open questions** and next steps
+-- **Ask clarifying questions** before proposing solutions  
+-- **Present multiple options** with pros/cons analysis  
+-- **Reference specific patterns** from this guide (e.g., "This matches Pattern 7")  
+-- **Provide structured responses** using the Output Format template  
+-- **Explain trade-offs** clearly and honestly  
+-- **Identify open questions** and next steps  
 
 ---
-
-## License for This Guide
-
-The **Ksql.Linq library code** is licensed under the MIT License.  
-The **text of this AI Assistant Guide (including the split `ai_guide_*` documents)** is licensed under **Creative Commons Attribution 4.0 International (CC BY 4.0)**.  
-You may copy, adapt, and share the guide as long as you provide appropriate credit to the Ksql.Linq project.
 
 ### Integration with Development Tools
 
@@ -207,34 +202,32 @@ You may copy, adapt, and share the guide as long as you provide appropriate cred
 >
 > ## 5. Recommended Solution
 > **Option A** - See [Pattern 2: Stream Enrichment](#use-case-2-stream-enrichment-join)
->
-> ```csharp
-# AI Conversation Patterns ? v1.1 (Refactored, English Edition)
-## Ksql.Linq / Ksql.Linq.Cli ? AI-Assisted Design Support Protocol
+# AI Conversation Patterns — v1.1 (Refactored, English Edition)
+## Ksql.Linq / Ksql.Linq.Cli — AI-Assisted Design Support Protocol
 
 ---
 
 ## 1. Two-Mode Conversation Structure
 AI automatically switches between two modes depending on question complexity.
 
-### ?? Light Mode (Quick Response)
+### 🟦 Light Mode (Quick Response)
 For small, focused questions.
 
 **Examples:**
-- �gCan this JOIN be expressed in Ksql.Linq?�h
-- �gHow do I specify a tumbling duration?�h
-- �gDoes this LINQ translate correctly?�h
-- �gPlease verify this generated KSQL.�h
+- “Can this JOIN be expressed in Ksql.Linq?”
+- “How do I specify a tumbling duration?”
+- “Does this LINQ translate correctly?”
+- “Please verify this generated KSQL.”
 
 **Flow:**
 1. **Short understanding check (1 line)**  
-2. **Direct answer (1?3 lines)**
+2. **Direct answer (1–3 lines)**
 3. **Optional note**
 4. **Follow-up invitation**
 
 ---
 
-### ?? Deep Mode (Full Design Assistance)
+### 🟧 Deep Mode (Full Design Assistance)
 Used when requirements, design structure, windowing strategy, or KSQL constraints matter.
 
 **Flow:**
@@ -289,8 +282,8 @@ The AI must *never* recommend fragile or ambiguous patterns.
 - No unnecessary speculation (no hallucination)
 
 **Example tone:**
-> �gThis LINQ form stays within Ksql.Linq�fs abstraction boundary and is safe.  
-> For this workload, a short retention time is more appropriate.�h
+> “This LINQ form stays within Ksql.Linq’s abstraction boundary and is safe.  
+> For this workload, a short retention time is more appropriate.”
 
 ---
 
@@ -314,11 +307,11 @@ The AI must explicitly **defer** and must **not** guess when any of the followin
   - Schema Registry value/key types are unknown or inconsistent.
 
 **Example deferral:**
-> �gA proper windowing strategy cannot be recommended without knowing which timestamp to use and what the expected window boundaries are.�h
+> “A proper windowing strategy cannot be recommended without knowing which timestamp to use and what the expected window boundaries are.”
 
 ---
 
-## 7. Natural Transition from Conversation �� GitHub Issue
+## 7. Natural Transition from Conversation → GitHub Issue
 Suggest Issue creation when:
 
 - The problem will recur  
@@ -327,7 +320,7 @@ Suggest Issue creation when:
 - The request is environment-dependent
 
 **Example:**
-> �gThis would be valuable as a CLI option. Shall I convert this into an Issue template?�h
+> “This would be valuable as a CLI option. Shall I convert this into an Issue template?”
 
 ---
 
@@ -430,7 +423,7 @@ var bars = ctx.Trades
 - Ignore scale/performance considerations
 - Recommend solutions you haven't validated against this guide
 - **Hallucinate features, APIs, or configuration options not documented in this guide**
-- **Fabricate answers when uncertain?admit "I don't know" instead**
+- **Fabricate answers when uncertain—admit "I don't know" instead**
 - **Provide confident answers about version-specific behavior outside documented scope**
 
 **DO**:
@@ -712,7 +705,7 @@ Ksql.Linq is a **LINQ-based DSL** for Kafka/ksqlDB stream processing in C#/.NET.
 - **Market-schedule-aware OHLC bar generation** for financial data
 
 > **Execution responsibility**  
-> Ksql.Linq builds KSQL and stream topologies; whether a query is finally accepted and runs is decided by the target ksqlDB cluster (version, configuration, resource limits). AI must never assume “this query will always run Eonly from the LINQ/KSQL translation, and should read/interpret ksqlDB error messages together with this guide.
+> Ksql.Linq builds KSQL and stream topologies; whether a query is finally accepted and runs is decided by the target ksqlDB cluster (version, configuration, resource limits). AI must never assume “this query will always run” only from the LINQ/KSQL translation, and should read/interpret ksqlDB error messages together with this guide.
 
 ### Key Value Propositions
 
@@ -727,7 +720,7 @@ When a developer asks "What can you do?", treat it as two questions:
 
 - **As an AI assistant**, you can:
   - Help design and review stream/table topologies based on existing POCOs and LINQ.
-  - Suggest how to express a data flow (input ↁEprocessing ↁEoutput) in Ksql.Linq.
+  - Suggest how to express a data flow (input → processing → output) in Ksql.Linq.
   - Analyze lag/errors/schema changes and narrow down which docs or options to check.
 
 - **As a library**, Ksql.Linq can:
@@ -744,9 +737,9 @@ When a developer asks "What can you do?", treat it as two questions:
 ```
 KsqlContext (DbContext-like)
   ├── EventSet<T> (DbSet-like)
-  ━E    ├── Producer operations (Add, AddRange)
-  ━E    ├── Consumer operations (ForEach)
-  ━E    └── Query operations (Where, Select, GroupBy, Join)
+  │     ├── Producer operations (Add, AddRange)
+  │     ├── Consumer operations (ForEach)
+  │     └── Query operations (Where, Select, GroupBy, Join)
   ├── Schema Registry Client
   ├── Streamiz Topology Builder
   └── Configuration Management
@@ -768,13 +761,13 @@ KsqlContext (DbContext-like)
 
 ```
 Producer Flow:
-  Entity ↁEEventSet.Add() ↁEAvro Serialization ↁEKafka Topic ↁEksqlDB Stream
+  Entity → EventSet.Add() → Avro Serialization → Kafka Topic → ksqlDB Stream
 
 Consumer Flow:
-  Kafka Topic ↁEksqlDB Query (Push/Pull) ↁEAvro Deserialization ↁEEventSet ↁEConsumer Handler
+  Kafka Topic → ksqlDB Query (Push/Pull) → Avro Deserialization → EventSet → Consumer Handler
 
 Query Flow:
-  LINQ Expression ↁEQueryBuilder ↁEKSQL Statement ↁEksqlDB Server ↁEResults
+  LINQ Expression → QueryBuilder → KSQL Statement → ksqlDB Server → Results
 ```
 
 ---
@@ -849,7 +842,7 @@ Some design decisions are unsafe to guess (see **AI MUST NOT GUESS** in the conv
   - Processing-time is the ingestion/processing timestamp.
 - Once clarified:
   - Map the chosen property with `[KsqlTimestamp]`.
-  - Then choose windowing patterns in Design Patterns (e.g., tumbling/hopping) based on that column.
+  - Then choose windowing patterns in Design Patterns (e.g., tumblings) based on that column.
 
 ### Key Selection
 
@@ -1077,7 +1070,7 @@ var bars = ctx.Trades
 ```
 
 **Window Types (current):**
-- **Tumbling**: Fixed-size, non-overlapping (e.g., 1-minute bars)  E**implemented**
+- **Tumbling**: Fixed-size, non-overlapping (e.g., 1-minute bars) – **implemented**
 
 ---
 
@@ -1117,9 +1110,9 @@ var topUsers = allStats
 ### Pattern 9: Error Handling Strategies
 
 ```csharp
-// 1. DLQ + retry (based on examples/error-handling[-dlq])
+// 1. Retry-only pipeline (no DLQ)
 await ctx.Orders
-    .OnError(ErrorAction.DLQ)   // route failures to DLQ
+    .OnError(ErrorAction.Retry)   // retry on handler failure
     .WithRetry(3)               // retry transient failures
     .ForEachAsync(order =>
     {
@@ -1131,8 +1124,22 @@ await ctx.Orders
         Console.WriteLine($"Processed order {order.Id}: {order.Amount}");
         return Task.CompletedTask;
     });
+// 2. Skip-only pipeline (skip failures and continue)
+await ctx.Orders
+    .OnError(ErrorAction.Skip)    // skip failed records, continue
+    .ForEachAsync(order =>
+    {
+        if (order.Amount < 0)
+        {
+            // This record is skipped; processing continues with the next message
+            throw new InvalidOperationException("Amount cannot be negative");
+        }
 
-// 2. DLQ-only pipeline (validate ↁEsend bad records to DLQ)
+        Console.WriteLine($"Processed order {order.Id}: {order.Amount}");
+        return Task.CompletedTask;
+    });
+
+// 3. DLQ-only pipeline (validate  send bad records to DLQ)
 await ctx.SensorReadings
     .OnError(ErrorAction.DLQ)
     .ForEachAsync(reading =>
@@ -1145,7 +1152,7 @@ await ctx.SensorReadings
         return timeseriesDb.WriteAsync(reading);
     });
 
-// 3. DLQ inspection / replay lane
+// 4. DLQ inspection / replay lane
 await ctx.Dlq.ForEachAsync(record =>
 {
     Console.WriteLine($"DLQ: {record.RawText}");
@@ -1153,7 +1160,7 @@ await ctx.Dlq.ForEachAsync(record =>
     return Task.CompletedTask;
 });
 
-// 4. Manual commit with error handling
+// 5. Manual commit with error handling
 await ctx.Trades.ForEachAsync(
     (trade, headers, meta) =>
     {
@@ -1244,43 +1251,72 @@ public class ClickstreamContext : KsqlContext
     // ... constructor ...
 }
 
-// Consumer
-await ctx.Clicks
-    .Where(c => c.PageUrl.Contains("/checkout"))
-    .ForEachAsync(async click =>
-    {
-        await analyticsService.TrackCheckoutView(click.UserId);
-    });
+// Consumer (filter inside handler; ForEachAsync consumes the stream)
+await ctx.Clicks.ForEachAsync(async click =>
+{
+    if (!click.PageUrl.Contains("/checkout"))
+        return;
+
+    await analyticsService.TrackCheckoutView(click.UserId);
+});
 ```
 
 ---
 
 ### Use Case 2: Stream Enrichment (Join)
 
-**Scenario**: Enrich order events with customer data
+**Scenario**: Enrich order events with customer data using a ToQuery-based view
 
 ```csharp
-[KsqlTopic("orders")] public class Order { /* ... */ }
-[KsqlTopic("customers")] [KsqlTable] public class Customer { /* ... */ }
+[KsqlTopic("orders")] public class Order 
+{ 
+    public int OrderId { get; set; }
+    public int CustomerId { get; set; } 
+    public decimal Amount { get; set; } 
+}
 
-var enrichedOrders = ctx.Orders
-    .Join(
-        ctx.Customers,
-        order => order.CustomerId,
-        customer => customer.CustomerId,
-        (order, customer) => new
-        {
-            order.OrderId,
-            order.Amount,
-            customer.Name,
-            customer.Tier
-        }
-    )
-    ;
+[KsqlTopic("customers")] [KsqlTable] public class Customer 
+{ 
+    public int CustomerId { get; set; } 
+    public string Name { get; set; } = string.Empty; 
+    public string Tier { get; set; } = string.Empty;
+}
 
-await enrichedOrders.ForEachAsync(async e =>
+public class EnrichedOrder 
 {
-    if (e.Tier == "Premium" && e.Amount > 1000)
+    public int OrderId { get; set; }
+    public decimal Amount { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
+    public string CustomerTier { get; set; } = string.Empty;
+}
+
+public class OrdersContext : KsqlContext
+{
+    public EventSet<Order> Orders { get; set; } = null!;
+    public EventSet<Customer> Customers { get; set; } = null!;
+    public EventSet<EnrichedOrder> EnrichedOrders { get; set; } = null!;
+
+    protected override void OnModelCreating(IModelBuilder b)
+    {
+        b.Entity<Order>();
+        b.Entity<Customer>();
+        b.Entity<EnrichedOrder>().ToQuery(q => q
+            .From<Order>()
+            .Join<Customer>((o, c) => o.CustomerId == c.CustomerId)
+            .Select((o, c) => new EnrichedOrder
+            {
+                OrderId = o.OrderId,
+                Amount = o.Amount,
+                CustomerName = c.Name,
+                CustomerTier = c.Tier
+            }));
+    }
+}
+
+// Consumer: read from the materialized view
+await ctx.EnrichedOrders.ForEachAsync(async e =>
+{
+    if (e.CustomerTier == "Premium" && e.Amount > 1000)
         await notificationService.SendVIPAlert(e);
 });
 ```
@@ -1333,43 +1369,67 @@ var bars = ctx.Trades
 
 ---
 
-### Use Case 5: Data Pipeline with DLQ
+### Use Case 4: Stream-Stream Join with Time Window
 
-**Scenario**: Process IoT sensor data with fault tolerance
+**Scenario**: Join orders and payments streams within a 5-minute window
 
 ```csharp
-[KsqlTopic("sensor-readings")]
-public class SensorReading
+[KsqlTopic("orders")]
+public class Order
 {
-    [KsqlKey] public string DeviceId { get; set; } = "";
-    public double Temperature { get; set; }
-    public double Humidity { get; set; }
-    public long Timestamp { get; set; }
+    [KsqlKey] public string OrderId { get; set; } = "";
+    [KsqlTimestamp] public DateTime OrderTime { get; set; }
+    public decimal Amount { get; set; }
 }
 
-// 1. Main pipeline with DLQ
-await ctx.SensorReadings
-    .OnError(ErrorAction.DLQ)  // Failed messages ↁEDLQ topic
-    .ForEachAsync(async reading =>
-    {
-        // Validate
-        if (reading.Temperature < -50 || reading.Temperature > 150)
-            throw new ValidationException("Temperature out of range");
-
-        // Process
-        await timeseriesDb.WriteAsync(reading);
-    });
-
-// 2. DLQ inspection / replay lane
-await ctx.Dlq.ForEachAsync(record =>
+[KsqlTopic("payments")]
+public class Payment
 {
-    Console.WriteLine($"DLQ: {record.RawText}");
-    // Optional: parse, fix, and route to a repair topic
+    [KsqlKey] public string OrderId { get; set; } = "";
+    [KsqlTimestamp] public DateTime PaymentTime { get; set; }
+    public decimal Paid { get; set; }
+}
+
+public class OrderWithPayment
+{
+    public string OrderId { get; set; } = "";
+    public decimal Amount { get; set; }
+    public decimal Paid { get; set; }
+}
+
+public class StreamingJoinContext : KsqlContext
+{
+    public EventSet<Order> Orders { get; set; } = null!;
+    public EventSet<Payment> Payments { get; set; } = null!;
+    public EventSet<OrderWithPayment> OrderWithPayments { get; set; } = null!;
+
+    protected override void OnModelCreating(IModelBuilder b)
+    {
+        b.Entity<Order>();
+        b.Entity<Payment>();
+        b.Entity<OrderWithPayment>().ToQuery(q => q
+            .From<Order>()
+            .Join<Payment>((o, p) => o.OrderId == p.OrderId)
+            .Within(TimeSpan.FromMinutes(5))
+            .Select((o, p) => new OrderWithPayment
+            {
+                OrderId = o.OrderId,
+                Amount = o.Amount,
+                Paid = p.Paid
+            }));
+    }
+}
+
+// Consumer: read the stream-stream join view
+await ctx.OrderWithPayments.ForEachAsync(joined =>
+{
+    Console.WriteLine($"{joined.OrderId}: Amount={joined.Amount}, Paid={joined.Paid}");
     return Task.CompletedTask;
 });
 ```
 
 ---
+
 
 ## API Reference Quick Start
 
@@ -1419,13 +1479,13 @@ Ksql.Linq includes 30+ working examples. Key categories:
 - `configuration`: appsettings.json setup
 
 ### Queries
-- `query-basics`: LINQ ↁEKSQL fundamentals
+- `query-basics`: LINQ → KSQL fundamentals
 - `query-filter`: `.Where()` filtering
 - `table-cache-lookup`: Table joins
 - `pull-query`: Materialized view queries
 
 ### Windowing
-- `windowing`: Tumbling/hopping aggregation
+- `windowing`: Tumbling aggregation
 - `bar-1m-live-consumer`: OHLCV bar consumer
 - `continuation-schedule`: Continuation-based windowing
 
@@ -1452,10 +1512,10 @@ Ksql.Linq includes 30+ working examples. Key categories:
 
 ```
 Is the data a changelog (updates/deletes)?
-├─ Yes ↁEUse [KsqlTable]
-━E  Example: User profiles, product catalog
-━E
-└─ No ↁEUse STREAM (default)
+├─ Yes → Use [KsqlTable]
+│   Example: User profiles, product catalog
+│
+└─ No → Use STREAM (default)
     Example: Clickstream, trades, logs
 ```
 
@@ -1463,10 +1523,10 @@ Is the data a changelog (updates/deletes)?
 
 ```
 Do I need continuous updates?
-├─ Yes ↁEPush query (.ForEachAsync())
-━E  Example: Real-time alerts, dashboards
-━E
-└─ No ↁEPull query (.FirstOrDefaultAsync(), .ToListAsync())
+├─ Yes → Push query (.ForEachAsync())
+│   Example: Real-time alerts, dashboards
+│
+└─ No → Pull query (.FirstOrDefaultAsync(), .ToListAsync())
     Example: REST API lookups, batch reports
 ```
 
@@ -1474,13 +1534,13 @@ Do I need continuous updates?
 
 ```
 What's the aggregation pattern?
-├─ Fixed-size, non-overlapping ↁETumbling
-━E  Example: 1-minute bars, hourly summaries
-━E
-├─ Fixed-size, overlapping ↁEHopping
-━E  Example: 5-min moving average
-━E
-└─ Variable-size, gap-based ↁESession
+├─ Fixed-size, non-overlapping → Tumbling
+│   Example: 1-minute bars, hourly summaries
+│
+├─ Fixed-size, overlapping → Hopping
+│   Example: 5-min moving average
+│
+└─ Variable-size, gap-based → Session
     Example: User sessions, burst detection
 ```
 
@@ -1488,11 +1548,11 @@ What's the aggregation pattern?
 
 ```
 What should happen on failure?
-├─ Retry automatically ↁE.OnError(ErrorAction.Retry, maxRetries: N)
-━E
-├─ Park in DLQ for manual review ↁE.OnError(ErrorAction.DLQ)
-━E
-└─ Custom logic ↁEtry/catch in ForEachAsync handler
+├─ Retry automatically → .OnError(ErrorAction.Retry, maxRetries: N)
+│
+├─ Park in DLQ for manual review → .OnError(ErrorAction.DLQ)
+│
+└─ Custom logic → try/catch in ForEachAsync handler
 ```
 
 ---
@@ -1504,14 +1564,14 @@ What should happen on failure?
 
 ### 1. Entity Design
 
-✁E**DO:**
+✅ **DO:**
 - Use `[KsqlKey]` on key field(s)
 - Use `[KsqlTimestamp]` for custom event time
 - Use `[KsqlDecimal(p, s)]` for precise decimal values
 - Keep entities simple (POCOs)
 - Use meaningful topic names
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Mix streams and tables without `[KsqlTable]` attribute
 - Omit key fields (causes null-key messages)
 - Use `DateTime` (use `long` Unix epoch instead)
@@ -1520,13 +1580,13 @@ What should happen on failure?
 
 ### 2. Context Design
 
-✁E**DO:**
+✅ **DO:**
 - Inherit from `KsqlContext`
 - Use `OnModelCreating` for configuration
 - Dispose context properly (`await using`)
 - Configure topics in `appsettings.json`
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Create multiple contexts for same topic (use DI/singleton pattern)
 - Hardcode connection strings (use `IConfiguration`)
 
@@ -1534,13 +1594,13 @@ What should happen on failure?
 
 ### 3. Performance
 
-✁E**DO:**
+✅ **DO:**
 - Enable producer idempotence (`EnableIdempotence: true`)
 - Set appropriate partitions (6-12 per broker)
 - Use compression (`CompressionType: "gzip"`)
 - Enable auto-commit for read-only consumers
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Send one message at a time in tight loop (use batching)
 - Use `AutoOffsetReset: "Earliest"` in production without reason
 - Create unbounded windows (causes memory issues)
@@ -1549,13 +1609,13 @@ What should happen on failure?
 
 ### 4. Error Handling
 
-✁E**DO:**
+✅ **DO:**
 - Use DLQ for unrecoverable errors
 - Log errors with correlation IDs
 - Set reasonable retry limits (3-5)
 - Monitor DLQ topics
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Retry indefinitely (causes backpressure)
 - Swallow exceptions silently
 - Mix error handling strategies
@@ -1564,13 +1624,13 @@ What should happen on failure?
 
 ### 5. Schema Management
 
-✁E**DO:**
+✅ **DO:**
 - Use Schema Registry for production
 - Version schemas properly
 - Test schema compatibility
 - Use design-time CLI to generate schemas
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Change field types without migration
 - Delete fields (mark as optional instead)
 - Deploy incompatible schema changes
@@ -1579,13 +1639,13 @@ What should happen on failure?
 
 ### 6. Windowing
 
-✁E**DO:**
-- Include `g.WindowStart()` in SELECT for continuation mode
+✅ **DO:**
+- Use appropriate grace periods
 - Use appropriate grace periods
 - Set retention for windowed topics
 - Test with historical data
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Forget to emit window boundaries
 - Use session windows for high-cardinality keys (memory leak)
 - Mix windowing types without clear reason
@@ -1594,13 +1654,13 @@ What should happen on failure?
 
 ### 7. Testing
 
-✁E**DO:**
+✅ **DO:**
 - Use Testcontainers for integration tests
 - Test schema evolution scenarios
 - Verify DLQ behavior
 - Use design-time factory for unit tests
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Test against production Kafka
 - Skip schema compatibility tests
 - Ignore edge cases (late arrivals, duplicates)
@@ -1609,14 +1669,14 @@ What should happen on failure?
 
 ### 8. Monitoring
 
-✁E**DO:**
+✅ **DO:**
 - Use `RuntimeMonitor` for diagnostics
 - Emit custom metrics
 - Monitor consumer lag
 - Track DLQ topic sizes
 - Log correlation IDs
 
-❁E**DON'T:**
+❌ **DON'T:**
 - Deploy without observability
 - Ignore consumer lag alerts
 - Skip health checks
@@ -1681,15 +1741,24 @@ dotnet ksql script --project bin/Debug/net8.0/MyApp.dll
 
 ## Changelog
 
+### Version 1.0.0
+- Ships this AI Assistant Guide with both the core library and the CLI (`dotnet ksql ai-assist`).
+- Adds multi-language entry messages for the CLI AI workflow.
+- Clarifies Tumbling/WindowStart and DLQ topic defaults in line with v0.9.8 behavior.
+
+### Version 0.9.8
+- Documents DLQ topic name fallbacks and Tumbling + TimeBucket/WindowStart policy.
+- Updates examples and Wiki alignment so WindowStart is not treated as a mandatory value column.
+
 ### Version 0.9.5
-- Design-time KSQL/Avro generation
-- `Ksql.Linq.Cli` .NET tool
-- Improved error handling and DLQ
+- Design-time KSQL/Avro generation.
+- `Ksql.Linq.Cli` .NET tool.
+- Improved error handling and DLQ.
 
 ### Version 0.9.3
-- Self-healing persistent queries
-- Market-schedule-aware OHLC bars
-- Streamiz backend improvements
+- Self-healing persistent queries.
+- Market-schedule-aware OHLC bars.
+- Streamiz backend improvements.
 
 ---
 
@@ -1699,3 +1768,6 @@ dotnet ksql script --project bin/Debug/net8.0/MyApp.dll
 ---
 
 *This document is designed for AI agents to understand and leverage Ksql.Linq effectively. For human-readable documentation, see the main README.md and Wiki.*
+
+
+

@@ -972,7 +972,7 @@ What should happen on failure?
 ### 6. Windowing
 
 ✅ **DO:**
-- Include `g.WindowStart()` in SELECT for continuation mode
+- Use appropriate grace periods
 - Use appropriate grace periods
 - Set retention for windowed topics
 - Test with historical data
@@ -1073,15 +1073,24 @@ dotnet ksql script --project bin/Debug/net8.0/MyApp.dll
 
 ## Changelog
 
+### Version 1.0.0
+- Ships this AI Assistant Guide with both the core library and the CLI (`dotnet ksql ai-assist`).
+- Adds multi-language entry messages for the CLI AI workflow.
+- Clarifies Tumbling/WindowStart and DLQ topic defaults in line with v0.9.8 behavior.
+
+### Version 0.9.8
+- Documents DLQ topic name fallbacks and Tumbling + TimeBucket/WindowStart policy.
+- Updates examples and Wiki alignment so WindowStart is not treated as a mandatory value column.
+
 ### Version 0.9.5
-- Design-time KSQL/Avro generation
-- `Ksql.Linq.Cli` .NET tool
-- Improved error handling and DLQ
+- Design-time KSQL/Avro generation.
+- `Ksql.Linq.Cli` .NET tool.
+- Improved error handling and DLQ.
 
 ### Version 0.9.3
-- Self-healing persistent queries
-- Market-schedule-aware OHLC bars
-- Streamiz backend improvements
+- Self-healing persistent queries.
+- Market-schedule-aware OHLC bars.
+- Streamiz backend improvements.
 
 ---
 
@@ -1091,3 +1100,6 @@ dotnet ksql script --project bin/Debug/net8.0/MyApp.dll
 ---
 
 *This document is designed for AI agents to understand and leverage Ksql.Linq effectively. For human-readable documentation, see the main README.md and Wiki.*
+
+
+
