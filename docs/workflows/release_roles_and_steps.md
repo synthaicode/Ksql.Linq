@@ -47,7 +47,11 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
 **Workflows:** `.github/workflows/publish-preview.yml`
 
 **Trigger:**
-- Push to `release/**` branches (e.g., `release/1.0.0`).
+- Manual RC (ad-hoc or internal):  
+  - Run `publish-preview.yml` via **workflow_dispatch** on the appropriate branch (typically `release/<version>`).
+- Tagged RC (official RC tied to a commit):  
+  - Push a tag like `v<version>-rcN` (e.g., `v1.1.0-rc1`).  
+  - This also triggers `publish-preview.yml` via `on.push.tags`.
 
 **What CI does:**
 - Restore, build, test (no Integration).
