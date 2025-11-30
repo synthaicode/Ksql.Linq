@@ -26,7 +26,7 @@ Lead’s explicit actions: review RC result → decide GO → add label `release
 
 ## 0. Local prep (mandatory)
 1) Branch: `git switch -c release/<version>`
-2) Align version/notes: update `<Version>` and `PackageReleaseNotes` in `src/Ksql.Linq.csproj`; append `docs/diff_log/diff_<feature>_<YYYYMMDD>.md`.
+2) Align version/notes: update `<Version>` and `PackageReleaseNotes` in `src/Ksql.Linq.csproj`; append `docs/diff_log/diff_<feature>_<YYYYMMDD>.md`. Also update `examples/Directory.Build.props` to reference the new `Ksql.Linq` package version so examples build against the released API.
 3) Public API check: `dotnet build src/Ksql.Linq.csproj -c Release -p:StrictPublicApi=true -warnaserror:RS0016,RS0017`
 4) Tests (no Integration): `dotnet test tests/Ksql.Linq.Tests.csproj -c Release --filter "TestCategory!=Integration"`
 5) Commit & push: `git push origin release/<version>`
