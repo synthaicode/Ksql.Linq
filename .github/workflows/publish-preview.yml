@@ -13,6 +13,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      packageVersion: ${{ steps.ver.outputs.pkg }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,3 +69,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dotnet nuget push ./.artifacts/nuget/*.nupkg --skip-duplicate --source github --api-key $GITHUB_TOKEN
+
+  build-examples-with-rc:
+    needs: pack-and-publish
+    uses: ./.github/workflows/examples-build.yml
+    with:
+      packageVersion: ${{ needs.pack-and-publish.outputs.packageVersion }}
