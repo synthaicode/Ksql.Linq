@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.0.0
+- Packaged the AI Assistant Guide alongside the library/CLI and pointed to `docs/releases/release_v1_0_0.md` for the release story.
+- Added the CLI `dotnet ksql ai-assist` command (with `--copy`) so users can immediately send the guide text to assistants.
+- Localized the `ai-assist` header/footer text across the supported regions to match the UI culture.
+- CI now generates `AI_ASSISTANT_GUIDE.md` for both the library and CLI, verifies it lands in the package, and publishes matching versions.
+
+## v0.9.8
+- Hardened DLQ defaults so minimal configurations fall back to `dead_letter_queue` and avoid startup failures.
+- Aligned the Tumbling/TimeBucket physical tests and examples with the Wiki's WindowStart policy so bucket timestamps stay logical and clear.
+- Tidied `physicalTests/OssSamples` by keeping only the compiled tests at the root, archiving the rest, and documenting the active suite in `physicalTests/OssSamples/README.md`.
+
 ## v0.9.7
 - Simplified KsqlDslOptions defaults: dropped DefaultValue attributes, rely on initializers.
 - Wait settings now use KsqlDslOptions; removed KSQL_QUERY_RUNNING_* env fallbacks.
