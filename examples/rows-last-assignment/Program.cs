@@ -21,6 +21,7 @@ public class Bar
 {
     [KsqlKey(1)] public string Broker { get; set; } = string.Empty;
     [KsqlKey(2)] public string Symbol { get; set; } = string.Empty;
+    
     public double Open { get; set; }
     public double High { get; set; }
     public double Low { get; set; }
@@ -50,6 +51,7 @@ public sealed class RowsLastAssignmentContext : KsqlContext
                 {
                     Broker = g.Key.Broker,
                     Symbol = g.Key.Symbol,
+                    
                     Open = g.EarliestByOffset(x => x.Bid),
                     High = g.Max(x => x.Bid),
                     Low = g.Min(x => x.Bid),
@@ -84,5 +86,6 @@ class Program
         Console.WriteLine("Done. For assignment failover test, run a second instance with same group and observe logs.");
     }
 }
+
 
 

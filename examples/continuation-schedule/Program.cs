@@ -11,7 +11,7 @@ using Ksql.Linq.Runtime;
 
 // Continuation schedule sample (DSL-first, aligned with physical tests)
 // Steps: From → TimeFrame → Tumbling(continuation: true) → GroupBy/Select → Rollup
-// Note: Select must include exactly one WindowStart() (bucket column)
+
 
 public class Tick
 {
@@ -34,6 +34,7 @@ public class Bar
 {
     [KsqlKey(1)] public string Broker { get; set; } = string.Empty;
     [KsqlKey(2)] public string Symbol { get; set; } = string.Empty;
+    
     public decimal Open { get; set; }
     public decimal High { get; set; }
     public decimal Low { get; set; }
@@ -60,6 +61,7 @@ public sealed class SampleContext : KsqlContext
                 {
                     Broker = g.Key.Broker,
                     Symbol = g.Key.Symbol,
+                    
                     Open = g.EarliestByOffset(x => x.Bid),
                     High = g.Max(x => x.Bid),
                     Low = g.Min(x => x.Bid),

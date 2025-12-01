@@ -1,10 +1,15 @@
 # Changelog
 
+## v1.0.0
+- Packaged the AI Assistant Guide alongside the library/CLI and pointed to `docs/releases/release_v1_0_0.md` for the release story.
+- Added the CLI `dotnet ksql ai-assist` command (with `--copy`) so users can immediately send the guide text to assistants.
+- Localized the `ai-assist` header/footer text across the supported regions to match the UI culture.
+- CI now generates `AI_ASSISTANT_GUIDE.md` for both the library and CLI, verifies it lands in the package, and publishes matching versions.
+
 ## v0.9.8
-- Fixed DLQ defaults for appsettings-lite scenarios: `GetDlqTopicName()` and `KafkaAdminService.EnsureDlqTopicExistsAsync()` now fall back to `dead_letter_queue` when `DlqTopicName` is unset (e.g., when `appsettings.json` is not loaded or does not define `DlqTopicName`).
-- Corrected physical Tumbling+TimeBucket tests to avoid double timestamp semantics: `TranslationsTimeBucketTests` now uses `BucketStart` as a logical column without `[KsqlTimestamp]`.
-- Cleaned up examples to avoid recommending `WindowStart()` as a projected value column for Tumbling windows; examples now focus on OHLC and continuation semantics instead.
-- Clarified OssSamples physical test scope by moving non-active tests into `OssSamples/Archive` and documenting the three active physical tests.
+- Hardened DLQ defaults so `GetDlqTopicName()` and `KafkaAdminService.EnsureDlqTopicExistsAsync()` fall back to `dead_letter_queue` whenever `DlqTopicName` is unset, preventing startup `ArgumentException`s.
+- Aligned the physical Tumbling/TimeBucket surface with the WindowStart policy: `TranslationsTimeBucketTests` treats `BucketStart` as a logical column without `[KsqlTimestamp]`, while the examples now avoid projecting `WindowStart()` as a data column and focus on OHLC/continuation semantics.
+- Tidied `physicalTests/OssSamples` by moving inactive tests into `Archive/`, documenting the active trio, and keeping only the compiled tests at the root so the physical suite stays obvious.
 
 ## v0.9.7
 - Simplified KsqlDslOptions defaults: dropped DefaultValue attributes, rely on initializers.

@@ -1,33 +1,39 @@
 
-## Overview
+## Ksql.Linq — An Entity Framework-style library for Kafka / ksqlDB
 
-Ksql.Linq is a C# library that unifies Kafka/ksqlDB and Avro/Schema Registry usage. It lets you control Kafka Streams and ksqlDB in a LINQ style and offers the following capabilities.
+It enables database engineers to use Kafka and ksqlDB with an Entity Framework-style development model, and your AI, powered by the AI Assistant Guide, can help a lot when you need support with Kafka.
 
-- Operate Kafka and ksqlDB through a LINQ-based DSL.
-- Design type-safe schemas with Avro and Schema Registry.
-- Detect Streams/Tables and Pull/Push modes automatically.
-- Support operations with DLQ, retry, and commit helpers.
-- **Self-healing persistent queries:** automatically stabilizes CTAS/CSAS queries
-  by retrying, pre-creating internal topics, and recovering from transient errors.
-- **Market-schedule–aware OHLC bars (support feature):**
-   Generate OHLC bars (e.g., 1s/1m/5m/15m/1h) strictly aligned to exchange trading sessions.
-   The engine skips closed hours and holidays, handles DST correctly, and offers gap policies
-   (skip, carry-forward close, or emit sentinel). Pre-/post-market can be toggled per schedule.
+### AI-assisted guidance for developers
 
-## Release Notes
+To use the AI Assistant Guide with your AI assistant (ChatGPT, Claude, Gemini, etc.):
+
+1. Install the CLI (`Ksql.Linq.Cli` version 1.0.0 or later):
+```
+dotnet tool install --global Ksql.Linq.Cli --version 1.0.0
+```
+2. Copy the AI Assistant Guide to your clipboard:
+```
+dotnet ksql ai-assist --copy
+```
+3. Paste it into your AI console and ask it to act as a design assistant for your Ksql.Linq project.
+
+
+---
+
+### Release Notes
 
 Version-specific changes (including v0.9.7 and later) are documented in the **Release notes** section of this NuGet page.
 
 ---
 
-## Documentation
+### Documentation
 
 For full documentation, advanced usage, and design notes, see the project wiki:
 
 ➡ **Ksql.Linq Wiki**  
 https://github.com/synthaicode/Ksql.Linq/wiki
 
-## Minimal Quick Start
+### Minimal Quick Start
 
 > NOTE: In this repo's docker-compose test environment, use  
 > `127.0.0.1:39092` (Kafka) / `18081` (Schema Registry) / `18088` (ksqlDB).  
@@ -82,8 +88,6 @@ public class AppCtx : KsqlContext
 
     public EventSet<Hello> Hellos { get; set; } = null!;
 
-    protected override void OnModelCreating(IModelBuilder b)
-        => b.Entity<Hello>();
 }
 
 var cfg = new ConfigurationBuilder()

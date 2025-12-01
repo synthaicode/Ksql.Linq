@@ -6,6 +6,9 @@ on:
       versionSuffix:
         description: "Pre-release suffix (e.g., preview.1-ci.<run>)"
         required: false
+  push:
+    tags:
+      - 'v*.*.*-rc*'   # e.g., v1.0.0-rc1, v1.0.0-rc.2
 
 jobs:
   pack-and-publish:
@@ -13,6 +16,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      packageVersion: ${{ steps.ver.outputs.pkg }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,3 +72,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dotnet nuget push ./.artifacts/nuget/*.nupkg --skip-duplicate --source github --api-key $GITHUB_TOKEN
+
+  build-examples-with-rc:
+    needs: pack-and-publish
+    uses: ./.github/workflows/examples-build.yml
+    with:
+      packageVersion: ${{ needs.pack-and-publish.outputs.packageVersion }}

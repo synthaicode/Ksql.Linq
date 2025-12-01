@@ -7,16 +7,16 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Ksql.Linq.Cli</RootNamespace>
     <AssemblyName>ksql-linq</AssemblyName>
-    <Version>1.0.0-rc4</Version>
+    <Version>1.0.0</Version>
 
     <!-- .NET Tool Configuration -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-ksql</ToolCommandName>
     <PackageId>Ksql.Linq.Cli</PackageId>
-    <Description>Design-time KSQL script and Avro schema generation tool for Ksql.Linq</Description>
+    <Description>Design-time KSQL script and Avro schema generation tool for Ksql.Linq, with AI Assistant Guide support for AI-powered workflows</Description>
     <Authors>SynthAICode</Authors>
     <Company>SynthAICode</Company>
-    <PackageTags>kafka;ksqldb;linq;stream-processing;avro;schema-registry;streamiz;dotnet;csharp;cli;design-time</PackageTags>
+    <PackageTags>kafka;ksqldb;linq;stream-processing;avro;schema-registry;dotnet;cli;design-time;entity-framework-style;entity-framework-like;ai-assist</PackageTags>
     <PackageProjectUrl>https://github.com/synthaicode/Ksql.Linq</PackageProjectUrl>
     <RepositoryUrl>https://github.com/synthaicode/Ksql.Linq</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

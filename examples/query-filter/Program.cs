@@ -32,7 +32,10 @@ class Program
         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(5));
         await ctx.Events.ForEachAsync(e =>
         {
-            if (e.Category == "A") Console.WriteLine($"A:{e.Id}");
+            if (!e.Category.Contains("A"))
+                return Task.CompletedTask;
+
+            Console.WriteLine($"A:{e.Id}");
             return Task.CompletedTask;
         }, cancellationToken: cts.Token);
     }
