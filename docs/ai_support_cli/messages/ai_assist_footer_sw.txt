@@ -1,0 +1,3 @@
+Kumbuka: Mwongozo huu ni maalum kwa toleo la Ksql.Linq ulilolifunga.
+Utakapoboreshha Ksql.Linq, endesha tena "dotnet ksql ai-assist" na ushiriki matokeo mapya na msaidizi wako wa AI.
+

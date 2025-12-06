@@ -1,0 +1,6 @@
+# So verwendest du diesen Text mit deinem KI-Assistenten
+
+Kopiere die gesamte Ausgabe und füge sie in deinen KI-Assistenten ein, oder speichere sie in einer Datei und bitte:
+
+„Lies diesen Ksql.Linq AI Assistant Guide und unterstütze mich bei der Gestaltung meines Ksql.Linq-Projekts.“
+

@@ -1,0 +1,3 @@
+Catatan: Panduan ini khusus untuk versi Ksql.Linq yang terpasang.
+Saat Anda meningkatkan Ksql.Linq, jalankan kembali "dotnet ksql ai-assist" dan bagikan output baru tersebut ke asisten AI Anda.
+

@@ -1,0 +1,3 @@
+Lưu ý: Hướng dẫn này dành riêng cho phiên bản Ksql.Linq mà bạn đã cài đặt.
+Khi bạn nâng cấp Ksql.Linq, hãy chạy lại "dotnet ksql ai-assist" và chia sẻ output mới đó với trợ lý AI của bạn.
+

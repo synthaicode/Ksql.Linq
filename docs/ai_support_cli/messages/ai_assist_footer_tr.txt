@@ -1,0 +1,3 @@
+Not: Bu kılavuz, yüklü olan Ksql.Linq sürümüne özeldir.
+Ksql.Linq sürümünü yükselttiğinizde, "dotnet ksql ai-assist" komutunu tekrar çalıştırın ve yeni çıktıyı yapay zeka asistanınızla paylaşın.
+
