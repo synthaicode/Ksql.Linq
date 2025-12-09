@@ -91,6 +91,29 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         throw new NotSupportedException("Legacy Tumbling overload is not supported in this phase.");
     }
 
+    public KsqlQueryable<T1> Hopping(
+        Expression<Func<T1, DateTime>> time,
+        TimeSpan windowSize,
+        TimeSpan hopInterval,
+        TimeSpan? grace = null)
+    {
+        if (_model.Hopping != null)
+            throw new InvalidOperationException("Hopping window already specified for this query.");
+        if (time.Body is MemberExpression me)
+            _model.TimeKey = me.Member.Name;
+        else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+            _model.TimeKey = me2.Member.Name;
+        _model.Hopping = new HoppingWindowSpec
+        {
+            Size = windowSize,
+            Advance = hopInterval,
+            Grace = grace
+        };
+        _model.Extras["HasHoppingWindow"] = true;
+        _model.BucketColumnName = null; // hopping uses windowed key rather than explicit bucket column
+        return this;
+    }
+
     // Filtering raw is upstream's responsibility. The DSL references an already-filtered stream
     // (e.g., trade_raw_filtered)
     public IScheduledScope<T1> TimeFrame<TSchedule>(
@@ -165,8 +188,24 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
             JoinCondition = condition,
             WhereCondition = _model.WhereCondition,
             SelectProjection = _model.SelectProjection,
-            PrimarySourceRequiresAlias = true
+            PrimarySourceRequiresAlias = true,
+            TimeKey = _model.TimeKey,
+            BucketColumnName = _model.BucketColumnName,
+            BaseUnitSeconds = _model.BaseUnitSeconds,
+            GraceSeconds = _model.GraceSeconds,
+            Continuation = _model.Continuation
         };
+        if (_model.Hopping != null)
+        {
+            newModel.Hopping = new HoppingWindowSpec
+            {
+                Size = _model.Hopping.Size,
+                Advance = _model.Hopping.Advance,
+                Grace = _model.Hopping.Grace
+            };
+        }
+        foreach (var kv in _model.Extras)
+            newModel.Extras[kv.Key] = kv.Value;
         return new KsqlQueryable2<T1, T2>(newModel);
     }
 

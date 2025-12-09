@@ -10,6 +10,7 @@ using Ksql.Linq.Query.Analysis;
 using Ksql.Linq.Query.Metadata;
 using Ksql.Linq.SchemaRegistryTools;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -259,6 +260,7 @@ public abstract partial class KsqlContext
     private async Task RegisterSchemasForAllEntitiesAsync()
     {
         var client = _schemaRegistryClient.Value;
+        var logger = Logger ?? NullLogger.Instance;
         var entities = _entityModels.ToArray();
         var schemaResults = new Dictionary<Type, SchemaRegistrationResult>();
         foreach (var (type, model) in entities)
@@ -269,11 +271,13 @@ public abstract partial class KsqlContext
                 if (model.QueryModel == null && model.QueryExpression == null && model.HasKeys() && mapping.AvroKeySchema != null)
                 {
                     var keySubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(model.GetTopicName());
+                    logger.LogInformation("Schema registration (key): Entity={Entity} Subject={Subject}", type.Name, keySubject);
                     await client.RegisterSchemaIfNewAsync(keySubject, mapping.AvroKeySchema);
                     var keySchema = Avro.Schema.Parse(mapping.AvroKeySchema);
                     model.KeySchemaFullName = keySchema.Fullname;
                 }
                 var valueSubject = Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(model.GetTopicName());
+                logger.LogInformation("Schema registration (value): Entity={Entity} Subject={Subject}", type.Name, valueSubject);
                 var valueResult = await client.RegisterSchemaIfNewAsync(valueSubject, mapping.AvroValueSchema!);
                 var valueSchema = Avro.Schema.Parse(mapping.AvroValueSchema!);
                 if (mapping.AvroValueType == typeof(Avro.Generic.GenericRecord))
@@ -285,7 +289,7 @@ public abstract partial class KsqlContext
                     model.ValueSchemaFullName = valueSchema.Fullname;
                 }
                 schemaResults[type] = valueResult;
-                DecimalSchemaValidator.Validate(model, client, ValidationMode.Strict, Logger);
+                DecimalSchemaValidator.Validate(model, client, ValidationMode.Strict, logger);
                 try
                 {
                     await Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent
@@ -302,7 +306,7 @@ public abstract partial class KsqlContext
             }
             catch (ConfluentSchemaRegistry.SchemaRegistryException ex)
             {
-                Logger.LogError(ex, "Schema registration failed for {Entity}", type.Name);
+                logger.LogError(ex, "Schema registration failed for {Entity}", type.Name);
                 try
                 {
                     await Ksql.Linq.Events.RuntimeEventBus.PublishAsync(new Ksql.Linq.Events.RuntimeEvent

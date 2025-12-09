@@ -9,6 +9,8 @@ internal static class WithClauseUtils
     public static List<string> BuildWithParts(
         string kafkaTopic,
         bool hasKey,
+        bool isCompositeKey,
+        string? keySchemaFullName,
         string? valueSchemaFullName,
         string? timestampColumn,
         int? partitions,
@@ -23,6 +25,8 @@ internal static class WithClauseUtils
         return WithClauseBuilder.BuildWithParts(
             kafkaTopic,
             hasKey,
+            isCompositeKey,
+            keySchemaFullName,
             valueSchemaFullName,
             timestampColumn,
             partitions,

@@ -554,6 +554,8 @@ internal static class DerivedEntityDdlPlanner
         var withParts = WithClauseUtils.BuildWithParts(
             kafkaTopic: context.Name,
             hasKey: keyMetas.Any(k => !string.IsNullOrWhiteSpace(k.Name)),
+            isCompositeKey: keyMetas.Count > 1,
+            keySchemaFullName: context.Model.KeySchemaFullName,
             valueSchemaFullName: null,
             timestampColumn: timestampColumn,
             partitions: settings.Partitions,
@@ -623,7 +625,12 @@ internal static class DerivedEntityDdlPlanner
             qm.Extras["select/exclude"] = selectExclude;
         }
 
-        if (context.Role != Role.Live && !qm.Extras.ContainsKey("valueSchemaFullName"))
+        // Respect explicit ValueSchemaFullName from the model (design-time/runtime overrides).
+        if (!string.IsNullOrWhiteSpace(model.ValueSchemaFullName))
+        {
+            qm.Extras["valueSchemaFullName"] = model.ValueSchemaFullName;
+        }
+        else if (!qm.Extras.ContainsKey("valueSchemaFullName"))
         {
             var nsValue = metadata.Namespace;
             if (!string.IsNullOrWhiteSpace(nsValue))

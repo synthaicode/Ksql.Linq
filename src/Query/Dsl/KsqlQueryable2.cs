@@ -79,6 +79,29 @@ public class KsqlQueryable2<T1, T2> : IKsqlQueryable
         return this;
     }
 
+    public KsqlQueryable2<T1, T2> Hopping(
+        Expression<Func<T1, T2, DateTime>> time,
+        TimeSpan windowSize,
+        TimeSpan hopInterval,
+        TimeSpan? grace = null)
+    {
+        if (_model.Hopping != null)
+            throw new InvalidOperationException("Hopping window already specified for this query.");
+        if (time.Body is MemberExpression me)
+            _model.TimeKey = me.Member.Name;
+        else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+            _model.TimeKey = me2.Member.Name;
+        _model.Hopping = new HoppingWindowSpec
+        {
+            Size = windowSize,
+            Advance = hopInterval,
+            Grace = grace
+        };
+        _model.Extras["HasHoppingWindow"] = true;
+        _model.BucketColumnName = null;
+        return this;
+    }
+
     public KsqlQueryable2<T1, T2> Within(TimeSpan interval)
     {
         if (interval <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(interval), "interval must be > 0");

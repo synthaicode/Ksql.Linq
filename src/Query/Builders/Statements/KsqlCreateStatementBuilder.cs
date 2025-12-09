@@ -213,6 +213,7 @@ internal static class KsqlCreateStatementBuilder
         var sb = new StringBuilder();
         sb.Append($"{createType} {streamName} ");
         var hasKey = AnySourceHasKeys(model);
+        var isCompositeKey = IsCompositeKey(model);
         if (string.IsNullOrWhiteSpace(valueSchemaFullName)
             && model.Extras != null
             && model.Extras.TryGetValue("valueSchemaFullName", out var __vsf)
@@ -240,11 +241,39 @@ internal static class KsqlCreateStatementBuilder
             retentionCandidate = convertedRetention;
         }
 
+        // TIMESTAMP can only reference a column present in the projected schema.
+        // Window系（Hopping/Tumbling）はカスタムタイムスタンプ列を優先して維持する。
+        var timestampColumn = model.TimeKey;
+        if (!model.HasHopping() && !model.HasTumbling() && model.IsAggregateQuery())
+        {
+            // 非ウィンドウ集計のみ、投影に無ければ TIMESTAMP を外す
+            var projected = false;
+            var meta = model.SelectProjectionMetadata;
+            if (meta?.Members != null)
+            {
+                foreach (var m in meta.Members)
+                {
+                    var name = m.ResolvedColumnName ?? m.SourceMemberPath ?? m.Alias;
+                    if (!string.IsNullOrWhiteSpace(name) &&
+                        timestampColumn != null &&
+                        name.Equals(timestampColumn, StringComparison.OrdinalIgnoreCase))
+                    {
+                        projected = true;
+                        break;
+                    }
+                }
+            }
+            if (!projected)
+                timestampColumn = null;
+        }
+
         var withClause = WithClauseBuilder.BuildClause(
             kafkaTopic: streamName,
             hasKey: hasKey,
+            isCompositeKey: isCompositeKey,
+            keySchemaFullName: keySchemaFullName,
             valueSchemaFullName: valueSchemaFullName,
-            timestampColumn: null,
+            timestampColumn: timestampColumn,
             partitions: partitionsValue,
             replicas: replicasValue,
             retentionMs: retentionCandidate,
@@ -283,6 +312,18 @@ internal static class KsqlCreateStatementBuilder
             if (keys != null && keys.Count > 0) return true;
         }
         return false;
+    }
+
+    private static bool IsCompositeKey(KsqlQueryModel model)
+    {
+        var types = model.SourceTypes ?? Array.Empty<Type>();
+        var allKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in types)
+        {
+            foreach (var key in ExtractKeyNames(t))
+                allKeys.Add(key);
+        }
+        return allKeys.Count > 1;
     }
 
     private static string BuildFromClauseCore(KsqlQueryModel model, Func<Type, string>? sourceNameResolver, out Dictionary<string, string> aliasToSource)

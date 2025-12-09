@@ -17,6 +17,8 @@ internal static class WithClauseBuilder
     public static List<string> BuildWithParts(
         string kafkaTopic,
         bool hasKey,
+        bool isCompositeKey,
+        string? keySchemaFullName,
         string? valueSchemaFullName,
         string? timestampColumn,
         int? partitions,
@@ -37,7 +39,7 @@ internal static class WithClauseBuilder
             parts.Add($"CLEANUP_POLICY='{resolvedCleanup}'");
 
         if (hasKey)
-            parts.Add("KEY_FORMAT='AVRO'");
+            parts.Add($"KEY_FORMAT='{(isCompositeKey ? "AVRO" : "KAFKA")}'");
 
         parts.Add("VALUE_FORMAT='AVRO'");
 
@@ -53,7 +55,9 @@ internal static class WithClauseBuilder
             parts.Add($"REPLICAS={replicas.Value}");
 
         var effectivePolicy = allowRetentionMs ? retentionPolicy : WithClauseRetentionPolicy.Disallow;
-        var isWindowed = model?.HasTumbling();
+        bool? isWindowed = null;
+        if (model != null)
+            isWindowed = model.HasTumbling() || model.HasHopping();
         if (objectType.HasValue && !isWindowed.HasValue)
             isWindowed = objectType.Value != StreamTableType.Table ? (bool?)true : null;
         if (TryResolveRetention(model, effectivePolicy, retentionMs, out var resolvedRetention, objectType, isWindowed))
@@ -65,6 +69,8 @@ internal static class WithClauseBuilder
     public static string BuildClause(
         string kafkaTopic,
         bool hasKey,
+        bool isCompositeKey,
+        string? keySchemaFullName,
         string? valueSchemaFullName,
         string? timestampColumn,
         int? partitions,
@@ -79,6 +85,8 @@ internal static class WithClauseBuilder
         var parts = BuildWithParts(
             kafkaTopic,
             hasKey,
+            isCompositeKey,
+            keySchemaFullName,
             valueSchemaFullName,
             timestampColumn,
             partitions,
@@ -150,7 +158,7 @@ internal static class WithClauseBuilder
         if (policy == WithClauseRetentionPolicy.Require)
             return true;
 
-        var windowed = isWindowed ?? model?.HasTumbling() ?? false;
+        var windowed = isWindowed ?? (model?.HasTumbling() == true || model?.HasHopping() == true);
         if (objectType.HasValue)
         {
             if (objectType.Value == StreamTableType.Table && !windowed)

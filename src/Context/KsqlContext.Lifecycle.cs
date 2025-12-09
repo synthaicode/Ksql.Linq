@@ -470,6 +470,11 @@ public abstract partial class KsqlContext : IKsqlContext
     protected virtual IEntitySet<T> CreateEntitySet<T>(EntityModel entityModel) where T : class
     {
         var model = EnsureEntityModel(typeof(T), entityModel);
+        // Hopping CTAS テーブルは Streamiz キャッシュを不要とする（起動抑止）
+        if (model.QueryModel?.HasHopping() == true)
+        {
+            model.EnableCache = false;
+        }
         var baseSet = new EventSetWithServices<T>(this, model);
         if (model.GetExplicitStreamTableType() == StreamTableType.Table && model.EnableCache)
         {

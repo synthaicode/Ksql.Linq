@@ -74,10 +74,11 @@ internal static class DdlPlanner
         if (keyColumns.Length == 0) throw new ArgumentException("keyColumns required", nameof(keyColumns));
         if (valueColumns.Length == 0) throw new ArgumentException("valueColumns required", nameof(valueColumns));
 
+        var isCompositeKey = keyColumns.Length > 1;
         var withParts = new System.Collections.Generic.List<string>
         {
             $"KAFKA_TOPIC='{targetName}'",
-            "KEY_FORMAT='AVRO'",
+            $"KEY_FORMAT='{(isCompositeKey ? "AVRO" : "KAFKA")}'",
             "VALUE_FORMAT='AVRO'"
         };
         if (partitions.HasValue && partitions.Value > 0) withParts.Add($"PARTITIONS={partitions.Value}");

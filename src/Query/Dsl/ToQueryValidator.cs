@@ -1,5 +1,6 @@
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Attributes;
+using Ksql.Linq.Core.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +16,22 @@ internal static class ToQueryValidator
         if (resultType == null) throw new ArgumentNullException(nameof(resultType));
         if (model == null) throw new ArgumentNullException(nameof(model));
 
+        var isWindowed = typeof(IWindowedRecord).IsAssignableFrom(resultType);
+
+        bool ShouldInclude(PropertyInfo p)
+        {
+            if (Attribute.IsDefined(p, typeof(KsqlIgnoreAttribute), true))
+                return false;
+            if (isWindowed && (string.Equals(p.Name, nameof(IWindowedRecord.WindowStart), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.Name, nameof(IWindowedRecord.WindowEnd), StringComparison.OrdinalIgnoreCase)))
+                return false;
+            return true;
+        }
+
         var entityProps = resultType
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .OrderBy(p => p.MetadataToken)
-            .Where(p => !Attribute.IsDefined(p, typeof(KsqlIgnoreAttribute), true))
+            .Where(ShouldInclude)
             .ToArray();
 
         var entityPropMap = entityProps.ToDictionary(p => p.Name);

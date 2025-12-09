@@ -276,6 +276,8 @@ public abstract partial class KsqlContext
             .OrderBy(x => x.Attr!.Order)
             .Select(x => x.Property)
             .ToArray();
+        var timeProperty = allProperties
+            .FirstOrDefault(p => p.GetCustomAttributes(typeof(KsqlTimestampAttribute), true).Any());
 
         var model = new EntityModel
         {
@@ -287,6 +289,11 @@ public abstract partial class KsqlContext
             KeyProperties = keyProperties
 
         };
+
+        if (timeProperty != null)
+        {
+            model.TimeKey = timeProperty.Name;
+        }
 
         if (entityType.GetCustomAttribute<KsqlTableAttribute>() != null)
         {

@@ -1157,6 +1157,10 @@ internal static class KsqlContextCacheExtensions
         if (model.GetExplicitStreamTableType() != Ksql.Linq.Query.Abstractions.StreamTableType.Table)
             return false;
 
+        // Hopping/Windowed CTAS はキャッシュ不要
+        if (model.QueryModel?.HasHopping() == true)
+            return false;
+
         if (TryGetTimeframeMetadata(model, out _, out var role))
             return IsEligibleTimeframeRole(role);
 

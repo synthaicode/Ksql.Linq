@@ -29,59 +29,49 @@ public class DesignTimeContextLoader
                 $"No IDesignTimeKsqlContextFactory implementation found in assembly: {assemblyPath}");
         }
 
-        Type factoryType;
-        Type contextType;
+        var created = factories
+            .Select(f => Activator.CreateInstance(f) as IDesignTimeKsqlContextFactory)
+            .Where(f => f != null)
+            .Select(f => (Factory: f!, Context: f!.CreateDesignTimeContext()
+                ?? throw new InvalidOperationException($"CreateDesignTimeContext returned null in {f.GetType().Name}")))
+            .ToList();
+
+        if (created.Count == 0)
+            throw new InvalidOperationException("Failed to create any IDesignTimeKsqlContextFactory instances.");
+
+        (IDesignTimeKsqlContextFactory Factory, KsqlContext Context) selected;
 
         if (!string.IsNullOrEmpty(contextTypeName))
         {
-            factoryType = factories.FirstOrDefault(f =>
-            {
-                var ctxType = GetContextTypeFromFactory(f);
-                return ctxType.Name == contextTypeName || ctxType.FullName == contextTypeName;
-            }) ?? throw new InvalidOperationException(
-                $"No factory found for context type '{contextTypeName}'. Available factories: " +
-                string.Join(", ", factories.Select(GetFactoryContextTypeName)));
+            selected = created.FirstOrDefault(c =>
+                string.Equals(c.Context.GetType().Name, contextTypeName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.Context.GetType().FullName, contextTypeName, StringComparison.OrdinalIgnoreCase));
 
-            contextType = GetContextTypeFromFactory(factoryType);
+            if (selected.Factory == null)
+                throw new InvalidOperationException(
+                    $"No factory found for context type '{contextTypeName}'. Available contexts: " +
+                    string.Join(", ", created.Select(c => c.Context.GetType().Name)));
         }
         else
         {
-            if (factories.Count > 1)
+            if (created.Count > 1)
             {
                 throw new InvalidOperationException(
                     $"Multiple factories found. Please specify --context. Available: " +
-                    string.Join(", ", factories.Select(GetFactoryContextTypeName)));
+                    string.Join(", ", created.Select(c => c.Context.GetType().Name)));
             }
-
-            factoryType = factories[0];
-            contextType = GetContextTypeFromFactory(factoryType);
+            selected = created[0];
         }
 
-        var factory = Activator.CreateInstance(factoryType) as IDesignTimeKsqlContextFactory
-            ?? throw new InvalidOperationException($"Failed to create factory instance: {factoryType.Name}");
-
-        var context = factory.CreateDesignTimeContext()
-            ?? throw new InvalidOperationException("CreateDesignTimeContext returned null");
+        var factory = selected.Factory;
+        var context = selected.Context;
+        var contextType = context.GetType();
 
         return new LoadResult(
             Context: context,
             AssemblyName: assemblyName.Name ?? "Unknown",
             AssemblyVersion: assemblyName.Version?.ToString() ?? "0.0.0",
             ContextTypeName: contextType.FullName ?? contextType.Name);
-    }
-
-    private static Type GetContextTypeFromFactory(Type factoryType)
-    {
-        var method = factoryType.GetMethod("CreateDesignTimeContext",
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException($"CreateDesignTimeContext method not found on {factoryType.Name}");
-
-        return method.ReturnType;
-    }
-
-    private static string GetFactoryContextTypeName(Type factoryType)
-    {
-        return GetContextTypeFromFactory(factoryType).Name;
     }
 
     public record LoadResult(

@@ -57,23 +57,19 @@ internal class DDLQueryGenerator : GeneratorBase, IDDLQueryGenerator
             var columns = GenerateColumnDefinitions(schema, isStream: true);
             var streamName = SanitizeName(schema.TopicName);
             var topicName = schema.TopicName;
-            var hasKey = schema.Columns.Any(c => c.IsKey);
+            var keyColumns = schema.Columns.Where(c => c.IsKey).ToList();
+            var hasKey = keyColumns.Count > 0;
+            var isCompositeKey = keyColumns.Count > 1;
             var partitions = schema.Partitions;
             var replicas = schema.Replicas;
 
             var withParts = Ksql.Linq.Query.Builders.Utilities.WithClauseUtils.BuildWithParts(
                 kafkaTopic: topicName,
                 hasKey: hasKey,
+                isCompositeKey: isCompositeKey,
+                keySchemaFullName: schema.KeySchemaFullName,
                 valueSchemaFullName: schema.ValueSchemaFullName,
                 timestampColumn: schema.TimestampColumn,
-                partitions: partitions,
-                replicas: replicas,
-                retentionMs: null);
-            withParts = Ksql.Linq.Query.Builders.Utilities.WithClauseUtils.BuildWithParts(
-                kafkaTopic: topicName,
-                hasKey: hasKey,
-                valueSchemaFullName: schema.ValueSchemaFullName,
-                timestampColumn: null,
                 partitions: partitions,
                 replicas: replicas,
                 retentionMs: null);
@@ -102,7 +98,9 @@ internal class DDLQueryGenerator : GeneratorBase, IDDLQueryGenerator
             var columns = GenerateColumnDefinitions(schema, isStream: false);
             var tableName = SanitizeName(schema.TopicName);
             var topicName = schema.TopicName;
-            var hasKey = schema.Columns.Any(c => c.IsKey);
+            var keyColumns = schema.Columns.Where(c => c.IsKey).ToList();
+            var hasKey = keyColumns.Count > 0;
+            var isCompositeKey = keyColumns.Count > 1;
             var partitions = schema.Partitions;
             var replicas = schema.Replicas;
 
@@ -110,7 +108,7 @@ internal class DDLQueryGenerator : GeneratorBase, IDDLQueryGenerator
             // TABLE は通常主キーを持つが、念のためキー定義がある場合のみ KEY_FORMAT を付与
             if (hasKey)
             {
-                withParts.Add("KEY_FORMAT='AVRO'");
+                withParts.Add($"KEY_FORMAT='{(isCompositeKey ? "AVRO" : "KAFKA")}'");
             }
             withParts.Add("VALUE_FORMAT='AVRO'");
             if (!string.IsNullOrWhiteSpace(schema.ValueSchemaFullName))
@@ -427,10 +425,6 @@ internal class DDLQueryGenerator : GeneratorBase, IDDLQueryGenerator
         {
             if (result.TimeKey == null)
                 throw new InvalidOperationException("Time key is required");
-            if (string.IsNullOrEmpty(result.BucketColumnName))
-                throw new InvalidOperationException("WindowStart() projection required for windowed queries");
-            if (result.WindowStartCallCount != 1)
-                throw new InvalidOperationException("Windowed query requires exactly one WindowStart() in projection.");
         }
         WindowValidator.Validate(result);
         return result;

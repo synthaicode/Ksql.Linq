@@ -38,7 +38,7 @@ internal class SchemaRegistryMetaProvider
         try
         {
             var keySchema = client.GetLatestSchemaAsync(keySubject).GetAwaiter().GetResult().SchemaString;
-            keyMeta = ParseSchema(keySchema);
+            keyMeta = ParseSchema(keySchema, allowPrimitive: true);
         }
         catch (SchemaRegistryException e) when (e.ErrorCode == 40401)
         {
@@ -46,14 +46,21 @@ internal class SchemaRegistryMetaProvider
         }
 
         var valueSchema = client.GetLatestSchemaAsync(valueSubject).GetAwaiter().GetResult().SchemaString;
-        var valueMeta = ParseSchema(valueSchema);
+        var valueMeta = ParseSchema(valueSchema, allowPrimitive: false);
         return (keyMeta, valueMeta);
     }
 
-    private static PropertyMeta[] ParseSchema(string avroSchema)
+    private static PropertyMeta[] ParseSchema(string avroSchema, bool allowPrimitive)
     {
-        var schema = Avro.Schema.Parse(avroSchema) as RecordSchema
-            ?? throw new InvalidOperationException("Expected record schema");
+        var schema = Avro.Schema.Parse(avroSchema) as RecordSchema;
+
+        if (schema == null)
+        {
+            if (allowPrimitive)
+                return Array.Empty<PropertyMeta>();
+
+            throw new InvalidOperationException("Expected record schema");
+        }
 
         var metas = new List<PropertyMeta>();
         foreach (var field in schema.Fields)
