@@ -9,6 +9,7 @@ using Ksql.Linq.Core.Modeling;
 using Microsoft.Extensions.Logging;
 using PhysicalTestEnv;
 using Xunit;
+using Ksql.Linq.Runtime;
 
 namespace Ksql.Linq.Tests.Integration;
 
@@ -70,15 +71,17 @@ internal sealed class TestContext : KsqlContext, IDesignTimeKsqlContextFactory
     });
 
     private bool _designTime;
+    private readonly bool _includeComposite;
 
-    public TestContext() : this(true)
+    public TestContext() : this(true, true)
     {
     }
 
-    public TestContext(bool designTime = true)
+    public TestContext(bool designTime = true, bool includeComposite = true)
         : base(BuildOptions(designTime), _lf)
     {
         _designTime = designTime;
+        _includeComposite = includeComposite;
     }
 
     public EventSet<Transaction> Transactions { get; set; } = null!;
@@ -104,19 +107,22 @@ internal sealed class TestContext : KsqlContext, IDesignTimeKsqlContextFactory
                     MaxAmount = g.Max(x => x.Amount)
                 }));
 
-        modelBuilder.Entity<CompositeUserStat>()
-            .ToQuery(q => q.From<CompositeTransaction>()
-                .Hopping(t => t.TransactionTime, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(1))
-                .GroupBy(t => new { t.Region, t.UserId })
-                .Select(g => new CompositeUserStat
-                {
-                    Region = g.Key.Region,
-                    UserId = g.Key.UserId,
-                    TransactionTime = g.Max(x => x.TransactionTime),
-                    TransactionCount = g.Count(),
-                    TotalAmount = g.Sum(x => x.Amount),
-                    MaxAmount = g.Max(x => x.Amount)
-                }));
+        if (_includeComposite)
+        {
+            modelBuilder.Entity<CompositeUserStat>()
+                .ToQuery(q => q.From<CompositeTransaction>()
+                    .Hopping(t => t.TransactionTime, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(1))
+                    .GroupBy(t => new { t.Region, t.UserId })
+                    .Select(g => new CompositeUserStat
+                    {
+                        Region = g.Key.Region,
+                        UserId = g.Key.UserId,
+                        TransactionTime = g.Max(x => x.TransactionTime),
+                        TransactionCount = g.Count(),
+                        TotalAmount = g.Sum(x => x.Amount),
+                        MaxAmount = g.Max(x => x.Amount)
+                    }));
+        }
     }
 
     // IDesignTimeKsqlContextFactory implementation for CLI script generation
@@ -149,7 +155,7 @@ public class HoppingPhysicalTests
         });
         await EnsureKafkaTopicAsync("transactions", partitions: 1, replicationFactor: 1);
 
-        await using var ctx = new TestContext(designTime: false);
+        await using var ctx = new TestContext(designTime: false, includeComposite: false);
         await ctx.StartAsync();
 
         var baseTime = DateTime.UtcNow;
@@ -169,6 +175,26 @@ public class HoppingPhysicalTests
             Currency = "EUR",
             TransactionTime = baseTime.AddMinutes(1)
         });
+
+        var rows = new System.Collections.Generic.List<UserTransactionStat>();
+        for (int i = 0; i < 10; i++)
+        {
+            rows = (await ctx.ReadHoppingAsync<UserTransactionStat>(
+                key: new { UserId = "user_add" },
+                from: baseTime.AddMinutes(-1),
+                to: baseTime.AddMinutes(10),
+                limit: 10,
+                timeout: TimeSpan.FromSeconds(5))).ToList();
+            if (rows.Count > 0) break;
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+        foreach (var r in rows)
+        {
+            Console.WriteLine(
+                $"row: UserId={r.UserId}, WindowStart={r.WindowStart:o}, WindowEnd={r.WindowEnd:o}, " +
+                $"Count={r.TransactionCount}, Total={r.TotalAmount}, Max={r.MaxAmount}");
+        }
+        Assert.NotEmpty(rows);
     }
 
     [Fact]
