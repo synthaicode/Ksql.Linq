@@ -53,15 +53,13 @@ class ProducerProgram
         {
             // Automatically register schemas if they don't exist
             AutoRegisterSchemas = true,
-            // Use topic name strategy for subject naming
-            SubjectNameStrategy = SubjectNameStrategy.TopicRecord
+            // Use Topic strategy: creates subjects named {topic}-key and {topic}-value
+            // This matches the manual registration: transactions-key, transactions-value
+            SubjectNameStrategy = SubjectNameStrategy.Topic
         };
 
         using var producer = new ProducerBuilder<string, TransactionAvro>(producerConfig)
-            .SetKeySerializer(new AvroSerializer<string>(schemaRegistry, new AvroSerializerConfig
-            {
-                AutoRegisterSchemas = true
-            }))
+            .SetKeySerializer(new AvroSerializer<string>(schemaRegistry, avroSerializerConfig))
             .SetValueSerializer(new AvroSerializer<TransactionAvro>(schemaRegistry, avroSerializerConfig))
             .SetErrorHandler((_, e) => Console.WriteLine($"Error: {e.Reason}"))
             .Build();

@@ -75,7 +75,7 @@ curl http://localhost:18081/subjects/transactions-value/versions
 
 **Subject Naming Strategy:**
 
-The producer uses `SubjectNameStrategy.TopicRecord` which creates subjects named `{topic}-{recordName}`. For KSQL compatibility, we register with the exact subject names KSQL expects.
+The producer uses `SubjectNameStrategy.Topic` which creates subjects named `{topic}-key` and `{topic}-value`. This is the most common and KSQL-compatible approach, matching the manual registration above (`transactions-key`, `transactions-value`).
 
 ### 3. Create KSQL Stream and Table
 
@@ -299,8 +299,9 @@ var avroSerializerConfig = new AvroSerializerConfig
 {
     // Automatically register schemas if they don't exist
     AutoRegisterSchemas = true,
-    // Use topic name strategy for subject naming
-    SubjectNameStrategy = SubjectNameStrategy.TopicRecord
+    // Use Topic strategy: creates subjects named {topic}-key and {topic}-value
+    // This matches the manual registration: transactions-key, transactions-value
+    SubjectNameStrategy = SubjectNameStrategy.Topic
 };
 ```
 
