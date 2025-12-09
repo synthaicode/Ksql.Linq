@@ -91,6 +91,42 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         throw new NotSupportedException("Legacy Tumbling overload is not supported in this phase.");
     }
 
+    public KsqlQueryable<T1> Hopping(
+        Expression<Func<T1, DateTime>> time,
+        HoppingWindows windows,
+        int baseUnitSeconds = 10,
+        TimeSpan? grace = null,
+        bool continuation = false)
+    {
+        _model.Extras["HasHoppingWindow"] = true;
+        _model.Extras["HoppingSize"] = windows.Size;
+        _model.Extras["HoppingAdvanceBy"] = windows.AdvanceBy;
+        _model.Extras["HoppingUnit"] = windows.Unit;
+        _model.Continuation = continuation;
+        _model.Extras["continuation"] = continuation;
+        if (time.Body is MemberExpression me)
+            _model.TimeKey = me.Member.Name;
+        else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+            _model.TimeKey = me2.Member.Name;
+
+        _model.Windows.Add($"{windows.Size}{GetUnitShorthand(windows.Unit)}");
+        _model.BaseUnitSeconds = baseUnitSeconds;
+        if (grace.HasValue)
+            _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
+        _model.NormalizeWindowsInPlace();
+        return this;
+    }
+
+    private static string GetUnitShorthand(string unit) => unit.ToUpperInvariant() switch
+    {
+        "SECONDS" => "s",
+        "MINUTES" => "m",
+        "HOURS" => "h",
+        "DAYS" => "d",
+        "MONTHS" => "mo",
+        _ => "m"
+    };
+
     // Filtering raw is upstream's responsibility. The DSL references an already-filtered stream
     // (e.g., trade_raw_filtered)
     public IScheduledScope<T1> TimeFrame<TSchedule>(

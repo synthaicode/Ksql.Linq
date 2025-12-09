@@ -44,7 +44,7 @@ internal static class KsqlCreateWindowedStatementBuilder
         {
             baseSql = OverrideFrom(baseSql, inputOverride);
         }
-        var window = FormatWindow(timeframe);
+        var window = FormatWindow(timeframe, model);
         // Optional GRACE insertion using simple heuristic: if model has AdditionalSettings[graceSeconds] on adapted entity, caller should pre-embed.
         var sql = InjectWindowAfterFrom(baseSql, window);
         // 注入オフ: WINDOWSTART 列は値側に追加しない（Window開始時刻は windowed key から復元する）
@@ -64,9 +64,25 @@ internal static class KsqlCreateWindowedStatementBuilder
         return result;
     }
 
-    private static string FormatWindow(string timeframe)
+    private static string FormatWindow(string timeframe, KsqlQueryModel model)
     {
-        // timeframe like: 1m, 5m, 1h, 1d, 7d, 1wk, 1mo
+        // Check if this is a hopping window
+        if (model.Extras.ContainsKey("HasHoppingWindow") && model.Extras["HasHoppingWindow"] is true)
+        {
+            var size = model.Extras.ContainsKey("HoppingSize") ? model.Extras["HoppingSize"] : 5;
+            var advanceBy = model.Extras.ContainsKey("HoppingAdvanceBy") ? model.Extras["HoppingAdvanceBy"] : 1;
+            var unit = model.Extras.ContainsKey("HoppingUnit") ? model.Extras["HoppingUnit"]?.ToString() ?? "MINUTES" : "MINUTES";
+
+            var graceClause = string.Empty;
+            if (model.GraceSeconds.HasValue && model.GraceSeconds.Value > 0)
+            {
+                graceClause = $", GRACE PERIOD {model.GraceSeconds.Value} SECONDS";
+            }
+
+            return $"WINDOW HOPPING (SIZE {size} {unit}, ADVANCE BY {advanceBy} {unit}{graceClause})";
+        }
+
+        // timeframe like: 1m, 5m, 1h, 1d, 7d, 1wk, 1mo (Tumbling)
         if (timeframe.EndsWith("wk", StringComparison.OrdinalIgnoreCase))
         {
             if (int.TryParse(timeframe[..^2], out var w))

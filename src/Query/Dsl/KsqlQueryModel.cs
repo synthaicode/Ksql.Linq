@@ -96,7 +96,9 @@ public class KsqlQueryModel
 
     public bool HasGroupBy() => GroupByExpression != null;
 
-    public bool HasTumbling() => Windows.Count > 0;
+    public bool HasTumbling() => Windows.Count > 0 && Extras.ContainsKey("HasTumblingWindow");
+
+    public bool HasHopping() => Extras.ContainsKey("HasHoppingWindow") && Extras["HasHoppingWindow"] is true;
 
     public bool HasAggregates()
     {
@@ -106,7 +108,7 @@ public class KsqlQueryModel
         return visitor.HasAggregates;
     }
 
-    public bool IsAggregateQuery() => HasGroupBy() || HasTumbling() || HasAggregates();
+    public bool IsAggregateQuery() => HasGroupBy() || HasTumbling() || HasHopping() || HasAggregates();
 
     public StreamTableType DetermineType() => IsAggregateQuery() ? StreamTableType.Table : StreamTableType.Stream;
 
