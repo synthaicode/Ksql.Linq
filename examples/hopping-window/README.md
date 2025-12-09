@@ -105,7 +105,23 @@ GROUP BY user_id
 EMIT CHANGES;
 ```
 
-### 4. Insert Sample Data
+### 4. Run the Producer (Option A)
+
+Use the C# producer to generate continuous test data:
+
+```bash
+cd examples/hopping-window
+dotnet run --project HoppingWindowProducer.csproj
+```
+
+The producer will:
+- Generate random transactions for users (user_A, user_B, user_C, user_D, user_E)
+- Send them to the `transactions` topic
+- Continue until you press Ctrl+C
+
+### 4. Insert Sample Data Manually (Option B)
+
+Alternatively, you can insert data manually via KSQL CLI:
 
 ```sql
 INSERT INTO transactions_stream (transaction_id, user_id, amount, currency, transaction_time)
@@ -120,24 +136,68 @@ INSERT INTO transactions_stream (transaction_id, user_id, amount, currency, tran
     VALUES ('txn_005', 'user_A', 150.0, 'USD', UNIX_TIMESTAMP());
 ```
 
-### 5. Query Results
+### 5. Run the Consumer
 
-```sql
-SELECT * FROM user_transaction_stats EMIT CHANGES;
-```
-
-## Running the Example
-
-Run the C# example to see how Ksql.Linq generates the KSQL queries:
+In a new terminal, run the consumer to see aggregated results:
 
 ```bash
-dotnet run
+cd examples/hopping-window
+dotnet run --project HoppingWindowConsumer.csproj
 ```
 
-The example will:
-1. Create a hopping window query using the Ksql.Linq fluent API
-2. Generate the corresponding KSQL CREATE TABLE statement
-3. Display the complete KSQL setup
+The consumer will:
+- Subscribe to the `user_transaction_stats` topic
+- Display hopping window aggregations in real-time
+- Execute pull queries to demonstrate direct table queries
+- Continue until you press Ctrl+C
+
+Example output:
+```
+[12:34:56.789] User: user_A, Window: 12:30:00 - 12:35:00, Count: 3, Total: $325.25, Avg: $108.42, Min: $75.25, Max: $150.00, Currencies: [USD]
+[12:34:57.123] User: user_B, Window: 12:30:00 - 12:35:00, Count: 1, Total: $250.50, Avg: $250.50, Min: $250.50, Max: $250.50, Currencies: [EUR]
+```
+
+### 6. Query Results via KSQL CLI
+
+You can also query results directly in KSQL:
+
+```sql
+-- Stream query (push query)
+SELECT * FROM user_transaction_stats EMIT CHANGES;
+
+-- Pull query for a specific user
+SELECT * FROM user_transaction_stats WHERE user_id = 'user_A';
+```
+
+## Project Structure
+
+This example includes three projects:
+
+1. **HoppingWindowExample.csproj**: Demonstrates KSQL query generation with Ksql.Linq
+   ```bash
+   dotnet run --project HoppingWindowExample.csproj
+   ```
+
+2. **HoppingWindowProducer.csproj**: Generates and sends test transaction data
+   ```bash
+   dotnet run --project HoppingWindowProducer.csproj
+   ```
+
+3. **HoppingWindowConsumer.csproj**: Consumes and displays aggregated window results
+   ```bash
+   dotnet run --project HoppingWindowConsumer.csproj
+   ```
+
+## Complete Workflow
+
+For a full end-to-end demo:
+
+1. Start infrastructure: `docker-compose up -d`
+2. Register schemas (see step 2 above)
+3. Create KSQL stream and table (see step 3 above)
+4. Terminal 1: Run the **Producer** to generate data
+5. Terminal 2: Run the **Consumer** to see real-time aggregations
+6. Optional: Run the **Example** to see KSQL query generation
 
 ## Key Concepts
 
@@ -189,6 +249,54 @@ WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTE, GRACE PERIOD 3 SECONDS)
 ## Grace Period
 
 The grace period (3 seconds in this example) allows late-arriving events to be included in their proper windows, handling out-of-order data.
+
+## Consumer API Usage
+
+### Real-time Stream Consumption (Push Query)
+
+```csharp
+await using var ctx = new HoppingWindowConsumerContext(config, loggerFactory);
+
+// Subscribe to hopping window aggregations
+await ctx.Set<UserTransactionStatsConsumer>()
+    .ForEachAsync((stats, headers, meta) =>
+    {
+        Console.WriteLine($"User: {stats.UserId}, Count: {stats.TransactionCount}");
+        return Task.CompletedTask;
+    },
+    cancellationToken: cancellationToken);
+```
+
+### Pull Queries (Point Lookups)
+
+```csharp
+// Query latest window for a specific user
+var sql = @"
+    SELECT user_id, transaction_count, total_amount
+    FROM user_transaction_stats
+    WHERE user_id = 'user_A'
+    ORDER BY WINDOWSTART DESC
+    LIMIT 1;";
+
+var rows = await ctx.QueryRowsAsync(sql, TimeSpan.FromSeconds(5));
+```
+
+### Consumer Entity Definition
+
+```csharp
+[KsqlTopic("user_transaction_stats")]
+public class UserTransactionStatsConsumer
+{
+    [KsqlKey(0)]
+    public string UserId { get; set; }
+
+    public DateTime WindowStart { get; set; }
+    public DateTime WindowEnd { get; set; }
+    public long TransactionCount { get; set; }
+    public double TotalAmount { get; set; }
+    // ... other properties
+}
+```
 
 ## Cleanup
 
