@@ -24,36 +24,50 @@ class ConsumerProgram
         Console.WriteLine("This consumer reads aggregated transaction statistics from the hopping window table.");
         Console.WriteLine("Press Ctrl+C to stop.\n");
 
-        var cfg = new ConfigurationBuilder()
-            .AddJsonFile("appsettings-consumer.json")
-            .Build();
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (sender, e) =>
+        {
+            e.Cancel = true;
+            cts.Cancel();
+            Console.WriteLine("\nShutting down gracefully...");
+        };
 
-        using var lf = LoggerFactory.Create(b => b
-            .SetMinimumLevel(LogLevel.Information)
-            .AddConsole());
-
-        await using var ctx = new HoppingWindowConsumerContext(cfg, lf);
-
-        // Run for 5 minutes or until cancelled
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-
-        Console.WriteLine("Waiting for entity to be ready...");
         try
         {
-            await ctx.WaitForEntityReadyAsync<UserTransactionStatsConsumer>(
-                TimeSpan.FromSeconds(30),
-                cts.Token);
-            Console.WriteLine("Entity is ready. Starting to consume...\n");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Warning: Could not verify entity readiness: {ex.Message}");
-            Console.WriteLine("Proceeding with consumption anyway...\n");
-        }
+            var cfg = new ConfigurationBuilder()
+                .AddJsonFile("appsettings-consumer.json", optional: false, reloadOnChange: false)
+                .Build();
 
-        // Start consuming from the hopping window table
-        var consumeTask = Task.Run(async () =>
-        {
+            using var lf = LoggerFactory.Create(b => b
+                .SetMinimumLevel(LogLevel.Information)
+                .AddConsole());
+
+            await using var ctx = new HoppingWindowConsumerContext(cfg, lf);
+
+            Console.WriteLine("Waiting for entity to be ready...");
+            try
+            {
+                await ctx.WaitForEntityReadyAsync<UserTransactionStatsConsumer>(
+                    TimeSpan.FromSeconds(30),
+                    cts.Token);
+                Console.WriteLine("Entity is ready. Starting to consume...\n");
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Cancelled during entity ready check.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Could not verify entity readiness: {ex.Message}");
+                Console.WriteLine("Proceeding with consumption anyway...\n");
+            }
+
+            // Demonstrate pull queries first
+            await DemonstratePullQueries(ctx, cts.Token);
+
+            // Start consuming from the hopping window table
+            Console.WriteLine("\n--- Starting real-time consumption ---\n");
             try
             {
                 await ctx.Set<UserTransactionStatsConsumer>()
@@ -66,27 +80,34 @@ class ConsumerProgram
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("\nConsumer stopped.");
+                Console.WriteLine("\nConsumer stopped by user.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"\nError during consumption: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
-        }, cts.Token);
-
-        // Demonstrate pull queries after a short delay
-        await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
-
-        await DemonstratePullQueries(ctx, cts.Token);
-
-        // Wait for consumption to complete
-        await consumeTask;
-
-        Console.WriteLine("\n=== Consumer finished ===");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\nFatal error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            Environment.ExitCode = 1;
+        }
+        finally
+        {
+            cts.Dispose();
+            Console.WriteLine("\n=== Consumer finished ===");
+        }
     }
 
     static async Task DemonstratePullQueries(HoppingWindowConsumerContext ctx, CancellationToken ct)
     {
+        if (ct.IsCancellationRequested)
+        {
+            return;
+        }
+
         Console.WriteLine("\n--- Pull Query Examples ---");
 
         try
@@ -153,6 +174,10 @@ class ConsumerProgram
             var countSql = $"SELECT COUNT(DISTINCT user_id) FROM {table};";
             var count = await ctx.QueryCountAsync(countSql, TimeSpan.FromSeconds(5), ct);
             Console.WriteLine($"\nTotal distinct users in hopping window table: {count}");
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("\nPull query examples cancelled.");
         }
         catch (Exception ex)
         {

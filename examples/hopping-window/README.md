@@ -41,21 +41,41 @@ Use the provided Docker Compose file:
 docker-compose up -d
 ```
 
-### 2. Register Avro Schemas
+### 2. Register Avro Schemas with Schema Registry
 
-Register the key and value schemas with Schema Registry:
+**Why Schema Registry?**
+
+Schema Registry is essential for:
+- **Schema Evolution**: Manage schema changes over time safely
+- **Data Validation**: Ensure data conforms to expected structure
+- **Compatibility**: Maintain backward/forward compatibility
+- **Efficiency**: Reduce payload size by storing schemas centrally
+
+The producer uses **AutoRegisterSchemas = true**, so schemas are automatically registered on first use. However, for KSQL to work properly, we need to register them manually first with specific subject names.
+
+**Register schemas:**
 
 ```bash
-# Register key schema
+# Register key schema (simple string type)
 curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
   --data '{"schema": "{\"type\":\"string\",\"name\":\"TransactionKey\"}"}' \
   http://localhost:18081/subjects/transactions-key/versions
 
-# Register value schema
+# Verify key schema registration
+curl http://localhost:18081/subjects/transactions-key/versions
+
+# Register value schema (complex record type)
 curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
   --data '{"schema": "{\"type\":\"record\",\"name\":\"Transaction\",\"namespace\":\"com.example.transactions\",\"fields\":[{\"name\":\"transaction_id\",\"type\":\"string\"},{\"name\":\"user_id\",\"type\":\"string\"},{\"name\":\"amount\",\"type\":\"double\"},{\"name\":\"currency\",\"type\":\"string\"},{\"name\":\"transaction_time\",\"type\":\"long\"}]}"}' \
   http://localhost:18081/subjects/transactions-value/versions
+
+# Verify value schema registration
+curl http://localhost:18081/subjects/transactions-value/versions
 ```
+
+**Subject Naming Strategy:**
+
+The producer uses `SubjectNameStrategy.TopicRecord` which creates subjects named `{topic}-{recordName}`. For KSQL compatibility, we register with the exact subject names KSQL expects.
 
 ### 3. Create KSQL Stream and Table
 
@@ -250,6 +270,46 @@ WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 1 MINUTE, GRACE PERIOD 3 SECONDS)
 
 The grace period (3 seconds in this example) allows late-arriving events to be included in their proper windows, handling out-of-order data.
 
+## Producer Configuration Details
+
+The producer is configured with best practices for production use:
+
+```csharp
+var producerConfig = new ProducerConfig
+{
+    BootstrapServers = "localhost:9093",
+    ClientId = "transaction-producer",
+    // Enable idempotence for exactly-once semantics
+    EnableIdempotence = true,
+    // Retry settings
+    MessageSendMaxRetries = 3,
+    RetryBackoffMs = 1000,
+    // Compression
+    CompressionType = CompressionType.Snappy
+};
+
+var schemaRegistryConfig = new SchemaRegistryConfig
+{
+    Url = "http://localhost:18081",
+    RequestTimeoutMs = 30000,
+    MaxCachedSchemas = 100
+};
+
+var avroSerializerConfig = new AvroSerializerConfig
+{
+    // Automatically register schemas if they don't exist
+    AutoRegisterSchemas = true,
+    // Use topic name strategy for subject naming
+    SubjectNameStrategy = SubjectNameStrategy.TopicRecord
+};
+```
+
+**Key Configuration Points:**
+- **EnableIdempotence**: Prevents duplicate messages
+- **AutoRegisterSchemas**: Automatically registers schemas on first use
+- **SubjectNameStrategy**: Controls how schema subjects are named
+- **Graceful Shutdown**: Producer flushes remaining messages on Ctrl+C
+
 ## Consumer API Usage
 
 ### Real-time Stream Consumption (Push Query)
@@ -298,6 +358,100 @@ public class UserTransactionStatsConsumer
 }
 ```
 
+## Error Handling and Async Best Practices
+
+### Producer Error Handling
+
+The producer implements robust error handling:
+
+```csharp
+try
+{
+    var result = await producer.ProduceAsync(
+        "transactions",
+        new Message<string, TransactionAvro> { ... },
+        cancellationToken);  // Pass CancellationToken
+}
+catch (ProduceException<string, TransactionAvro> ex)
+{
+    // Handle Kafka produce errors
+    Console.WriteLine($"Delivery failed: {ex.Error.Reason}");
+}
+catch (OperationCanceledException)
+{
+    // Handle graceful shutdown
+    break;
+}
+finally
+{
+    // Always flush before shutdown
+    producer.Flush(TimeSpan.FromSeconds(10));
+}
+```
+
+### Consumer Error Handling
+
+The consumer handles cancellation and errors properly:
+
+```csharp
+using var cts = new CancellationTokenSource();
+Console.CancelKeyPress += (sender, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+
+try
+{
+    await ctx.Set<UserTransactionStatsConsumer>()
+        .ForEachAsync((stats, headers, meta) => { ... }, cts.Token);
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Stopped gracefully");
+}
+```
+
+### Key Async Patterns
+
+1. **Always pass CancellationToken**: Enables graceful shutdown
+2. **Flush before exit**: Ensures all messages are sent
+3. **Handle ProduceException**: Kafka-specific errors
+4. **Use using statements**: Proper resource disposal
+5. **Catch OperationCanceledException**: Expected during shutdown
+
+## Troubleshooting
+
+### Schema Registry Issues
+
+**Problem**: Producer fails with "Subject not found"
+**Solution**: Ensure schemas are registered before starting producer:
+```bash
+curl http://localhost:18081/subjects/transactions-key/versions
+```
+
+**Problem**: "Failed to serialize" errors
+**Solution**: Check that Avro schema matches C# class:
+- Field names must match exactly
+- Field types must be compatible (double → double, string → string, long → long)
+
+### Connection Issues
+
+**Problem**: "Connection refused" to Kafka
+**Solution**: Verify Docker containers are running:
+```bash
+docker-compose ps
+docker-compose logs kafka
+```
+
+**Problem**: "Timeout" waiting for entity
+**Solution**: Check KSQL table exists:
+```bash
+docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+SHOW TABLES;
+DESCRIBE user_transaction_stats;
+```
+
 ## Cleanup
 
 ```bash
@@ -308,3 +462,5 @@ docker-compose down -v
 
 - [KSQL Windowing Documentation](https://docs.ksqldb.io/en/latest/concepts/time-and-windows-in-ksqldb-queries/)
 - [Hopping Window Use Cases](https://kafka.apache.org/documentation/streams/developer-guide/dsl-api.html#hopping-time-windows)
+- [Confluent Schema Registry Documentation](https://docs.confluent.io/platform/current/schema-registry/index.html)
+- [Kafka Producer Best Practices](https://docs.confluent.io/kafka-clients/dotnet/current/overview.html#producer)
