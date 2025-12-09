@@ -53,13 +53,13 @@ class ProducerProgram
         {
             // Automatically register schemas if they don't exist
             AutoRegisterSchemas = true,
-            // Use Topic strategy: creates subjects named {topic}-key and {topic}-value
-            // This matches the manual registration: transactions-key, transactions-value
+            // Use Topic strategy: creates subjects named {topic}-value
+            // Key is plain string, so no Avro schema needed for key
             SubjectNameStrategy = SubjectNameStrategy.Topic
         };
 
         using var producer = new ProducerBuilder<string, TransactionAvro>(producerConfig)
-            .SetKeySerializer(new AvroSerializer<string>(schemaRegistry, avroSerializerConfig))
+            .SetKeySerializer(Serializers.Utf8)  // Key as plain string (KAFKA format)
             .SetValueSerializer(new AvroSerializer<TransactionAvro>(schemaRegistry, avroSerializerConfig))
             .SetErrorHandler((_, e) => Console.WriteLine($"Error: {e.Reason}"))
             .Build();

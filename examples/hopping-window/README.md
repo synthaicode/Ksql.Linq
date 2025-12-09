@@ -56,15 +56,8 @@ The producer uses **AutoRegisterSchemas = true**, so schemas are automatically r
 **Register schemas:**
 
 ```bash
-# Register key schema (simple string type)
-curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-  --data '{"schema": "{\"type\":\"string\",\"name\":\"TransactionKey\"}"}' \
-  http://localhost:18081/subjects/transactions-key/versions
-
-# Verify key schema registration
-curl http://localhost:18081/subjects/transactions-key/versions
-
 # Register value schema (complex record type)
+# Note: Key uses KAFKA (String) format, so no Avro schema needed for key
 curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
   --data '{"schema": "{\"type\":\"record\",\"name\":\"Transaction\",\"namespace\":\"com.example.transactions\",\"fields\":[{\"name\":\"transaction_id\",\"type\":\"string\"},{\"name\":\"user_id\",\"type\":\"string\"},{\"name\":\"amount\",\"type\":\"double\"},{\"name\":\"currency\",\"type\":\"string\"},{\"name\":\"transaction_time\",\"type\":\"long\"}]}"}' \
   http://localhost:18081/subjects/transactions-value/versions
@@ -73,9 +66,13 @@ curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
 curl http://localhost:18081/subjects/transactions-value/versions
 ```
 
-**Subject Naming Strategy:**
+**Key Format Choice:**
 
-The producer uses `SubjectNameStrategy.Topic` which creates subjects named `{topic}-key` and `{topic}-value`. This is the most common and KSQL-compatible approach, matching the manual registration above (`transactions-key`, `transactions-value`).
+We use `KEY_FORMAT='KAFKA'` (String) instead of AVRO for the key because:
+- Kafka keys are typically simple strings (transaction IDs, user IDs, etc.)
+- AVRO keys require complex record schemas and can cause KSQL compatibility issues
+- String keys are simpler, more performant, and widely supported
+- Only the value payload uses AVRO for schema evolution benefits
 
 ### 3. Create KSQL Stream and Table
 
@@ -89,13 +86,18 @@ Execute the following KSQL statements:
 
 ```sql
 -- Create stream
-CREATE STREAM transactions_stream
+CREATE STREAM transactions_stream (
+    transaction_id VARCHAR KEY,
+    transaction_id_value VARCHAR,
+    user_id VARCHAR,
+    amount DOUBLE,
+    currency VARCHAR,
+    transaction_time BIGINT
+)
 WITH (
     KAFKA_TOPIC='transactions',
-    KEY_FORMAT='AVRO',
+    KEY_FORMAT='KAFKA',
     VALUE_FORMAT='AVRO',
-    KEY_SCHEMA_FULL_NAME='TransactionKey',
-    VALUE_SCHEMA_FULL_NAME='com.example.transactions.Transaction',
     PARTITIONS=1,
     REPLICAS=1
 );
@@ -299,16 +301,24 @@ var avroSerializerConfig = new AvroSerializerConfig
 {
     // Automatically register schemas if they don't exist
     AutoRegisterSchemas = true,
-    // Use Topic strategy: creates subjects named {topic}-key and {topic}-value
-    // This matches the manual registration: transactions-key, transactions-value
+    // Use Topic strategy: creates subjects named {topic}-value
+    // Key uses plain string (KAFKA format), so only value needs Avro
     SubjectNameStrategy = SubjectNameStrategy.Topic
 };
+
+// Build producer with String key and Avro value
+using var producer = new ProducerBuilder<string, TransactionAvro>(producerConfig)
+    .SetKeySerializer(Serializers.Utf8)  // Plain string for key
+    .SetValueSerializer(new AvroSerializer<TransactionAvro>(schemaRegistry, avroSerializerConfig))
+    .SetErrorHandler((_, e) => Console.WriteLine($"Error: {e.Reason}"))
+    .Build();
 ```
 
 **Key Configuration Points:**
+- **KEY_FORMAT='KAFKA'**: Uses plain string for keys (transaction IDs)
+- **VALUE_FORMAT='AVRO'**: Uses Avro for values with schema evolution
 - **EnableIdempotence**: Prevents duplicate messages
-- **AutoRegisterSchemas**: Automatically registers schemas on first use
-- **SubjectNameStrategy**: Controls how schema subjects are named
+- **AutoRegisterSchemas**: Automatically registers value schema (no key schema needed)
 - **Graceful Shutdown**: Producer flushes remaining messages on Ctrl+C
 
 ## Consumer API Usage
@@ -426,15 +436,19 @@ catch (OperationCanceledException)
 ### Schema Registry Issues
 
 **Problem**: Producer fails with "Subject not found"
-**Solution**: Ensure schemas are registered before starting producer:
+**Solution**: Ensure value schema is registered before starting producer:
 ```bash
-curl http://localhost:18081/subjects/transactions-key/versions
+curl http://localhost:18081/subjects/transactions-value/versions
 ```
+Note: Key uses KAFKA (String) format, so no key schema registration needed.
 
 **Problem**: "Failed to serialize" errors
 **Solution**: Check that Avro schema matches C# class:
-- Field names must match exactly
+- Field names must match exactly (transaction_id, user_id, amount, currency, transaction_time)
 - Field types must be compatible (double → double, string → string, long → long)
+
+**Problem**: KSQL crashes when creating stream with `KEY_FORMAT='AVRO'`
+**Solution**: Use `KEY_FORMAT='KAFKA'` for simple string keys. Avro keys are complex and rarely needed.
 
 ### Connection Issues
 
