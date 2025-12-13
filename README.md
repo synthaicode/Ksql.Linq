@@ -11,6 +11,7 @@ Ksql.Linq is a C# library that unifies Kafka/ksqlDB and Avro/Schema Registry usa
 - Operate Kafka and ksqlDB through a LINQ-based DSL.
 - Design type-safe schemas with Avro and Schema Registry.
 - Detect Streams/Tables and Pull/Push modes automatically.
+- Windowing support: **Tumbling** and **Hopping** windows (see Wiki for usage and constraints).
 - Support operations with DLQ, retry, and commit helpers.
 - **Self-healing persistent queries:** automatically stabilizes CTAS/CSAS queries
   by retrying, pre-creating internal topics, and recovering from transient errors.
@@ -29,6 +30,11 @@ See practical usage examples in the
 ## 📚 Documentation
 Full guides, design notes, and examples are available in the
 👉 [Ksql.Linq Wiki](https://github.com/synthaicode/Ksql.Linq/wiki).  
+
+### Windowing (Tumbling / Hopping)
+
+- Tumbling (overview/constraints): https://github.com/synthaicode/Ksql.Linq/wiki/Tumbling-Overview
+- Hopping (overview/definition/constraints): https://github.com/synthaicode/Ksql.Linq/wiki/Hopping-Overview
 
 ---
 

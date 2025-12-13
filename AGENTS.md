@@ -40,6 +40,23 @@ OSSプロジェクト AIメンバー／エージェント定義
 - Migration Guide 等の設計ドキュメントは diff_log 追加時に同期更新する。
 - 変更のたびに新規 diff ファイルを作成し、履歴を保全する。
 
+### 影響範囲ガード（L1～L4）の使い方（リファクタ運用）
+- 目的: L1～L4 は「品質ゲート」ではなく、リファクタ時に**影響範囲を見落とさないための表示/運用ガード**として用いる。
+- 運用の基本:
+  - `src/Query/**`（KSQL生成・方言・hub補正・DSL）を触ったら **L3/L4 影響あり** とみなし、最低限 `gate(L3)` と `golden(L4)` を実行する。
+  - `src/Runtime/Hopping*` / `src/Query/Dsl/*Hopping*` を触ったら、上記に加えて **Hopping物理テスト**（Windowsのみ）も実行候補に入れる。
+- 実行コマンド:
+  - L3（gate）: `pwsh -NoLogo -File tests/run-ut.ps1 -Level gate`
+  - L4（golden）: `pwsh -NoLogo -File tests/run-golden.ps1`
+  - 自動判定（変更ファイルから gate+golden を選択）: `pwsh -NoLogo -File tests/run-guard.ps1`
+  - 自動判定 + （任意）Hopping物理テスト: `pwsh -NoLogo -File tests/run-guard.ps1 -Physical`
+- ルール（最小）:
+  - `src/Query/Builders/Functions/**` の変更は外部（ksqlDB）方言に影響し得るため **L4対象**として扱う。
+  - `src/Query/Hub/**` / `src/Query/Builders/Visitors/**` の変更は hub rows 経路（`*_1s_rows`）に影響し得るため **L3+L4対象**として扱う。
+  - “物理で落ちた修正”は、次のどちらかを必ず追加して再発を防ぐ（可能な方）:
+    - L3: SQL構造（禁止/必須ルール）をUTで固定
+    - L4: golden（生成KSQLスナップショット）を更新/追加
+
 ## AIチーム一覧
 - 天城（あまぎ）: 全体進捗管理とタスク調整を担う司令塔。
 - 鳴瀬（なるせ）: C#実装と LINQ→KSQL 変換を担当。

@@ -1,8 +1,10 @@
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Extensions;
 using Ksql.Linq.Events;
 using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Statements;
 using Ksql.Linq.Query.Ddl;
+using Ksql.Linq.Query.Metadata;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
@@ -71,6 +73,11 @@ internal sealed class SchemaRegistrar : ISchemaRegistrar
                 }
 
                 var isTable = model.QueryModel.DetermineType() == StreamTableType.Table;
+                if (model.QueryModel.HasHopping())
+                {
+                    model.EnableCache = false;
+                    ApplyHoppingMetadata(model);
+                }
                 if (isTable)
                 {
                     // TABLE系: CTAS を生成・実行し、実行確認まで（最小安定化）
@@ -82,7 +89,20 @@ internal sealed class SchemaRegistrar : ISchemaRegistrar
                             return srcModel.GetTopicName().ToUpperInvariant();
                         return key;
                     };
-                    var ddl = KsqlCreateStatementBuilder.Build(
+                    if (string.IsNullOrWhiteSpace(model.ValueSchemaFullName))
+                    {
+                        var ns = model.GetOrCreateMetadata().Namespace ?? "ksql_linq_tests_integration";
+                        model.ValueSchemaFullName = $"{ns}.{model.GetTopicName()}_valueAvro";
+                    }
+                    _context.Logger?.LogInformation("ValueSchemaFullName for {Entity}: {Value}", type.Name, model.ValueSchemaFullName);
+                    var ddl = model.QueryModel.HasHopping()
+                        ? KsqlCreateWindowedStatementBuilder.BuildHopping(
+                            model.GetTopicName(),
+                            model.QueryModel!,
+                            model.KeySchemaFullName,
+                            model.ValueSchemaFullName,
+                            resolver)
+                        : KsqlCreateStatementBuilder.Build(
                             model.GetTopicName(),
                             model.QueryModel!,
                             model.KeySchemaFullName,
@@ -219,6 +239,35 @@ internal sealed class SchemaRegistrar : ISchemaRegistrar
             _context.Logger?.LogError(ex, "DDL execution failed after retries.");
             return new Ksql.Linq.KsqlDbResponse(false, ex.Message);
         }
+    }
+
+    private static void ApplyHoppingMetadata(EntityModel model)
+    {
+        var hopping = model.QueryModel?.Hopping;
+        if (hopping == null)
+            return;
+
+        var metadata = model.GetOrCreateMetadata();
+        var timeframeRaw = FormatTimeframeRaw(hopping.Size);
+        metadata = metadata with
+        {
+            Role = "Live",
+            TimeframeRaw = timeframeRaw,
+            GraceSeconds = hopping.Grace.HasValue ? (int?)Math.Ceiling(hopping.Grace.Value.TotalSeconds) : null,
+            TimeKey = model.QueryModel?.TimeKey
+        };
+        model.SetMetadata(metadata);
+    }
+
+    private static string FormatTimeframeRaw(TimeSpan size)
+    {
+        if (size.TotalMinutes >= 1 && size.TotalSeconds % 60 == 0)
+            return $"{(int)size.TotalMinutes}m";
+        if (size.TotalHours >= 1 && size.TotalMinutes % 60 == 0)
+            return $"{(int)size.TotalHours}h";
+        if (size.TotalDays >= 1 && size.TotalHours % 24 == 0)
+            return $"{(int)size.TotalDays}d";
+        return $"{(int)size.TotalSeconds}s";
     }
 
     private static bool IsRetryableKsqlError(string? message)

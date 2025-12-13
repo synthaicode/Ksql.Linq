@@ -11,6 +11,9 @@ public static class SqlAssert
     public static void ContainsNormalized(string actual, string expectedFragment)
         => Assert.Contains(Normalize(expectedFragment), Normalize(actual));
 
+    public static void DoesNotContainNormalized(string actual, string expectedFragment)
+        => Assert.DoesNotContain(Normalize(expectedFragment), Normalize(actual));
+
     public static void StartsWithNormalized(string actual, string expectedPrefix)
         => Assert.StartsWith(Normalize(expectedPrefix), Normalize(actual));
 

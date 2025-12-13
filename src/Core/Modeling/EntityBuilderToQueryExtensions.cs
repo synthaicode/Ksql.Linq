@@ -21,6 +21,7 @@ public static class EntityBuilderToQueryExtensions
         if (model.SourceTypes.Length == 0 || model.SourceTypes.Length > 2)
             throw new NotSupportedException("Only 1 or 2 source types are supported in this phase.");
 
+        ToQueryValidator.ValidateHoppingPipeline(typeof(T), model);
         ToQueryValidator.ValidateSelectMatchesPoco(typeof(T), model);
 
         builder.GetModel().QueryModel = model;

@@ -36,6 +36,7 @@
     <Compile Include="OssSamples/TranslationsTimeBucketTests.cs" />
     <Compile Include="OssSamples/BarTranslationsSmokeTests.cs" />
     <Compile Include="OssSamples/BarTxYearTests.cs" />
+    <Compile Include="OssSamples/HoppingPhysicalTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../tests/Common/CategoryAttribute.cs" Link="CategoryAttribute.cs" />

@@ -1,7 +1,9 @@
 using Ksql.Linq.Configuration;
 using Ksql.Linq.Core.Attributes;
+using Ksql.Linq.Core.Abstractions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -15,10 +17,24 @@ internal static class ToQueryValidator
         if (resultType == null) throw new ArgumentNullException(nameof(resultType));
         if (model == null) throw new ArgumentNullException(nameof(model));
 
+        ValidateHoppingPipeline(resultType, model);
+
+        var isWindowed = typeof(IWindowedRecord).IsAssignableFrom(resultType);
+
+        bool ShouldInclude(PropertyInfo p)
+        {
+            if (Attribute.IsDefined(p, typeof(KsqlIgnoreAttribute), true))
+                return false;
+            if (isWindowed && (string.Equals(p.Name, nameof(IWindowedRecord.WindowStart), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.Name, nameof(IWindowedRecord.WindowEnd), StringComparison.OrdinalIgnoreCase)))
+                return false;
+            return true;
+        }
+
         var entityProps = resultType
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .OrderBy(p => p.MetadataToken)
-            .Where(p => !Attribute.IsDefined(p, typeof(KsqlIgnoreAttribute), true))
+            .Where(ShouldInclude)
             .ToArray();
 
         var entityPropMap = entityProps.ToDictionary(p => p.Name);
@@ -114,4 +130,61 @@ internal static class ToQueryValidator
         }
         return props;
     }
+
+    public static void ValidateHoppingPipeline(Type resultType, KsqlQueryModel model)
+    {
+        if (resultType == null) throw new ArgumentNullException(nameof(resultType));
+        if (model == null) throw new ArgumentNullException(nameof(model));
+        if (!model.HasHopping())
+            return;
+
+        var ops = model.OperationSequence ?? new List<string>();
+        bool HasOp(string op, [NotNullWhen(true)] out int index)
+        {
+            index = ops.IndexOf(op);
+            return index >= 0;
+        }
+
+        var hasJoin = model.JoinCondition != null || model.SourceTypes.Length > 1;
+        if (hasJoin)
+        {
+            if (!HasOp("Join", out var joinIdx))
+                throw new InvalidOperationException("Hopping with join requires Join() before defining the window.");
+            if (!HasOp("Hopping", out var hopIdx))
+                throw new InvalidOperationException("Hopping window is missing for the join query.");
+            if (!HasOp("GroupBy", out var groupIdx) || !HasOp("Select", out var selectIdx))
+                throw new InvalidOperationException("Hopping with join requires GroupBy() followed by Select().");
+
+            if (!(joinIdx < hopIdx && hopIdx < groupIdx && groupIdx < selectIdx))
+                throw new InvalidOperationException("Allowed order: From -> Join -> Hopping -> GroupBy -> Select.");
+
+            if (ops.Count(op => string.Equals(op, "Hopping", StringComparison.OrdinalIgnoreCase)) > 1)
+                throw new InvalidOperationException("Multiple hopping windows are not supported.");
+
+            if (ops.Skip(hopIdx + 1).Any(op => string.Equals(op, "Join", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Join after hopping is not supported.");
+
+            if (model.HasTumbling())
+                throw new NotSupportedException("Window-to-window join is not supported.");
+
+            if (model.SourceTypes.Length != 2)
+                throw new NotSupportedException("Only stream-to-table join is supported for hopping.");
+
+            var leftIsTable = IsTable(model.SourceTypes[0]);
+            var rightIsTable = IsTable(model.SourceTypes[1]);
+            if (leftIsTable || !rightIsTable)
+                throw new NotSupportedException("Only Stream -> Table join is supported for hopping.");
+        }
+        else
+        {
+            // Non-join hopping: still require GroupBy -> Select ordering if provided.
+            if (HasOp("Hopping", out var hopIdx) && HasOp("GroupBy", out var groupIdx) && HasOp("Select", out var selectIdx))
+            {
+                if (!(hopIdx < groupIdx && groupIdx < selectIdx))
+                    throw new InvalidOperationException("Hopping requires GroupBy then Select in order.");
+            }
+        }
+    }
+
+    private static bool IsTable(Type type) => Attribute.IsDefined(type, typeof(KsqlTableAttribute), inherit: true);
 }

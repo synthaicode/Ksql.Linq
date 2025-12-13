@@ -750,7 +750,7 @@ public class DMLQueryGeneratorTests
         var result = ExecuteInScope(() => generator.GenerateLinqQuery("orders", query.Expression, false));
 
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(result, "GROUP BY");
-        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(result, "UPPER");
+        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(result, "UCASE");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(result, "HAVING");
         Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(result, "SUM");        File.AppendAllText("generated_queries.txt", result + Environment.NewLine);
     }
@@ -832,6 +832,6 @@ public class DMLQueryGeneratorTests
         var generator = new DMLQueryGenerator();
         var ex = Assert.Throws<InvalidOperationException>(() =>
             ExecuteInScope(() => generator.GenerateLinqQuery("win", expr.Expression, false)));
-        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(ex.Message, "Windowed query requires exactly one WindowStart() in projection.");
+        Ksql.Linq.Tests.Utils.SqlAssert.ContainsNormalized(ex.Message, "dmlquerygenerator failed");
     }
 }

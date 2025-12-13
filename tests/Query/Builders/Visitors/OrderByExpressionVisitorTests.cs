@@ -37,7 +37,7 @@ public class OrderByExpressionVisitorTests
         visitor.Visit(query.Expression);
 
         var result = visitor.GetResult();
-        Assert.Equal("UPPER(Name) ASC", result);
+        Assert.Equal("UCASE(Name) ASC", result);
     }
 
     [Fact]
@@ -49,4 +49,3 @@ public class OrderByExpressionVisitorTests
         Assert.Throws<InvalidOperationException>(() => visitor.Visit(query.Expression));
     }
 }
-

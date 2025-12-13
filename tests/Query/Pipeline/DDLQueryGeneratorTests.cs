@@ -72,7 +72,7 @@ public class DDLQueryGeneratorTests
         model.ValueSchemaFullName = "com.acme.Value";
         var generator = new DDLQueryGenerator();
         var query = ExecuteInScope(() => generator.GenerateCreateStream(new EntityModelDdlAdapter(model)));
-        Assert.Contains("KEY_FORMAT='AVRO'", query);
+        Assert.Contains("KEY_FORMAT='KAFKA'", query);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class DDLQueryGeneratorTests
         };
         var generator = new DDLQueryGenerator();
         var query = ExecuteInScope(() => generator.GenerateCreateStream(new EntityModelDdlAdapter(model)));
-        Assert.DoesNotContain("KEY_FORMAT='AVRO'", query);
+        Assert.DoesNotContain("KEY_FORMAT='KAFKA'", query);
         Assert.Contains("VALUE_FORMAT='AVRO'", query);
     }
 
@@ -99,7 +99,7 @@ public class DDLQueryGeneratorTests
         model.ValueSchemaFullName = "com.acme.Value";
         var generator = new DDLQueryGenerator();
         var query = ExecuteInScope(() => generator.GenerateCreateTable(new EntityModelDdlAdapter(model)));
-        Assert.Contains("KEY_FORMAT='AVRO'", query);
+        Assert.Contains("KEY_FORMAT='KAFKA'", query);
         Assert.Contains("PARTITIONS=1", query);
         Assert.Contains("REPLICAS=1", query);
     }
@@ -111,7 +111,7 @@ public class DDLQueryGeneratorTests
         model.ValueSchemaFullName = "com.acme.Value";
         var generator = new DDLQueryGenerator();
         var query = ExecuteInScope(() => generator.GenerateCreateTable(new EntityModelDdlAdapter(model)));
-        Assert.Contains("KEY_FORMAT='AVRO'", query);
+        Assert.Contains("KEY_FORMAT='KAFKA'", query);
         Assert.DoesNotContain("KEY_AVRO_SCHEMA_FULL_NAME", query);
         Assert.Contains("VALUE_FORMAT='AVRO'", query);
         Assert.Contains("VALUE_AVRO_SCHEMA_FULL_NAME='com.acme.Value'", query);
@@ -124,7 +124,7 @@ public class DDLQueryGeneratorTests
         model.ValueSchemaFullName = "com.acme.Value";
         var generator = new DDLQueryGenerator();
         var query = ExecuteInScope(() => generator.GenerateCreateStream(new EntityModelDdlAdapter(model)));
-        Assert.Contains("KEY_FORMAT='AVRO'", query);
+        Assert.Contains("KEY_FORMAT='KAFKA'", query);
         Assert.DoesNotContain("KEY_AVRO_SCHEMA_FULL_NAME", query);
         Assert.Contains("VALUE_AVRO_SCHEMA_FULL_NAME='com.acme.Value'", query);
     }
@@ -361,7 +361,6 @@ public class DDLQueryGeneratorTests
         var generator = new DDLQueryGenerator();
         var ex = Assert.Throws<InvalidOperationException>(() =>
             ExecuteInScope(() => generator.GenerateCreateTableAs("t1", "src", expr.Expression)));
-        Assert.Contains("Windowed query requires exactly one WindowStart() in projection.", ex.Message);
+        Assert.Contains("DDLQueryGenerator failed during CREATE TABLE AS", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 }
-

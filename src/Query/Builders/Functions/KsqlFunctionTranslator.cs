@@ -30,6 +30,10 @@ internal static class KsqlFunctionTranslator
         ["COUNT"] = new(["INT", "BIGINT", "DOUBLE", "DECIMAL", "STRING", "BOOLEAN", "DATETIME", "STRUCT"]),
         ["TOPK"] = new(["INT", "BIGINT", "DOUBLE", "DECIMAL", "STRING", "BOOLEAN", "DATETIME"]),
         ["COLLECT_LIST"] = new(["INT", "BIGINT", "DOUBLE", "DECIMAL", "STRING", "BOOLEAN", "DATETIME", "STRUCT"]),
+        // ksqlDB dialect: use LCASE/UCASE (not LOWER/UPPER) for string casing
+        ["LCASE"] = new(["STRING"]),
+        ["UCASE"] = new(["STRING"]),
+        // Backward compatibility (if any old mapping still emits these)
         ["LOWER"] = new(["STRING"]),
         ["UPPER"] = new(["STRING"]),
         ["LEN"] = new(["STRING"])

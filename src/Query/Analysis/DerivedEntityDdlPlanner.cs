@@ -246,8 +246,7 @@ internal static class DerivedEntityDdlPlanner
         for (var i = 0; i < existingValNames.Length; i++)
         {
             var valueName = existingValNames[i];
-            if (string.IsNullOrWhiteSpace(valueName) ||
-                valueName.Equals("BucketStart", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(valueName))
             {
                 continue;
             }
@@ -554,6 +553,8 @@ internal static class DerivedEntityDdlPlanner
         var withParts = WithClauseUtils.BuildWithParts(
             kafkaTopic: context.Name,
             hasKey: keyMetas.Any(k => !string.IsNullOrWhiteSpace(k.Name)),
+            isCompositeKey: keyMetas.Count > 1,
+            keySchemaFullName: context.Model.KeySchemaFullName,
             valueSchemaFullName: null,
             timestampColumn: timestampColumn,
             partitions: settings.Partitions,
@@ -623,13 +624,10 @@ internal static class DerivedEntityDdlPlanner
             qm.Extras["select/exclude"] = selectExclude;
         }
 
-        if (context.Role != Role.Live && !qm.Extras.ContainsKey("valueSchemaFullName"))
+        // Respect explicit ValueSchemaFullName from the model (design-time/runtime overrides).
+        if (!string.IsNullOrWhiteSpace(model.ValueSchemaFullName))
         {
-            var nsValue = metadata.Namespace;
-            if (!string.IsNullOrWhiteSpace(nsValue))
-            {
-                qm.Extras["valueSchemaFullName"] = $"{nsValue}.{context.Name}_valueAvro";
-            }
+            qm.Extras["valueSchemaFullName"] = model.ValueSchemaFullName;
         }
 
         var sinkPartitions = model.Partitions > 0 ? model.Partitions : 1;

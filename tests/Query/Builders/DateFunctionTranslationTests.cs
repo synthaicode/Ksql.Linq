@@ -73,22 +73,28 @@ public class DateFunctionTranslationTests
         Assert.True(qs.HasEmitChanges);
 
         Assert.True(qs.TryGetProjection("Y", out var y));
-        Assert.Contains("EXTRACT(YEAR FROM CAST(Timestamp AS TIMESTAMP))", y, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("TIMESTAMPTOSTRING", y, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("'yyyy'", y, StringComparison.OrdinalIgnoreCase);
 
         Assert.True(qs.TryGetProjection("Mo", out var mo));
-        Assert.Contains("EXTRACT(MONTH FROM CAST(Timestamp AS TIMESTAMP))", mo, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("TIMESTAMPTOSTRING", mo, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("'MM'", mo, StringComparison.OrdinalIgnoreCase);
 
         Assert.True(qs.TryGetProjection("D", out var d));
-        Assert.Contains("EXTRACT(DAY FROM CAST(Timestamp AS TIMESTAMP))", d, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("TIMESTAMPTOSTRING", d, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("'dd'", d, StringComparison.OrdinalIgnoreCase);
 
         Assert.True(qs.TryGetProjection("H", out var h));
-        Assert.Contains("EXTRACT(HOUR FROM CAST(Timestamp AS TIMESTAMP))", h, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("TIMESTAMPTOSTRING", h, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("'HH'", h, StringComparison.OrdinalIgnoreCase);
 
         Assert.True(qs.TryGetProjection("Mi", out var mi));
-        Assert.Contains("EXTRACT(MINUTE FROM CAST(Timestamp AS TIMESTAMP))", mi, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("TIMESTAMPTOSTRING", mi, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("'mm'", mi, StringComparison.OrdinalIgnoreCase);
 
         Assert.True(qs.TryGetProjection("S", out var s));
-        Assert.Contains("EXTRACT(SECOND FROM CAST(Timestamp AS TIMESTAMP))", s, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("TIMESTAMPTOSTRING", s, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("'ss'", s, StringComparison.OrdinalIgnoreCase);
 
         Assert.True(qs.TryGetProjection("Dp1", out var d1));
         Assert.Contains("DATEADD('day', 1, Timestamp)", d1, StringComparison.OrdinalIgnoreCase);
@@ -107,6 +113,5 @@ public class DateFunctionTranslationTests
         Assert.Contains("'yyyy-MM-dd''T''HH:mm:ssXXX'", tsStr, StringComparison.OrdinalIgnoreCase);
     }
 }
-
 
 

@@ -1,3 +1,4 @@
+using Ksql.Linq.Core.Abstractions;
 using Ksql.Linq.Core.Models;
 using Ksql.Linq.Query.Schema;
 using System;
@@ -21,16 +22,26 @@ internal static class KsqlSchemaBuilder
             throw new NotSupportedException("Only object initializer projections are supported.");
 
         var targetType = newExpr.Type;
+        var isWindowed = typeof(IWindowedRecord).IsAssignableFrom(targetType);
+        bool ShouldInclude(PropertyInfo prop)
+        {
+            if (prop.GetCustomAttributes().Any(a => a.GetType().Name == "KsqlIgnoreAttribute"))
+                return false;
+            if (isWindowed && (string.Equals(prop.Name, nameof(IWindowedRecord.WindowStart), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(prop.Name, nameof(IWindowedRecord.WindowEnd), StringComparison.OrdinalIgnoreCase)))
+                return false;
+            return true;
+        }
+
         var props = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .OrderBy(p => p.MetadataToken);
+            .OrderBy(p => p.MetadataToken)
+            .Where(ShouldInclude);
 
         var columns = new List<KsqlColumn>();
 
         foreach (var prop in props)
         {
             var meta = PropertyMeta.FromProperty(prop);
-            if (meta.Attributes.Any(a => a.GetType().Name == "KsqlIgnoreAttribute"))
-                continue;
 
             var ksqlType = KsqlTypeMapping.MapToKsqlType(meta.PropertyType, meta.PropertyInfo, meta.Precision, meta.Scale);
             var isKey = meta.Attributes.Any(a => a.GetType().Name == "KsqlKeyAttribute");

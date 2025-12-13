@@ -54,6 +54,8 @@ public sealed class DefaultKsqlScriptBuilder : IKsqlScriptBuilder
             var withParts = WithClauseUtils.BuildWithParts(
                 kafkaTopic: topic,
                 hasKey: hasKey,
+                isCompositeKey: model.IsCompositeKey(),
+                keySchemaFullName: model.KeySchemaFullName,
                 valueSchemaFullName: model.ValueSchemaFullName,
                 timestampColumn: null,
                 partitions: partitions,
@@ -125,12 +127,19 @@ public sealed class DefaultKsqlScriptBuilder : IKsqlScriptBuilder
         // Query-defined entity (CSAS/CTAS)
         if (model.QueryModel != null)
         {
-            var create = KsqlCreateStatementBuilder.Build(
-                streamName,
-                model.QueryModel,
-                keySchemaFullName: model.KeySchemaFullName,
-                valueSchemaFullName: model.ValueSchemaFullName,
-                partitionBy: null);
+            var create = model.QueryModel.HasHopping()
+                ? KsqlCreateWindowedStatementBuilder.BuildHopping(
+                    streamName,
+                    model.QueryModel,
+                    keySchemaFullName: model.KeySchemaFullName,
+                    valueSchemaFullName: model.ValueSchemaFullName,
+                    sourceResolver: t => t.Name.ToUpperInvariant())
+                : KsqlCreateStatementBuilder.Build(
+                    streamName,
+                    model.QueryModel,
+                    keySchemaFullName: model.KeySchemaFullName,
+                    valueSchemaFullName: model.ValueSchemaFullName,
+                    partitionBy: null);
 
             // Insert our WITH clause in place of the one generated inside the builder
             var idx = create.IndexOf("WITH (", StringComparison.OrdinalIgnoreCase);

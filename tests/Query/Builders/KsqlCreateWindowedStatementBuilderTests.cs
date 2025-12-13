@@ -5,6 +5,7 @@ using Ksql.Linq.Query.Dsl;
 using Ksql.Linq.Query.Abstractions;
 using System;
 using System.Linq.Expressions;
+using Ksql.Linq;
 using Ksql.Linq.Tests.Utils;
 using Xunit;
 namespace Ksql.Linq.Tests.Query.Builders;
@@ -166,6 +167,83 @@ public class KsqlCreateWindowedStatementBuilderTests
             .Select(r => r)
             .Build();
         Assert.Equal(StreamTableType.Stream, model.DetermineType());
+    }
+
+    [Fact]
+    public void BuildHopping_InsertsWindowBeforeJoinAndKeepsAlias()
+    {
+        Expression<Func<Rate, DedupRate, bool>> join = (o, i) => o.Symbol == i.Symbol;
+        Expression<Func<Rate, DedupRate, object>> groupBy = (o, i) => new { o.Broker, o.Symbol };
+        Expression<Func<Rate, DedupRate, object>> select = (o, i) => new
+        {
+            o.Broker,
+            o.Symbol,
+            Start = WindowExtensions.WindowStart<object, object>(null!)
+        };
+        var model = new KsqlQueryModel
+        {
+            SourceTypes = new[] { typeof(Rate), typeof(DedupRate) },
+            JoinCondition = join,
+            GroupByExpression = groupBy,
+            SelectProjection = select,
+            TimeKey = nameof(Rate.Timestamp),
+            Hopping = new HoppingWindowSpec
+            {
+                Size = TimeSpan.FromMinutes(5),
+                Advance = TimeSpan.FromMinutes(1)
+            },
+            PrimarySourceRequiresAlias = true
+        };
+
+        var sql = KsqlCreateWindowedStatementBuilder.BuildHopping("rate_5m_live", model);
+
+        SqlAssert.ContainsNormalized(sql, "WINDOW HOPPING ( SIZE 5 MINUTES , ADVANCE BY 1 MINUTES )");
+        Assert.True(sql.IndexOf("WINDOW HOPPING", StringComparison.OrdinalIgnoreCase) <
+                    sql.IndexOf("JOIN", StringComparison.OrdinalIgnoreCase));
+        SqlAssert.ContainsNormalized(sql, "FROM RATE o WINDOW HOPPING");
+        SqlAssert.ContainsNormalized(sql, "JOIN DEDUPRATE i");
+    }
+
+    [Fact]
+    public void BuildHopping_ThrowsWithoutGroupBy()
+    {
+        Expression<Func<Rate, object>> select = r => new { Start = r.Timestamp };
+        var model = new KsqlQueryModel
+        {
+            SourceTypes = new[] { typeof(Rate) },
+            SelectProjection = select,
+            TimeKey = nameof(Rate.Timestamp),
+            Hopping = new HoppingWindowSpec
+            {
+                Size = TimeSpan.FromMinutes(5),
+                Advance = TimeSpan.FromMinutes(1)
+            }
+        };
+
+        Assert.Throws<InvalidOperationException>(() => KsqlCreateWindowedStatementBuilder.BuildHopping("h_no_group", model));
+    }
+
+    [Fact]
+    public void BuildHopping_ThrowsWithoutWindowStart()
+    {
+        Expression<Func<Rate, object>> select = r => new { r.Broker, r.Symbol };
+        Expression<Func<Rate, object>> group = r => new { r.Broker };
+        var model = new KsqlQueryModel
+        {
+            SourceTypes = new[] { typeof(Rate) },
+            GroupByExpression = group,
+            SelectProjection = select,
+            TimeKey = nameof(Rate.Timestamp),
+            Hopping = new HoppingWindowSpec
+            {
+                Size = TimeSpan.FromMinutes(5),
+                Advance = TimeSpan.FromMinutes(1)
+            }
+        };
+
+        var sql = KsqlCreateWindowedStatementBuilder.BuildHopping("h_no_ws", model);
+        SqlAssert.ContainsNormalized(sql, "WINDOW HOPPING");
+        SqlAssert.DoesNotContainNormalized(sql, "WINDOWSTART AS");
     }
 }
 

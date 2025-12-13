@@ -1,18 +1,45 @@
-Design-time KSQL & Avro Tool (with AI Support)
+Design-time KSQL & Avro Tool (with AI Assist)
 ===========================================
 
 This is a .NET global tool that generates KSQL scripts and Avro schemas
 from a Ksql.Linq-based application, without requiring Kafka/ksqlDB/Schema
-Registry to be running.<br/> <b>It also supports AI-assisted workflows for developers using Ksql.Linq.</b>
+Registry to be running.
 
-This tool targets Ksql.Linq v0.9.5 or later,
+**It also supports AI-assisted workflows for developers using Ksql.Linq.**
+
+This tool is developed alongside Ksql.Linq. For best results, keep the library and CLI versions aligned.
+
+Prerequisites / compatibility
+----------------------------
+
+- **.NET SDK**: .NET 8+ (this tool targets `net8.0`).
+- **Version pairing (recommended)**: use `Ksql.Linq.Cli 1.1.x` together with `Ksql.Linq 1.1.x`.
+  - The `ai-assist` guide is bundled with **Ksql.Linq**; the CLI reads the guide from the library it ships with.
+  - **Operational note**: keeping library/CLI versions aligned avoids “guide/content drift”, reduces behavior mismatch, and makes support/debugging simpler.
 
 Install
 -------
 
 ```bash
-dotnet tool install --global Ksql.Linq.Cli --version 1.0.0
+dotnet tool install --global Ksql.Linq.Cli
 ```
+
+Update
+------
+
+Global tool:
+
+```bash
+dotnet tool update --global Ksql.Linq.Cli
+```
+
+Local tool (tool manifest):
+
+```bash
+dotnet tool update Ksql.Linq.Cli
+```
+
+After updating, rerun `dotnet ksql ai-assist --copy` if you want to refresh the AI Assistant Guide text you paste into your AI assistant.
 
 Commands
 --------
@@ -61,7 +88,7 @@ Ksql.Linq ships with an **AI Assistant Guide** (`AI_ASSISTANT_GUIDE.md`) that ex
 (for example: ChatGPT, Claude, GitHub Copilot, Cursor) together with both the library and this CLI tool.
 
 - Ask an AI to design or review your `KsqlContext`, entities, and windowing strategy.
-- Generate or refine KSQL scripts produced by `dotnet ksql script`.
+- Explain KSQL scripts produced by `dotnet ksql script` and highlight what to verify on your own ksqlDB version/configuration.
 - Get prompt patterns and anti-patterns specific to Ksql.Linq so the AI respects your model and conventions.
 
-Open `AI_ASSISTANT_GUIDE.md` in your editor and share it with your AI assistant to get better, Ksql.Linq-aware suggestions. 
+Run `dotnet ksql ai-assist --copy`, paste it into your AI assistant, and ask it to follow the guide. 

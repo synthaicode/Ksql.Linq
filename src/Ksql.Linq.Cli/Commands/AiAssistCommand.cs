@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http;
 using System.Text;
+using System.Reflection;
 
 namespace Ksql.Linq.Cli.Commands;
 
@@ -10,7 +11,18 @@ public static class AiAssistCommand
 {
     public static Command Create()
     {
-        var command = new Command("ai-assist", "Prints the Ksql.Linq AI Assistant Guide for use with AI coding assistants.")
+        var command = new Command("ai-assist", """
+            Prints the Ksql.Linq AI Assistant Guide for use with AI coding assistants.
+
+            Quick start:
+              dotnet ksql ai-assist --copy
+
+            Then ask your AI assistant:
+              "Read this guide and act as a design support AI for my Ksql.Linq project. Highlight what I should verify in my own ksqlDB environment."
+
+            Tip (GitHub Copilot / agent mode):
+              Paste the output into Copilot Chat and ask it to follow the guide when designing or reviewing your Ksql.Linq code.
+            """)
         {
             new Option<bool>(
                 name: "--copy",
@@ -21,10 +33,10 @@ public static class AiAssistCommand
 
         command.SetHandler(async (bool copy) =>
         {
-            var guidePath = FindGuidePath();
-            if (guidePath is null)
+            var guideText = await ReadGuideTextAsync();
+            if (guideText is null)
             {
-                Console.Error.WriteLine("AI_ASSISTANT_GUIDE.md not found next to the CLI assembly or in the working directory.");
+                Console.Error.WriteLine("AI_ASSISTANT_GUIDE.md not found (library-embedded or local file).");
                 Environment.ExitCode = 1;
                 return;
             }
@@ -34,8 +46,7 @@ public static class AiAssistCommand
             var header = await GetHeaderAsync(culture);
             var footer = await GetFooterAsync(culture);
 
-            var guide = await File.ReadAllTextAsync(guidePath, Encoding.UTF8);
-            var fullText = header + guide + footer;
+            var fullText = header + guideText + footer;
 
             Console.OutputEncoding = Encoding.UTF8;
             Console.Write(fullText);
@@ -49,17 +60,44 @@ public static class AiAssistCommand
         return command;
     }
 
-    private static string? FindGuidePath()
+    private static async Task<string?> ReadGuideTextAsync()
     {
+        // Preferred: read the guide embedded in the Ksql.Linq library assembly (bundled with the library package).
+        var embedded = TryReadEmbeddedGuide();
+        if (!string.IsNullOrWhiteSpace(embedded))
+            return embedded;
+
+        // Fallback: local file next to the CLI tool (legacy) or in the working directory.
         var assemblyDir = AppContext.BaseDirectory;
         var candidate = Path.Combine(assemblyDir, "AI_ASSISTANT_GUIDE.md");
         if (File.Exists(candidate))
-        {
-            return candidate;
-        }
+            return await File.ReadAllTextAsync(candidate, Encoding.UTF8);
 
         candidate = Path.Combine(Directory.GetCurrentDirectory(), "AI_ASSISTANT_GUIDE.md");
-        return File.Exists(candidate) ? candidate : null;
+        return File.Exists(candidate) ? await File.ReadAllTextAsync(candidate, Encoding.UTF8) : null;
+    }
+
+    private static string? TryReadEmbeddedGuide()
+    {
+        try
+        {
+            var asm = typeof(Ksql.Linq.KsqlContext).Assembly;
+            // Prefer the known logical name; fall back to suffix search for safety.
+            var resourceName = asm.GetManifestResourceNames()
+                .FirstOrDefault(n => string.Equals(n, "Ksql.Linq.AI_ASSISTANT_GUIDE.md", StringComparison.Ordinal))
+                ?? asm.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("AI_ASSISTANT_GUIDE.md", StringComparison.OrdinalIgnoreCase));
+            if (string.IsNullOrWhiteSpace(resourceName))
+                return null;
+
+            using var s = asm.GetManifestResourceStream(resourceName);
+            if (s is null) return null;
+            using var r = new StreamReader(s, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            return r.ReadToEnd();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static void TryCopyToClipboard(string text)
@@ -68,20 +106,35 @@ public static class AiAssistCommand
         {
             if (OperatingSystem.IsWindows())
             {
-                var psi = new ProcessStartInfo
+                // Prefer PowerShell's Set-Clipboard to avoid codepage-dependent mojibake (multi-locale safe).
+                // Read stdin explicitly as UTF-8 inside PowerShell, so the parent can always write UTF-8 bytes.
+                var psScript =
+                    "$sr = New-Object System.IO.StreamReader([Console]::OpenStandardInput(), [System.Text.UTF8Encoding]::new($false));" +
+                    " $t = $sr.ReadToEnd();" +
+                    " Set-Clipboard -Value $t";
+
+                if (!RunPipeCommand("pwsh", text, "-NoProfile", "-NonInteractive", "-Command", psScript))
                 {
-                    FileName = "cmd.exe",
-                    Arguments = "/c clip",
-                    RedirectStandardInput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using var p = Process.Start(psi);
-                if (p is not null)
-                {
-                    p.StandardInput.Write(text);
-                    p.StandardInput.Close();
-                    p.WaitForExit();
+                    if (!RunPipeCommand("powershell", text, "-NoProfile", "-NonInteractive", "-Command", psScript))
+                    {
+                        // Fallback: clip.exe (best-effort; may be codepage-dependent on some systems).
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = "cmd.exe",
+                            Arguments = "/c clip",
+                            RedirectStandardInput = true,
+                            StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        using var p = Process.Start(psi);
+                        if (p is not null)
+                        {
+                            p.StandardInput.Write(text);
+                            p.StandardInput.Close();
+                            p.WaitForExit();
+                        }
+                    }
                 }
             }
             else if (OperatingSystem.IsMacOS())
@@ -111,6 +164,7 @@ public static class AiAssistCommand
             {
                 FileName = fileName,
                 RedirectStandardInput = true,
+                StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
                 UseShellExecute = false,
                 CreateNoWindow = true
             };

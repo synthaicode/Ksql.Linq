@@ -475,6 +475,30 @@ internal class SelectExpressionVisitor : ExpressionVisitor
 
     private string TranslateMethodCallPossiblyOverridden(MethodCallExpression methodCall)
     {
+        // If this is a non-aggregate wrapper (e.g., ROUND(AVG(...),1)) and we have hub overrides,
+        // translate the arguments via this visitor so nested aggregates can be overridden too.
+        if (_aggregateArgOverridesByOutputAlias != null &&
+            _currentOutputAlias != null &&
+            !Ksql.Linq.Query.Builders.Functions.KsqlFunctionRegistry.IsAggregateFunction(methodCall.Method.Name) &&
+            IsAggregateExpression(methodCall))
+        {
+            var mapping = Ksql.Linq.Query.Builders.Functions.KsqlFunctionRegistry.GetMapping(methodCall.Method.Name);
+            if (mapping != null && !mapping.RequiresSpecialHandling)
+            {
+                var previousOverride = KsqlFunctionTranslator.MemberTranslatorOverride;
+                try
+                {
+                    KsqlFunctionTranslator.MemberTranslatorOverride = GetColumnName;
+                    var args = ExtractArgumentsViaVisitor(methodCall);
+                    return mapping.GenerateStandardCall(args);
+                }
+                finally
+                {
+                    KsqlFunctionTranslator.MemberTranslatorOverride = previousOverride;
+                }
+            }
+        }
+
         // Only consider overrides for aggregate functions and when we know the output alias
         if (_aggregateArgOverridesByOutputAlias != null && _currentOutputAlias != null)
         {
@@ -525,6 +549,39 @@ internal class SelectExpressionVisitor : ExpressionVisitor
         {
             KsqlFunctionTranslator.MemberTranslatorOverride = previous;
         }
+    }
+
+    private string[] ExtractArgumentsViaVisitor(MethodCallExpression methodCall)
+    {
+        var args = new System.Collections.Generic.List<string>();
+
+        // Treat the object as an argument for instance methods
+        if (methodCall.Object != null && !methodCall.Method.IsStatic)
+        {
+            args.Add(ProcessProjectionArgument(methodCall.Object));
+        }
+
+        foreach (var arg in methodCall.Arguments)
+        {
+            if (arg is LambdaExpression le)
+            {
+                args.Add(ProcessProjectionArgument(le.Body));
+            }
+            else
+            {
+                args.Add(ProcessProjectionArgument(arg));
+            }
+        }
+
+        // Exclude first argument for extension methods as it is the receiver
+        if (methodCall.Method.IsStatic &&
+            methodCall.Method.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false) &&
+            args.Count > 0)
+        {
+            args.RemoveAt(0);
+        }
+
+        return args.ToArray();
     }
 
     /// <summary>

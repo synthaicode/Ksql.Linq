@@ -57,6 +57,11 @@ public class EntityModel
     public LambdaExpression? BarTimeSelector { get; set; }
 
     /// <summary>
+    /// Event-time column name used as KSQL TIMESTAMP when available.
+    /// </summary>
+    public string? TimeKey { get; set; }
+
+    /// <summary>
     /// Indicates whether this entity is used for reading, writing, or both.
     /// </summary>
     public EntityAccessMode AccessMode { get; set; } = EntityAccessMode.ReadWrite;

@@ -48,7 +48,9 @@ public class KsqlQueryModel
     public int? GraceSeconds { get; set; }
     public bool Continuation { get; set; } = false;
     public bool PrimarySourceRequiresAlias { get; set; }
+    public List<string> OperationSequence { get; } = new();
     public System.Collections.Generic.Dictionary<string, object?> Extras { get; } = new();
+    public HoppingWindowSpec? Hopping { get; set; }
     internal ProjectionMetadata? SelectProjectionMetadata { get; set; }
 
     public KsqlQueryModel Clone()
@@ -79,9 +81,19 @@ public class KsqlQueryModel
         };
         clone.Windows.AddRange(Windows);
         clone.BasedOnJoinKeys.AddRange(BasedOnJoinKeys);
+        clone.OperationSequence.AddRange(OperationSequence);
         foreach (var kv in Extras)
             clone.Extras[kv.Key] = kv.Value;
         clone.SelectProjectionMetadata = SelectProjectionMetadata;
+        if (Hopping != null)
+        {
+            clone.Hopping = new HoppingWindowSpec
+            {
+                Size = Hopping.Size,
+                Advance = Hopping.Advance,
+                Grace = Hopping.Grace
+            };
+        }
         return clone;
     }
 
@@ -97,6 +109,7 @@ public class KsqlQueryModel
     public bool HasGroupBy() => GroupByExpression != null;
 
     public bool HasTumbling() => Windows.Count > 0;
+    public bool HasHopping() => Hopping != null;
 
     public bool HasAggregates()
     {
@@ -106,7 +119,7 @@ public class KsqlQueryModel
         return visitor.HasAggregates;
     }
 
-    public bool IsAggregateQuery() => HasGroupBy() || HasTumbling() || HasAggregates();
+    public bool IsAggregateQuery() => HasGroupBy() || HasTumbling() || HasHopping() || HasAggregates();
 
     public StreamTableType DetermineType() => IsAggregateQuery() ? StreamTableType.Table : StreamTableType.Stream;
 
@@ -120,4 +133,11 @@ public class KsqlQueryModel
         Windows.Clear();
         Windows.AddRange(ordered);
     }
+}
+
+public sealed class HoppingWindowSpec
+{
+    public TimeSpan Size { get; set; }
+    public TimeSpan Advance { get; set; }
+    public TimeSpan? Grace { get; set; }
 }

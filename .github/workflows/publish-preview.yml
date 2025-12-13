@@ -6,9 +6,6 @@ on:
       versionSuffix:
         description: "Pre-release suffix (e.g., preview.1-ci.<run>)"
         required: false
-  push:
-    tags:
-      - 'v*.*.*-rc*'   # e.g., v1.0.0-rc1, v1.0.0-rc.2
 
 jobs:
   pack-and-publish:
@@ -26,6 +23,11 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      - name: Build AI_ASSISTANT_GUIDE.md from sources
+        shell: pwsh
+        run: |
+          pwsh -NoLogo -File tools/build-ai-assistant-guide.ps1 -Write
 
       - name: Restore
         run: dotnet restore src/Ksql.Linq.csproj
@@ -49,6 +51,21 @@ jobs:
         run: |
           dotnet pack src/Ksql.Linq.csproj -c Release -o ./.artifacts/nuget \
             -p:PackageVersion=${{ steps.ver.outputs.pkg }}
+
+      - name: Verify AI_ASSISTANT_GUIDE.md is packaged (library)
+        shell: pwsh
+        run: |
+          $nupkg = Get-ChildItem ./.artifacts/nuget -Filter 'Ksql.Linq.*.nupkg' | Select-Object -First 1
+          if (-not $nupkg) { throw "No library nupkg found under .artifacts/nuget" }
+          Add-Type -AssemblyName System.IO.Compression
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($nupkg.FullName)
+          try {
+            $entry = $zip.Entries | Where-Object { $_.FullName -ieq 'AI_ASSISTANT_GUIDE.md' } | Select-Object -First 1
+            if (-not $entry) { throw "AI_ASSISTANT_GUIDE.md is missing from $($nupkg.Name)" }
+            if ($entry.Length -lt 1000) { throw "AI_ASSISTANT_GUIDE.md seems too small ($($entry.Length) bytes) in $($nupkg.Name)" }
+            Write-Host "[ai-guide] OK: packaged AI_ASSISTANT_GUIDE.md ($($entry.Length) bytes)"
+          }
+          finally { $zip.Dispose() }
 
       - name: Create NuGet.config for GitHub Packages
         run: |

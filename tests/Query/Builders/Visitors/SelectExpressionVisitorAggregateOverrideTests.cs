@@ -64,9 +64,10 @@ public class SelectExpressionVisitorAggregateOverrideTests
         visitor.Visit(select.Body);
         var sql = visitor.GetResult();
 
-        Assert.Contains("ROUND(AVG(", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ROUND(", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SUM", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("CNT", sql, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("RoundAvg1", sql, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("LATEST_BY_OFFSET", sql, StringComparison.OrdinalIgnoreCase);
     }
 }
-

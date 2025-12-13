@@ -64,6 +64,42 @@ dotnet ksql ai-assist --copy
 ```
 Then paste the copied text into your AI assistant and ask it to act as a Ksql.Linq design support AI.
 
+### AI Request Rules (Must / Should)
+
+To keep results reliable across different AI products/models (GitHub Copilot, ChatGPT, Claude, etc.), treat the AI as an **assistant** and use these rules:
+
+**Must**
+- Provide your **Ksql.Linq version** and your **ksqlDB version/config assumptions** (or say “unknown”).
+- Provide the relevant inputs (your `KsqlContext` snippet and/or generated KSQL) and ask the AI to output a **checklist of what you should verify in your own environment**.
+- Treat any “this will work on ksqlDB” statement as **non-binding** unless you verify it yourself.
+
+**Should**
+- Ask the AI to state **assumptions and open questions** explicitly before recommending a pattern.
+- Ask for the answer in a **structured format** (the Output Format template in this guide).
+- When unsure, ask the AI to propose **multiple options** and a small “next-step experiment” you can run locally.
+
+### Guide Loading Strategy (Full / Focused)
+
+AI assistants have different context limits. Use one of these two approaches:
+
+**Full load (recommended when possible)**
+```text
+Please read the entire AI_ASSISTANT_GUIDE.md first (from the file or URL),
+then follow the AI Request Rules (Must/Should) and help me with my question.
+```
+
+**Focused load (when the full guide does not fit)**
+```text
+You may not be able to load the entire AI_ASSISTANT_GUIDE.md due to context limits.
+Please read only the sections relevant to my question and tell me which sections you read.
+If you cannot access the file, say so and ask me to paste the specific sections you need.
+```
+
+**Suggested “focused” section set (minimum)**
+- **AI Profile** (how the AI should behave)
+- **Conversation Patterns** (especially “AI MUST NOT GUESS”)
+- The specific **Technical Section** related to my topic (e.g., Windowing / Joins / Error Handling)
+
 ### Recommended Workflows
 
 #### 1. **Initial Design Consultation**
@@ -141,6 +177,14 @@ After reading this document, your AI will:
 1. Reference the file: `#file:AI_ASSISTANT_GUIDE.md`
 2. Ask design questions with context
 
+**Prompt template (recommended)**
+```text
+Before answering, tell me whether you can access my local/workspace files in this environment.
+If you cannot, say so explicitly and ask me to paste the relevant snippets.
+If you can (agent/workspace mode), read #file:AI_ASSISTANT_GUIDE.md first and follow its rules.
+Then help me design or sanity-check my KsqlContext and windowing strategy, and output a checklist of what I should verify in my own ksqlDB environment.
+```
+
 #### ChatGPT / Claude Desktop
 
 1. Upload `AI_ASSISTANT_GUIDE.md` to the conversation
@@ -202,6 +246,8 @@ After reading this document, your AI will:
 >
 > ## 5. Recommended Solution
 > **Option A** - See [Pattern 2: Stream Enrichment](#use-case-2-stream-enrichment-join)
+
+
 # AI Conversation Patterns — v1.1 (Refactored, English Edition)
 ## Ksql.Linq / Ksql.Linq.Cli — AI-Assisted Design Support Protocol
 
@@ -666,6 +712,8 @@ When you suggest creating an Issue or Discussion:
 4. **Follow-up**:
    - Offer to refine the template based on user feedback
    - Suggest additional information that might be helpful
+
+
 
 ---
 

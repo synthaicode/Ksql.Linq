@@ -13,11 +13,12 @@ internal static class KsqlFunctionRegistry
     private static readonly Dictionary<string, KsqlFunctionMapping> _functionMappings = new()
     {
         // String functions (fully supported)
-        ["ToUpper"] = new("UPPER", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
-        ["ToLower"] = new("LOWER", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
+        // ksqlDB in this repo's physical test stack uses UCASE/LCASE (UPPER/LOWER are not available).
+        ["ToUpper"] = new("UCASE", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
+        ["ToLower"] = new("LCASE", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
         // Aliases commonly used in expression builders/tests
-        ["Upper"] = new("UPPER", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
-        ["Lower"] = new("LOWER", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
+        ["Upper"] = new("UCASE", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
+        ["Lower"] = new("LCASE", 1) { AllowedInGroupBy = true, AllowedInOrderBy = true },
         ["Substring"] = new("SUBSTRING", 2, 3) { AllowedInGroupBy = true },
         ["Length"] = new("LEN", 1),
         ["Trim"] = new("TRIM", 1),
@@ -58,18 +59,18 @@ internal static class KsqlFunctionRegistry
         ["Exp"] = new("EXP", 1),
 
         // Date functions
-        // Use EXTRACT(... FROM CAST({0} AS TIMESTAMP)) for ksqlDB compatibility across versions
-        ["Year"] = new("EXTRACT(YEAR FROM CAST({0} AS TIMESTAMP))", 1, "EXTRACT(YEAR FROM CAST({0} AS TIMESTAMP))") { AllowedInGroupBy = true, AllowedInOrderBy = true },
+        // Use TIMESTAMPTOSTRING+CAST for broader ksqlDB compatibility (some versions reject EXTRACT(... FROM ...)).
+        ["Year"] = new("CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'yyyy', 'UTC') AS INT)", 1, "CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'yyyy', 'UTC') AS INT)") { AllowedInGroupBy = true, AllowedInOrderBy = true },
         ["AddDays"] = new("DATEADD('day', {1}, {0})", 2, "DATEADD('day', {1}, {0})"),
         ["AddHours"] = new("DATEADD('hour', {1}, {0})", 2, "DATEADD('hour', {1}, {0})"),
         ["AddMinutes"] = new("DATEADD('minute', {1}, {0})", 2, "DATEADD('minute', {1}, {0})"),
         ["AddSeconds"] = new("DATEADD('second', {1}, {0})", 2, "DATEADD('second', {1}, {0})"),
         ["AddMilliseconds"] = new("DATEADD('millisecond', {1}, {0})", 2, "DATEADD('millisecond', {1}, {0})"),
-        ["Month"] = new("EXTRACT(MONTH FROM CAST({0} AS TIMESTAMP))", 1, "EXTRACT(MONTH FROM CAST({0} AS TIMESTAMP))") { AllowedInGroupBy = true, AllowedInOrderBy = true },
-        ["Day"] = new("EXTRACT(DAY FROM CAST({0} AS TIMESTAMP))", 1, "EXTRACT(DAY FROM CAST({0} AS TIMESTAMP))") { AllowedInGroupBy = true, AllowedInOrderBy = true },
-        ["Hour"] = new("EXTRACT(HOUR FROM CAST({0} AS TIMESTAMP))", 1, "EXTRACT(HOUR FROM CAST({0} AS TIMESTAMP))") { AllowedInGroupBy = true },
-        ["Minute"] = new("EXTRACT(MINUTE FROM CAST({0} AS TIMESTAMP))", 1, "EXTRACT(MINUTE FROM CAST({0} AS TIMESTAMP))") { AllowedInGroupBy = true },
-        ["Second"] = new("EXTRACT(SECOND FROM CAST({0} AS TIMESTAMP))", 1, "EXTRACT(SECOND FROM CAST({0} AS TIMESTAMP))") { AllowedInGroupBy = true },
+        ["Month"] = new("CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'MM', 'UTC') AS INT)", 1, "CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'MM', 'UTC') AS INT)") { AllowedInGroupBy = true, AllowedInOrderBy = true },
+        ["Day"] = new("CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'dd', 'UTC') AS INT)", 1, "CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'dd', 'UTC') AS INT)") { AllowedInGroupBy = true, AllowedInOrderBy = true },
+        ["Hour"] = new("CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'HH', 'UTC') AS INT)", 1, "CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'HH', 'UTC') AS INT)") { AllowedInGroupBy = true },
+        ["Minute"] = new("CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'mm', 'UTC') AS INT)", 1, "CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'mm', 'UTC') AS INT)") { AllowedInGroupBy = true },
+        ["Second"] = new("CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'ss', 'UTC') AS INT)", 1, "CAST(TIMESTAMPTOSTRING(CAST({0} AS BIGINT), 'ss', 'UTC') AS INT)") { AllowedInGroupBy = true },
         ["DayOfWeek"] = new("DAYOFWEEK", 1) { AllowedInGroupBy = true },
         ["DayOfYear"] = new("DAYOFYEAR", 1) { AllowedInGroupBy = true },
         // WeekOfYear: for BIGINT epoch inputs (e.g., WINDOWSTART), cast to TIMESTAMP first
@@ -293,6 +294,3 @@ internal static class KsqlFunctionRegistry
         return result.ToString();
     }
 }
-
-
-

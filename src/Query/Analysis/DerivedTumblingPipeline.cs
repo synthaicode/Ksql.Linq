@@ -195,13 +195,19 @@ internal static class DerivedTumblingPipeline
                         genericKey: true,
                         genericValue: isRows || isTimeframeTableValueGeneric,
                         overrideNamespace: ns);
+                    var valueSchemaProvided = !string.IsNullOrWhiteSpace(m.ValueSchemaFullName);
                     if (kvMapping.AvroValueType == typeof(Avro.Generic.GenericRecord))
                     {
                         m.ValueSchemaFullName = null;
                     }
-                    else if (string.IsNullOrWhiteSpace(m.ValueSchemaFullName))
+                    else if (valueSchemaProvided)
                     {
-                        m.ValueSchemaFullName = kvMapping.AvroValueRecordSchema?.Fullname;
+                        m.ValueSchemaFullName = kvMapping.AvroValueRecordSchema?.Fullname ?? m.ValueSchemaFullName;
+                    }
+                    else
+                    {
+                        // 呼び出し側で ValueSchemaFullName を指定していない場合は WITH へ出力しない
+                        m.ValueSchemaFullName = null;
                     }
                 }
                 catch { }

@@ -24,6 +24,27 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Verify AI_ASSISTANT_GUIDE.md matches sources
+        shell: pwsh
+        run: |
+          pwsh -NoLogo -File tools/build-ai-assistant-guide.ps1 -Verify
+
+      - name: Verify library/CLI versions are aligned
+        shell: pwsh
+        run: |
+          function Get-Version([string]$path) {
+            $xml = Get-Content $path -Raw
+            $m = [regex]::Match($xml, '<Version>([^<]+)</Version>')
+            if (-not $m.Success) { throw "Missing <Version> in $path" }
+            return $m.Groups[1].Value
+          }
+          $lib = Get-Version 'src/Ksql.Linq.csproj'
+          $cli = Get-Version 'src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj'
+          if ($lib -ne $cli) {
+            throw "Version mismatch: library=$lib cli=$cli. Keep src/Ksql.Linq.csproj and src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj in sync."
+          }
+          Write-Host "[version] OK: library=$lib cli=$cli"
+
       - name: Build library (Public API checks not enforced in PR)
         run: |
           dotnet build src/Ksql.Linq.csproj -c Release --no-incremental --nologo
@@ -42,6 +63,21 @@ jobs:
           dotnet pack src/Ksql.Linq.csproj -c Release -o ./.artifacts/nuget \
             -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg \
             -p:PackageVersion=${{ steps.ver.outputs.pkg }}
+
+      - name: Verify AI_ASSISTANT_GUIDE.md is packaged (library)
+        shell: pwsh
+        run: |
+          $nupkg = Get-ChildItem ./.artifacts/nuget -Filter 'Ksql.Linq.*.nupkg' | Select-Object -First 1
+          if (-not $nupkg) { throw "No library nupkg found under .artifacts/nuget" }
+          Add-Type -AssemblyName System.IO.Compression
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($nupkg.FullName)
+          try {
+            $entry = $zip.Entries | Where-Object { $_.FullName -ieq 'AI_ASSISTANT_GUIDE.md' } | Select-Object -First 1
+            if (-not $entry) { throw "AI_ASSISTANT_GUIDE.md is missing from $($nupkg.Name)" }
+            if ($entry.Length -lt 1000) { throw "AI_ASSISTANT_GUIDE.md seems too small ($($entry.Length) bytes) in $($nupkg.Name)" }
+            Write-Host "[ai-guide] OK: packaged AI_ASSISTANT_GUIDE.md ($($entry.Length) bytes)"
+          }
+          finally { $zip.Dispose() }
 
       - name: Point examples to local package version
         shell: pwsh

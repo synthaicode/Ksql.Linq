@@ -25,11 +25,51 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Build AI_ASSISTANT_GUIDE.md from sources
+        shell: pwsh
+        run: |
+          pwsh -NoLogo -File tools/build-ai-assistant-guide.ps1 -Write
+
+      - name: Compute CLI version from tag
+        id: cli_ver
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#cli-v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "CLI Version=$VERSION"
+
+      - name: Verify CLI tag commit matches library tag commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --prune
+          LIB_TAG="v${VERSION}"
+          if ! git rev-parse "$LIB_TAG" >/dev/null 2>&1; then
+            echo "[FAIL] Expected library tag '$LIB_TAG' to exist. Tag the library first, then tag the CLI on the same commit." >&2
+            exit 2
+          fi
+          LIB_SHA="$(git rev-parse "$LIB_TAG")"
+          if [ "$LIB_SHA" != "$GITHUB_SHA" ]; then
+            echo "[FAIL] Build consistency rule violated: $LIB_TAG=$LIB_SHA but cli tag commit=$GITHUB_SHA" >&2
+            echo "Tag 'cli-v${VERSION}' must be created on the same commit as '$LIB_TAG'." >&2
+            exit 3
+          fi
+          echo "[OK] cli tag commit matches $LIB_TAG ($LIB_SHA)"
+
       - name: Restore CLI project
         run: dotnet restore src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj
 
       - name: Pack CLI tool
-        run: dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o ./artifacts/cli
+        run: dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o ./artifacts/cli -p:PackageVersion=${{ steps.cli_ver.outputs.version }}
+
+      - name: "Smoke: ai-assist reads bundled guide"
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet tool install --tool-path ./_tool --add-source ./artifacts/cli Ksql.Linq.Cli --version "${VERSION}"
+          ./_tool/dotnet-ksql ai-assist | head -n 5
+          ./_tool/dotnet-ksql ai-assist | grep -q "AI Assistant Guide"
 
       - name: Publish CLI tool to nuget.org
         env:
@@ -39,4 +79,3 @@ jobs:
             --api-key "$NUGET_API_KEY" \
             --source "https://api.nuget.org/v3/index.json" \
             --skip-duplicate
-

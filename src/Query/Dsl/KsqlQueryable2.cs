@@ -16,6 +16,8 @@ public class KsqlQueryable2<T1, T2> : IKsqlQueryable
             SourceTypes = new[] { typeof(T1), typeof(T2) },
             PrimarySourceRequiresAlias = true
         };
+        _model.OperationSequence.Add("From");
+        _model.OperationSequence.Add("Join");
     }
 
     internal KsqlQueryable2(KsqlQueryModel model)
@@ -29,6 +31,7 @@ public class KsqlQueryable2<T1, T2> : IKsqlQueryable
             throw new InvalidOperationException("Where() must be called before GroupBy/Having/Select().");
 
         _model.WhereCondition = predicate;
+        _model.OperationSequence.Add("Where");
         _stage = QueryBuildStage.Where;
         return this;
     }
@@ -47,6 +50,7 @@ public class KsqlQueryable2<T1, T2> : IKsqlQueryable
             throw new InvalidOperationException("Select() cannot be called in the current state.");
         }
         _model.SelectProjection = projection;
+        _model.OperationSequence.Add("Select");
 
         var visitor = new AggregateDetectionVisitor();
         visitor.Visit(projection.Body);
@@ -76,6 +80,31 @@ public class KsqlQueryable2<T1, T2> : IKsqlQueryable
         if (grace.HasValue)
             _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
         _model.NormalizeWindowsInPlace();
+        _model.OperationSequence.Add("Tumbling");
+        return this;
+    }
+
+    public KsqlQueryable2<T1, T2> Hopping(
+        Expression<Func<T1, T2, DateTime>> time,
+        TimeSpan windowSize,
+        TimeSpan hopInterval,
+        TimeSpan? grace = null)
+    {
+        if (_model.Hopping != null)
+            throw new InvalidOperationException("Hopping window already specified for this query.");
+        if (time.Body is MemberExpression me)
+            _model.TimeKey = me.Member.Name;
+        else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+            _model.TimeKey = me2.Member.Name;
+        _model.Hopping = new HoppingWindowSpec
+        {
+            Size = windowSize,
+            Advance = hopInterval,
+            Grace = grace
+        };
+        _model.Extras["HasHoppingWindow"] = true;
+        _model.BucketColumnName = null;
+        _model.OperationSequence.Add("Hopping");
         return this;
     }
 
@@ -84,6 +113,7 @@ public class KsqlQueryable2<T1, T2> : IKsqlQueryable
         if (interval <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(interval), "interval must be > 0");
         var seconds = (int)Math.Ceiling(interval.TotalSeconds);
         _model.WithinSeconds = seconds;
+        _model.OperationSequence.Add("Within");
         return this;
     }
 

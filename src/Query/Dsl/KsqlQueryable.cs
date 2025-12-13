@@ -10,12 +10,15 @@ namespace Ksql.Linq.Query.Dsl;
 /// </summary>
 public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
 {
-    public KsqlQueryable() { }
     private readonly KsqlQueryModel _model = new()
     {
         SourceTypes = new[] { typeof(T1) },
         PrimarySourceRequiresAlias = false
     };
+    public KsqlQueryable()
+    {
+        _model.OperationSequence.Add("From");
+    }
     private QueryBuildStage _stage = QueryBuildStage.From;
 
     public KsqlQueryable<T1> Where(Expression<Func<T1, bool>> predicate)
@@ -24,6 +27,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
             throw new InvalidOperationException("Where() must be called before GroupBy/Having/Select().");
 
         _model.WhereCondition = predicate;
+        _model.OperationSequence.Add("Where");
         _stage = QueryBuildStage.Where;
         return this;
     }
@@ -43,6 +47,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         }
 
         _model.SelectProjection = projection;
+        _model.OperationSequence.Add("Select");
         var visitor = new AggregateDetectionVisitor();
         visitor.Visit(projection.Body);
         var wsVisitor = new WindowStartDetectionVisitor();
@@ -57,6 +62,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
             throw new InvalidOperationException("GroupBy() must be called before Select().");
 
         _model.GroupByExpression = keySelector;
+        _model.OperationSequence.Add("GroupBy");
         _stage = QueryBuildStage.GroupBy;
         return new KsqlGroupedQueryable<T1, TKey>(_model);
     }
@@ -83,12 +89,37 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         if (grace.HasValue)
             _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
         _model.NormalizeWindowsInPlace();
+        _model.OperationSequence.Add("Tumbling");
         return this;
     }
 
     public KsqlQueryable<T1> Tumbling(Expression<Func<T1, object>> timeProperty, TimeSpan size)
     {
         throw new NotSupportedException("Legacy Tumbling overload is not supported in this phase.");
+    }
+
+    public KsqlQueryable<T1> Hopping(
+        Expression<Func<T1, DateTime>> time,
+        TimeSpan windowSize,
+        TimeSpan hopInterval,
+        TimeSpan? grace = null)
+    {
+        if (_model.Hopping != null)
+            throw new InvalidOperationException("Hopping window already specified for this query.");
+        if (time.Body is MemberExpression me)
+            _model.TimeKey = me.Member.Name;
+        else if (time.Body is UnaryExpression ue && ue.Operand is MemberExpression me2)
+            _model.TimeKey = me2.Member.Name;
+        _model.Hopping = new HoppingWindowSpec
+        {
+            Size = windowSize,
+            Advance = hopInterval,
+            Grace = grace
+        };
+        _model.Extras["HasHoppingWindow"] = true;
+        _model.BucketColumnName = null; // hopping uses windowed key rather than explicit bucket column
+        _model.OperationSequence.Add("Hopping");
+        return this;
     }
 
     // Filtering raw is upstream's responsibility. The DSL references an already-filtered stream
@@ -165,8 +196,26 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
             JoinCondition = condition,
             WhereCondition = _model.WhereCondition,
             SelectProjection = _model.SelectProjection,
-            PrimarySourceRequiresAlias = true
+            PrimarySourceRequiresAlias = true,
+            TimeKey = _model.TimeKey,
+            BucketColumnName = _model.BucketColumnName,
+            BaseUnitSeconds = _model.BaseUnitSeconds,
+            GraceSeconds = _model.GraceSeconds,
+            Continuation = _model.Continuation
         };
+        if (_model.Hopping != null)
+        {
+            newModel.Hopping = new HoppingWindowSpec
+            {
+                Size = _model.Hopping.Size,
+                Advance = _model.Hopping.Advance,
+                Grace = _model.Hopping.Grace
+            };
+        }
+        foreach (var kv in _model.Extras)
+            newModel.Extras[kv.Key] = kv.Value;
+        newModel.OperationSequence.AddRange(_model.OperationSequence);
+        newModel.OperationSequence.Add("Join");
         return new KsqlQueryable2<T1, T2>(newModel);
     }
 

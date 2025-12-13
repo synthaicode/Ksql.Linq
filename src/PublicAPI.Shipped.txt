@@ -415,10 +415,15 @@ Ksql.Linq.Core.Abstractions.EntityModel.SetStreamTableType(Ksql.Linq.Query.Abstr
 Ksql.Linq.Core.Abstractions.EntityModel.StreamTableType.get -> Ksql.Linq.Query.Abstractions.StreamTableType
 Ksql.Linq.Core.Abstractions.EntityModel.TopicName.get -> string?
 Ksql.Linq.Core.Abstractions.EntityModel.TopicName.set -> void
+Ksql.Linq.Core.Abstractions.EntityModel.TimeKey.get -> string?
+Ksql.Linq.Core.Abstractions.EntityModel.TimeKey.set -> void
 Ksql.Linq.Core.Abstractions.EntityModel.ValidationResult.get -> Ksql.Linq.Core.Abstractions.ValidationResult?
 Ksql.Linq.Core.Abstractions.EntityModel.ValidationResult.set -> void
 Ksql.Linq.Core.Abstractions.EntityModel.ValueSchemaFullName.get -> string?
 Ksql.Linq.Core.Abstractions.EntityModel.ValueSchemaFullName.set -> void
+Ksql.Linq.Core.Abstractions.IWindowedRecord
+Ksql.Linq.Core.Abstractions.IWindowedRecord.WindowEnd.get -> System.DateTime
+Ksql.Linq.Core.Abstractions.IWindowedRecord.WindowStart.get -> System.DateTime
 Ksql.Linq.Core.Abstractions.ErrorAction
 Ksql.Linq.Core.Abstractions.ErrorAction.DLQ = 2 -> Ksql.Linq.Core.Abstractions.ErrorAction
 Ksql.Linq.Core.Abstractions.ErrorAction.Retry = 1 -> Ksql.Linq.Core.Abstractions.ErrorAction
@@ -848,6 +853,7 @@ Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.RequireExplicitWithin() -> Ksql.Linq.
 Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Select<TResult>(System.Linq.Expressions.Expression<System.Func<T1, T2, TResult>!>! projection) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
 Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Tumbling(System.Linq.Expressions.Expression<System.Func<T1, T2, object!>!>! timeProperty, System.TimeSpan size) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
 Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Tumbling(System.Linq.Expressions.Expression<System.Func<T1, T2, System.DateTime>!>! time, Ksql.Linq.Query.Dsl.Windows! windows, int baseUnitSeconds = 10, System.TimeSpan? grace = null, bool continuation = false) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
+Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Hopping(System.Linq.Expressions.Expression<System.Func<T1, T2, System.DateTime>!>! time, System.TimeSpan windowSize, System.TimeSpan hopInterval, System.TimeSpan? grace = null) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
 Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Where(System.Linq.Expressions.Expression<System.Func<T1, T2, bool>!>! predicate) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
 Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Within(System.TimeSpan interval) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
 Ksql.Linq.Query.Dsl.KsqlQueryable<T1>
@@ -859,6 +865,7 @@ Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Select<TResult>(System.Linq.Expressions.Ex
 Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.TimeFrame<TSchedule>(System.Linq.Expressions.Expression<System.Func<T1, TSchedule, bool>!>! predicate, System.Linq.Expressions.Expression<System.Func<TSchedule, object!>!>? dayKey = null) -> Ksql.Linq.Query.Dsl.IScheduledScope<T1>!
 Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Tumbling(System.Linq.Expressions.Expression<System.Func<T1, object!>!>! timeProperty, System.TimeSpan size) -> Ksql.Linq.Query.Dsl.KsqlQueryable<T1>!
 Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Tumbling(System.Linq.Expressions.Expression<System.Func<T1, System.DateTime>!>! time, Ksql.Linq.Query.Dsl.Windows! windows, int baseUnitSeconds = 10, System.TimeSpan? grace = null, bool continuation = false) -> Ksql.Linq.Query.Dsl.KsqlQueryable<T1>!
+Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Hopping(System.Linq.Expressions.Expression<System.Func<T1, System.DateTime>!>! time, System.TimeSpan windowSize, System.TimeSpan hopInterval, System.TimeSpan? grace = null) -> Ksql.Linq.Query.Dsl.KsqlQueryable<T1>!
 Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Where(System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> Ksql.Linq.Query.Dsl.KsqlQueryable<T1>!
 Ksql.Linq.Query.Dsl.KsqlQueryModel
 Ksql.Linq.Query.Dsl.KsqlQueryModel.BasedOnClose.get -> string?
@@ -893,8 +900,12 @@ Ksql.Linq.Query.Dsl.KsqlQueryModel.GroupByExpression.set -> void
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasAggregates() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasGroupBy() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasTumbling() -> bool
+Ksql.Linq.Query.Dsl.KsqlQueryModel.HasHopping() -> bool
+Ksql.Linq.Query.Dsl.KsqlQueryModel.OperationSequence.get -> System.Collections.Generic.List<string!>!
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HavingCondition.get -> System.Linq.Expressions.LambdaExpression?
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HavingCondition.set -> void
+Ksql.Linq.Query.Dsl.KsqlQueryModel.Hopping.get -> Ksql.Linq.Query.Dsl.HoppingWindowSpec?
+Ksql.Linq.Query.Dsl.KsqlQueryModel.Hopping.set -> void
 Ksql.Linq.Query.Dsl.KsqlQueryModel.IsAggregateQuery() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.JoinCondition.get -> System.Linq.Expressions.LambdaExpression?
 Ksql.Linq.Query.Dsl.KsqlQueryModel.JoinCondition.set -> void
@@ -914,6 +925,14 @@ Ksql.Linq.Query.Dsl.KsqlQueryModel.WhereCondition.get -> System.Linq.Expressions
 Ksql.Linq.Query.Dsl.KsqlQueryModel.WhereCondition.set -> void
 Ksql.Linq.Query.Dsl.KsqlQueryModel.Windows.get -> System.Collections.Generic.List<string!>!
 Ksql.Linq.Query.Dsl.KsqlQueryModel.WithinSeconds.get -> int?
+Ksql.Linq.Query.Dsl.HoppingWindowSpec
+Ksql.Linq.Query.Dsl.HoppingWindowSpec.Advance.get -> System.TimeSpan
+Ksql.Linq.Query.Dsl.HoppingWindowSpec.Advance.set -> void
+Ksql.Linq.Query.Dsl.HoppingWindowSpec.Grace.get -> System.TimeSpan?
+Ksql.Linq.Query.Dsl.HoppingWindowSpec.Grace.set -> void
+Ksql.Linq.Query.Dsl.HoppingWindowSpec.HoppingWindowSpec() -> void
+Ksql.Linq.Query.Dsl.HoppingWindowSpec.Size.get -> System.TimeSpan
+Ksql.Linq.Query.Dsl.HoppingWindowSpec.Size.set -> void
 Ksql.Linq.Query.Dsl.KsqlQueryRoot
 Ksql.Linq.Query.Dsl.KsqlQueryRoot.From<T>() -> Ksql.Linq.Query.Dsl.KsqlQueryable<T>!
 Ksql.Linq.Query.Dsl.KsqlQueryRoot.KsqlQueryRoot() -> void
@@ -985,6 +1004,12 @@ Ksql.Linq.Runtime.PeriodUnit.Minutes = 1 -> Ksql.Linq.Runtime.PeriodUnit
 Ksql.Linq.Runtime.PeriodUnit.Months = 4 -> Ksql.Linq.Runtime.PeriodUnit
 Ksql.Linq.Runtime.PeriodUnit.Seconds = 0 -> Ksql.Linq.Runtime.PeriodUnit
 Ksql.Linq.Runtime.PeriodUnit.Weeks = 5 -> Ksql.Linq.Runtime.PeriodUnit
+Ksql.Linq.Runtime.HoppingWindow
+static Ksql.Linq.Runtime.HoppingWindow.Get<T>(Ksql.Linq.KsqlContext! ctx, string? tableName = null) -> Ksql.Linq.Runtime.HoppingWindow<T!>!
+Ksql.Linq.Runtime.HoppingWindow<T>
+Ksql.Linq.Runtime.HoppingWindow<T>.ToListAsync(object! key, System.DateTime? from = null, System.DateTime? to = null, int? limit = null, System.TimeSpan? timeout = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
+Ksql.Linq.Runtime.HoppingExtensions
+static Ksql.Linq.Runtime.HoppingExtensions.ReadHoppingAsync<T>(this Ksql.Linq.KsqlContext! ctx, object! key, System.DateTime? from = null, System.DateTime? to = null, int? limit = null, System.TimeSpan? timeout = null, string? tableName = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
 Ksql.Linq.Runtime.TimeBucket
 Ksql.Linq.Runtime.TimeBucket<T>
 Ksql.Linq.Runtime.TimeBucket<T>.LiveTopicName.get -> string!

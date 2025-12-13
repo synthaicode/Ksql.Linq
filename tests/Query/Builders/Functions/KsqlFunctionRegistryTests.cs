@@ -102,7 +102,7 @@ public class KsqlFunctionRegistryTests
         var info = KsqlFunctionRegistry.GetDebugInfo();
 
         Assert.Contains("[String]", info);
-        Assert.Contains("\u2022 ToUpper \u2192 UPPER", info); // bullet "•" and arrow "→"
+        Assert.Contains("\u2022 ToUpper \u2192 UCASE", info); // bullet "•" and arrow "→"
     }
 
     [Fact]
