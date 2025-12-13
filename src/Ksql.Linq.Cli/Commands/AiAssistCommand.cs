@@ -18,7 +18,7 @@ public static class AiAssistCommand
               dotnet ksql ai-assist --copy
 
             Then ask your AI assistant:
-              "Read this guide and act as a design support AI for my Ksql.Linq project."
+              "Read this guide and act as a design support AI for my Ksql.Linq project. Highlight what I should verify in my own ksqlDB environment."
 
             Tip (GitHub Copilot / agent mode):
               Paste the output into Copilot Chat and ask it to follow the guide when designing or reviewing your Ksql.Linq code.

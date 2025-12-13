@@ -14,7 +14,7 @@ public class Program
               dotnet ksql ai-assist --copy
 
             Then ask your AI assistant:
-              "Read this guide and help me review my KsqlContext, entities, and windowing strategy."
+              "Read this guide and help me design and sanity-check my KsqlContext, entities, and windowing strategy."
 
             Tip (GitHub Copilot / agent mode):
               Paste the output into Copilot Chat and ask it to follow the guide when reviewing your KsqlContext or generated KSQL.

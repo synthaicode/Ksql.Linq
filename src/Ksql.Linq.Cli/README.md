@@ -88,7 +88,7 @@ Ksql.Linq ships with an **AI Assistant Guide** (`AI_ASSISTANT_GUIDE.md`) that ex
 (for example: ChatGPT, Claude, GitHub Copilot, Cursor) together with both the library and this CLI tool.
 
 - Ask an AI to design or review your `KsqlContext`, entities, and windowing strategy.
-- Generate or refine KSQL scripts produced by `dotnet ksql script`.
+- Explain KSQL scripts produced by `dotnet ksql script` and highlight what to verify on your own ksqlDB version/configuration.
 - Get prompt patterns and anti-patterns specific to Ksql.Linq so the AI respects your model and conventions.
 
 Run `dotnet ksql ai-assist --copy`, paste it into your AI assistant, and ask it to follow the guide. 
