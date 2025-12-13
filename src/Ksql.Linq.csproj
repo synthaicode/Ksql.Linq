@@ -87,6 +87,10 @@ Includes AI Assistant Guide for Kafka/ksqlDB support.
     <None Include="..\AI_ASSISTANT_GUIDE.md" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Embed the AI guide into the library assembly so the CLI tool can read it without shipping a separate copy. -->
+    <EmbeddedResource Include="..\AI_ASSISTANT_GUIDE.md" LogicalName="Ksql.Linq.AI_ASSISTANT_GUIDE.md" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="2.12.0" />
     <PackageReference Include="Confluent.SchemaRegistry" Version="2.12.0" />
     <PackageReference Include="Confluent.SchemaRegistry.Serdes.Avro" Version="2.12.0" />

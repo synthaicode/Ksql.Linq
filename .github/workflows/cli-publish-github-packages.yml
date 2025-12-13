@@ -58,20 +58,13 @@ jobs:
       - name: Pack CLI tool
         run: dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o ./artifacts/cli -p:PackageVersion=${{ steps.cli_ver.outputs.version }}
 
-      - name: Verify AI_ASSISTANT_GUIDE.md is packaged (CLI tool)
-        shell: pwsh
+      - name: Smoke: ai-assist reads bundled guide
+        shell: bash
         run: |
-          $nupkg = Get-ChildItem ./artifacts/cli -Filter 'Ksql.Linq.Cli.*.nupkg' | Select-Object -First 1
-          if (-not $nupkg) { throw "No CLI nupkg found under artifacts/cli" }
-          Add-Type -AssemblyName System.IO.Compression
-          $zip = [System.IO.Compression.ZipFile]::OpenRead($nupkg.FullName)
-          try {
-            $entry = $zip.Entries | Where-Object { $_.FullName -ieq 'AI_ASSISTANT_GUIDE.md' } | Select-Object -First 1
-            if (-not $entry) { throw "AI_ASSISTANT_GUIDE.md is missing from $($nupkg.Name)" }
-            if ($entry.Length -lt 1000) { throw "AI_ASSISTANT_GUIDE.md seems too small ($($entry.Length) bytes) in $($nupkg.Name)" }
-            Write-Host "[ai-guide] OK: packaged AI_ASSISTANT_GUIDE.md ($($entry.Length) bytes)"
-          }
-          finally { $zip.Dispose() }
+          set -euo pipefail
+          dotnet tool install --tool-path ./_tool --add-source ./artifacts/cli Ksql.Linq.Cli --version "${VERSION}"
+          ./_tool/dotnet-ksql ai-assist | head -n 5
+          ./_tool/dotnet-ksql ai-assist | grep -q "AI Assistant Guide"
 
       - name: Publish CLI tool to GitHub Packages
         env:

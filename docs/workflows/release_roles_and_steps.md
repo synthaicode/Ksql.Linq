@@ -61,6 +61,7 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
 - CLI smoke build:
   - `dotnet build src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release`
   - `dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o .artifacts/cli` (optional local check)
+  - Note: the AI assist guide is bundled with **Ksql.Linq**; the CLI reads it from the library (no separate guide copy in the CLI package).
 - Commit and push:
   - `git commit` with a clear message (e.g., *Prepare Ksql.Linq 1.0.0: CLI + AI guide cleanup*)
   - `git push origin release/<version>`

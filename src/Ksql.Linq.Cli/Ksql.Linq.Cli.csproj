@@ -41,7 +41,6 @@
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="" />
     <None Include="..\\KsqlLinq-icon-128.png" Pack="true" PackagePath="" />
-    <None Include="..\\..\\AI_ASSISTANT_GUIDE.md" Pack="true" PackagePath="" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
