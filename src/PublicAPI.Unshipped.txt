@@ -15,12 +15,12 @@ Ksql.Linq.Query.Dsl.HoppingWindowSpec.Size.set -> void
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasHopping() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.Hopping.get -> Ksql.Linq.Query.Dsl.HoppingWindowSpec?
 Ksql.Linq.Query.Dsl.KsqlQueryModel.Hopping.set -> void
-Ksql.Linq.Query.Dsl.KsqlQueryModel.OperationSequence.get -> System.Collections.Generic.List<string>!
-Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Hopping(System.Linq.Expressions.Expression<System.Func<T1, System.DateTime>>! time, System.TimeSpan windowSize, System.TimeSpan hopInterval, System.TimeSpan? grace = null) -> Ksql.Linq.Query.Dsl.KsqlQueryable<T1>!
+Ksql.Linq.Query.Dsl.KsqlQueryModel.OperationSequence.get -> System.Collections.Generic.List<string!>!
+Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Hopping(System.Linq.Expressions.Expression<System.Func<T1, System.DateTime>!>! time, System.TimeSpan windowSize, System.TimeSpan hopInterval, System.TimeSpan? grace = null) -> Ksql.Linq.Query.Dsl.KsqlQueryable<T1>!
 Ksql.Linq.Runtime.HoppingWindow
-Ksql.Linq.Runtime.HoppingWindow.Get<T>(Ksql.Linq.KsqlContext! ctx, string? tableName = null) -> Ksql.Linq.Runtime.HoppingWindow<T>!
+static Ksql.Linq.Runtime.HoppingWindow.Get<T>(Ksql.Linq.KsqlContext! ctx, string? tableName = null) -> Ksql.Linq.Runtime.HoppingWindow<T!>!
 Ksql.Linq.Runtime.HoppingWindow<T>
-Ksql.Linq.Runtime.HoppingWindow<T>.ToListAsync(object! key, System.DateTime? from = null, System.DateTime? to = null, int? limit = null, System.TimeSpan? timeout = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T>!>!
+Ksql.Linq.Runtime.HoppingWindow<T>.ToListAsync(object! key, System.DateTime? from = null, System.DateTime? to = null, int? limit = null, System.TimeSpan? timeout = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
 Ksql.Linq.Runtime.HoppingExtensions
-Ksql.Linq.Runtime.HoppingExtensions.ReadHoppingAsync<T>(Ksql.Linq.KsqlContext! ctx, object! key, System.DateTime? from = null, System.DateTime? to = null, int? limit = null, System.TimeSpan? timeout = null, string? tableName = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T>!>!
-Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Hopping(System.Linq.Expressions.Expression<System.Func<T1, T2, System.DateTime>>! time, System.TimeSpan windowSize, System.TimeSpan hopInterval, System.TimeSpan? grace = null) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
+static Ksql.Linq.Runtime.HoppingExtensions.ReadHoppingAsync<T>(this Ksql.Linq.KsqlContext! ctx, object! key, System.DateTime? from = null, System.DateTime? to = null, int? limit = null, System.TimeSpan? timeout = null, string? tableName = null, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<T!>!>!
+Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>.Hopping(System.Linq.Expressions.Expression<System.Func<T1, T2, System.DateTime>!>! time, System.TimeSpan windowSize, System.TimeSpan hopInterval, System.TimeSpan? grace = null) -> Ksql.Linq.Query.Dsl.KsqlQueryable2<T1, T2>!
