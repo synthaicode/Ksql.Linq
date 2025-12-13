@@ -6,9 +6,6 @@ on:
       versionSuffix:
         description: "Pre-release suffix (e.g., preview.1-ci.<run>)"
         required: false
-  push:
-    tags:
-      - 'v*.*.*-rc*'   # e.g., v1.0.0-rc1, v1.0.0-rc.2
 
 jobs:
   pack-and-publish:
