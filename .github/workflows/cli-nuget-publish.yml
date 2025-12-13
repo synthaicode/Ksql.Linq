@@ -63,7 +63,7 @@ jobs:
       - name: Pack CLI tool
         run: dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o ./artifacts/cli -p:PackageVersion=${{ steps.cli_ver.outputs.version }}
 
-      - name: Smoke: ai-assist reads bundled guide
+      - name: "Smoke: ai-assist reads bundled guide"
         shell: bash
         run: |
           set -euo pipefail
