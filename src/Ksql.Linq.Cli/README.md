@@ -7,13 +7,21 @@ Registry to be running.
 
 **It also supports AI-assisted workflows for developers using Ksql.Linq.**
 
-This tool targets Ksql.Linq v0.9.5 or later,
+This tool is developed alongside Ksql.Linq. For best results, keep the library and CLI versions aligned.
+
+Prerequisites / compatibility
+----------------------------
+
+- **.NET SDK**: .NET 8+ (this tool targets `net8.0`).
+- **Version pairing (recommended)**: use `Ksql.Linq.Cli 1.1.x` together with `Ksql.Linq 1.1.x`.
+  - The `ai-assist` guide is bundled with **Ksql.Linq**; the CLI reads the guide from the library it ships with.
+  - Keeping library/CLI versions aligned avoids “guide/content drift” and makes support/debugging simpler.
 
 Install
 -------
 
 ```bash
-dotnet tool install --global Ksql.Linq.Cli --version 1.0.0
+dotnet tool install --global Ksql.Linq.Cli
 ```
 
 Update
@@ -83,4 +91,4 @@ Ksql.Linq ships with an **AI Assistant Guide** (`AI_ASSISTANT_GUIDE.md`) that ex
 - Generate or refine KSQL scripts produced by `dotnet ksql script`.
 - Get prompt patterns and anti-patterns specific to Ksql.Linq so the AI respects your model and conventions.
 
-Open `AI_ASSISTANT_GUIDE.md` in your editor and share it with your AI assistant to get better, Ksql.Linq-aware suggestions. 
+Run `dotnet ksql ai-assist --copy`, paste it into your AI assistant, and ask it to follow the guide. 
