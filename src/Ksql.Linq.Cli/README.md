@@ -15,7 +15,7 @@ Prerequisites / compatibility
 - **.NET SDK**: .NET 8+ (this tool targets `net8.0`).
 - **Version pairing (recommended)**: use `Ksql.Linq.Cli 1.1.x` together with `Ksql.Linq 1.1.x`.
   - The `ai-assist` guide is bundled with **Ksql.Linq**; the CLI reads the guide from the library it ships with.
-  - Keeping library/CLI versions aligned avoids “guide/content drift” and makes support/debugging simpler.
+  - **Operational note**: keeping library/CLI versions aligned avoids “guide/content drift”, reduces behavior mismatch, and makes support/debugging simpler.
 
 Install
 -------
