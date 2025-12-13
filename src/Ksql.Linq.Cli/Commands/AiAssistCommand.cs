@@ -68,20 +68,35 @@ public static class AiAssistCommand
         {
             if (OperatingSystem.IsWindows())
             {
-                var psi = new ProcessStartInfo
+                // Prefer PowerShell's Set-Clipboard to avoid codepage-dependent mojibake (multi-locale safe).
+                // Read stdin explicitly as UTF-8 inside PowerShell, so the parent can always write UTF-8 bytes.
+                var psScript =
+                    "$sr = New-Object System.IO.StreamReader([Console]::OpenStandardInput(), [System.Text.UTF8Encoding]::new($false));" +
+                    " $t = $sr.ReadToEnd();" +
+                    " Set-Clipboard -Value $t";
+
+                if (!RunPipeCommand("pwsh", text, "-NoProfile", "-NonInteractive", "-Command", psScript))
                 {
-                    FileName = "cmd.exe",
-                    Arguments = "/c clip",
-                    RedirectStandardInput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using var p = Process.Start(psi);
-                if (p is not null)
-                {
-                    p.StandardInput.Write(text);
-                    p.StandardInput.Close();
-                    p.WaitForExit();
+                    if (!RunPipeCommand("powershell", text, "-NoProfile", "-NonInteractive", "-Command", psScript))
+                    {
+                        // Fallback: clip.exe (best-effort; may be codepage-dependent on some systems).
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = "cmd.exe",
+                            Arguments = "/c clip",
+                            RedirectStandardInput = true,
+                            StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        using var p = Process.Start(psi);
+                        if (p is not null)
+                        {
+                            p.StandardInput.Write(text);
+                            p.StandardInput.Close();
+                            p.WaitForExit();
+                        }
+                    }
                 }
             }
             else if (OperatingSystem.IsMacOS())
@@ -111,6 +126,7 @@ public static class AiAssistCommand
             {
                 FileName = fileName,
                 RedirectStandardInput = true,
+                StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
