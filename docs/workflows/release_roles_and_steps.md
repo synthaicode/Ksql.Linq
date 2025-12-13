@@ -13,14 +13,33 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
 **Responsibilities:**
 - Create or update the release branch:
   - `git switch -c release/<version>` (or `git switch release/<version>`)
+- Requirement intake & design consultation (before coding):
+  - Confirm **what changes** (feature/bugfix), **who is affected** (API/behavior), and **how to verify** (UT/physical/CLI/docs).
+  - Decide the guard level expectations (L1–L4) and the minimum test matrix for this change.
+  - Confirm documentation scope: Wiki (canonical), CHANGELOG, release notes, READMEs, and AI guide (docs sources → generated → packaged).
+  - If the change touches AI guide/CLI packaging, explicitly include the agreement phrase: `原稿→生成→同梱→検証`.
 - Align versioning and notes:
   - Update `<Version>` and `<PackageReleaseNotes>` in `src/Ksql.Linq.csproj`.
+  - Update `<Version>` in `src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj` to the **same base version** as the library (unless explicitly agreed otherwise).
+  - Dependency model (clarify to avoid release-time surprises):
+    - The CLI is built via `ProjectReference` to `Ksql.Linq` during development.
+    - Release packages must still be version-consistent: validate that the packed CLI/tool resolves the intended library bits for the same version.
   - Append a new `docs/diff_log/diff_<feature>_<YYYYMMDD>.md` for notable changes.
   - Update `docs/releases/release_v<version>.md` (or create it for new minor versions).
-  - Update `docs/AI_ASSISTANT_*` sections as needed and regenerate `AI_ASSISTANT_GUIDE.md` by concatenating:
-    - `docs/ai_guide_intro_and_workflows.md`
-    - `docs/ai_guide_conversation_patterns.md`
-    - `docs/ai_guide_technical_sections.md`
+  - AI guide (source → generated → packaged):
+    - **Edit sources** (do not hand-edit the generated file):
+      - `docs/ai_guide_intro_and_workflows.md`
+      - `docs/ai_guide_conversation_patterns.md`
+      - `docs/ai_guide_technical_sections.md`
+    - **Regenerate** `AI_ASSISTANT_GUIDE.md` (generated artifact committed to the repo) using the project’s build script/tooling.
+      - Note: generation is deterministic (a pure concatenation of the three source files, enforced by CI), not an LLM/prompt-driven step.
+    - **Verify packaging** locally (optional but recommended):
+      - Library: `dotnet pack src/Ksql.Linq.csproj -c Release -o .artifacts`
+      - CLI tool: `dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o .artifacts/cli`
+      - Confirm `AI_ASSISTANT_GUIDE.md` exists inside the produced `.nupkg` (unzip and inspect).
+    - **Smoke** the CLI against packaged content:
+      - `dotnet ksql ai-assist` prints the packaged guide
+      - `dotnet ksql ai-assist --copy` copies it to clipboard (where supported; verify no mojibake)
 - Keep examples in sync (see also §6):
   - Update `examples/Directory.Build.props` to reference the new `Ksql.Linq` NuGet version (e.g., `1.0.0`).
   - Run a quick build for examples to confirm compatibility (optional but recommended):
@@ -101,15 +120,26 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
   - Confirm critical features (TimeBucket, DLQ, Tumbling, etc.) behave as expected.
 - CLI:
   - Run `dotnet ksql script` and `dotnet ksql avro` against sample contexts.
-  - Verify the packaged `AI_ASSISTANT_GUIDE.md` is up to date and readable (no encoding issues or duplication).
+  - AI guide checks:
+    - Verify the packaged `AI_ASSISTANT_GUIDE.md` is up to date and readable (no encoding issues, duplication, or stale content).
+    - Run `dotnet ksql ai-assist` and confirm it reads the packaged guide file (no external dependency).
+    - If used: run `dotnet ksql ai-assist --copy` and confirm the clipboard content is not mojibake.
 
 **GO decision (Lead):**
 - If RC is acceptable:
-  - Fast-forward merge `release/<version>` into `main`:
-    - `git checkout main`
-    - `git merge --ff-only release/<version>`
-    - `git push origin main`
+  - Merge `release/<version>` into `main`:
+    - Preferred (simple history): `git checkout main` → `git merge --ff-only release/<version>` → `git push origin main`
+    - If `--ff-only` fails because `main` moved:
+      - Option A (recommended): temporarily **freeze main** (branch protection / release window rule), then re-run the merge.
+      - Option B: do a normal merge commit (`git merge release/<version>`) with review, to avoid last-minute rebase accidents.
 - The `main` branch now represents the final release content.
+
+**Commit pinning (build consistency for CLI)**:
+- The CLI tool is built using `ProjectReference` to `Ksql.Linq`, so `dotnet pack` embeds the library build output from that same commit.
+- To avoid “NuGet library contents” vs “CLI embedded library contents” drift:
+  - Treat the post-GO commit on `main` as **immutable for release**.
+  - Publish the library tag `vX.Y.Z` and the CLI tag `cli-vX.Y.Z` from the **same commit hash** (no intervening commits).
+  - Policy: “Do not release from a commit other than the tagged commit.”
 
 ---
 
@@ -156,8 +186,16 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
 
 **Developer responsibilities:**
 - Create and push the tag after library release is confirmed:
-  - `git tag cli-v1.0.0`
-  - `git push origin cli-v1.0.0`
+  - Use the **exact CLI version** from `src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj` (avoid typos/mismatch).
+  - Tag format must match workflows:
+    - Stable: `cli-vX.Y.Z`
+    - RC: `cli-vX.Y.Z-rc.N`
+  - Build consistency rule:
+    - Create `cli-vX.Y.Z` on the **same commit** as the library tag `vX.Y.Z`.
+    - Do not add commits between `vX.Y.Z` and `cli-vX.Y.Z`.
+  - Then push the tag:
+    - `git tag cli-v<version>`
+    - `git push origin cli-v<version>`
 - Verify on nuget.org that `Ksql.Linq.Cli` appears with the expected version and README.
 
 ---
@@ -180,6 +218,7 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
     - 変更された仕様に関わる Wiki ページ（例: Tumbling / WindowStart / DLQ / Examples / CLI-Usage / Examples Index / AI Support 関連）を確認し、必要な修正を反映。
     - AIガイドからリンクされている Wiki セクションが、リリース時点の挙動と矛盾していないことを確認。
     - 必要であれば、`Home.md` や `Overview.md` に今回のリリースで重要な変更点を追記。
+    - **ラグ対策**: 破壊的変更や導線変更がある場合、Wikiは Aftercare に回さず、RC検証～GO判断の段階で更新案を確定し、リリースと同時に反映できる状態にする（下書き/PR/コミット準備）。
 - Examples:
   - Confirm `examples/Directory.Build.props` references the released version (e.g., `1.0.0`).
   - Optionally, run `build_examples` workflow or a local equivalent.
@@ -253,7 +292,8 @@ Before declaring a release **ready**, confirm at least the following items.
 
 - [ ] `src/README.md` が「Ksql.Linq 1.x」の主対象読者・主な価値・サポート状況（Tumbling/Hopping 等）を正しく反映している。  
 - [ ] `src/Ksql.Linq.Cli/README.md` が CLI 1.x の機能（`script` / `avro` / `ai-assist`）と GitHub Packages/NuGet の利用方法を説明している。  
-- [ ] `AI_ASSISTANT_GUIDE.md` が `docs/ai_guide_intro_and_workflows.md` / `docs/ai_guide_conversation_patterns.md` / `docs/ai_guide_technical_sections.md` の内容と一致しており、文字化けや License の重複がない。  
+- [ ] AI guide 原稿（`docs/ai_guide_*`）の更新が反映され、`AI_ASSISTANT_GUIDE.md` が最新である（手動編集していない）。  
+- [ ] `AI_ASSISTANT_GUIDE.md` が文字化けせず、License の重複やヘッダ/フッタの重複がない。  
 - [ ] Wiki の主要ページが今回のリリース内容と整合している：  
   - Tumbling / WindowStart / TimeBucket 関連 (`Tumbling-*.md`, `Expression-Support-Tumbling-vs-General`, `Tumbling-Overview`, `Tumbling-Definition` など)。  
   - DLQ / Streamiz / TableCache 関連。  
@@ -265,5 +305,21 @@ Before declaring a release **ready**, confirm at least the following items.
 - [ ] CLI 用 GitHub Packages ワークフロー（`cli-v*.*.*-rc.*` トリガー）が通過し、RC をインストールして動作確認済み。  
 - [ ] `nuget-publish.yml` が `v<version>` タグで通過し、ライブラリが nuget.org に反映されている。  
 - [ ] CLI 用 nuget publish ワークフロー（`cli-v<version>` タグ）が通過し、`Ksql.Linq.Cli` が nuget.org に反映されている。  
+- [ ] パッケージ同梱検証（AI guide）が CI で有効になっている：`AI_ASSISTANT_GUIDE.md` が `.nupkg` に入っていない場合は workflow が fail する。  
+
+---
+
+## 9. Rollback / Emergency Policy (minimal)
+
+NuGet publish is effectively irreversible (you can unlist, but the version is consumed). Prepare the following minimal policy:
+
+- Library release has a critical bug:
+  - Decide whether to **unlist** the broken version.
+  - Start a hotfix release (`X.Y.(Z+1)`) with a minimal diff and clear release notes.
+- CLI publish fails after library is already published:
+  - Decide whether this is acceptable (library only) or blocks release.
+  - If acceptable, publish CLI as soon as possible and communicate the delay (release notes / README / issue).
+  - If not acceptable, stop and ship a coordinated hotfix release.
+
 
 このチェックリストを満たしていることを各担当が報告し、天城が最終確認することで、リリース品質を安定して維持できる。 
