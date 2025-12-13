@@ -155,6 +155,14 @@ After reading this document, your AI will:
 1. Reference the file: `#file:AI_ASSISTANT_GUIDE.md`
 2. Ask design questions with context
 
+**Prompt template (recommended)**
+```text
+Before answering, tell me whether you can access my local/workspace files in this environment.
+If you cannot, say so explicitly and ask me to paste the relevant snippets.
+If you can (agent/workspace mode), read #file:AI_ASSISTANT_GUIDE.md first and follow its rules.
+Then help me design or sanity-check my KsqlContext and windowing strategy, and output a checklist of what I should verify in my own ksqlDB environment.
+```
+
 #### ChatGPT / Claude Desktop
 
 1. Upload `AI_ASSISTANT_GUIDE.md` to the conversation
