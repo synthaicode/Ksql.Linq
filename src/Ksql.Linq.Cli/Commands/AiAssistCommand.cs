@@ -11,7 +11,15 @@ public static class AiAssistCommand
 {
     public static Command Create()
     {
-        var command = new Command("ai-assist", "Prints the Ksql.Linq AI Assistant Guide for use with AI coding assistants.")
+        var command = new Command("ai-assist", """
+            Prints the Ksql.Linq AI Assistant Guide for use with AI coding assistants.
+
+            Quick start:
+              dotnet ksql ai-assist --copy
+
+            Tip (GitHub Copilot / agent mode):
+              Paste the output into Copilot Chat and ask it to follow the guide when designing or reviewing your Ksql.Linq code.
+            """)
         {
             new Option<bool>(
                 name: "--copy",
