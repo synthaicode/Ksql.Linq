@@ -36,6 +36,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Build AI_ASSISTANT_GUIDE.md from sources
+        shell: pwsh
+        run: |
+          pwsh -NoLogo -File tools/build-ai-assistant-guide.ps1 -Write
+
       - name: Compute version from tag
         shell: bash
         run: |
@@ -67,6 +72,21 @@ jobs:
 
       - name: Pack
         run: dotnet pack src/Ksql.Linq.csproj -c Release --no-build -p:PackageVersion=${{ env.VERSION }} -o ./artifacts
+
+      - name: Verify AI_ASSISTANT_GUIDE.md is packaged (library)
+        shell: pwsh
+        run: |
+          $nupkg = Get-ChildItem ./artifacts -Filter 'Ksql.Linq.*.nupkg' | Select-Object -First 1
+          if (-not $nupkg) { throw "No library nupkg found under artifacts/" }
+          Add-Type -AssemblyName System.IO.Compression
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($nupkg.FullName)
+          try {
+            $entry = $zip.Entries | Where-Object { $_.FullName -ieq 'AI_ASSISTANT_GUIDE.md' } | Select-Object -First 1
+            if (-not $entry) { throw "AI_ASSISTANT_GUIDE.md is missing from $($nupkg.Name)" }
+            if ($entry.Length -lt 1000) { throw "AI_ASSISTANT_GUIDE.md seems too small ($($entry.Length) bytes) in $($nupkg.Name)" }
+            Write-Host "[ai-guide] OK: packaged AI_ASSISTANT_GUIDE.md ($($entry.Length) bytes)"
+          }
+          finally { $zip.Dispose() }
 
       - name: Push to nuget.org
         if: env.ON_MASTER == 'true'

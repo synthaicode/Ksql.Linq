@@ -414,5 +414,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-#AI logs
+# AI logs
+# Note: diff logs are tracked when committed, but untracked local files under docs/diff_log/ are ignored by default.
+# When adding a new diff log, stage it explicitly (e.g., `git add -f docs/diff_log/diff_...md`).
 docs/diff_log/

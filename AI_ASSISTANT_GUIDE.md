@@ -202,6 +202,8 @@ After reading this document, your AI will:
 >
 > ## 5. Recommended Solution
 > **Option A** - See [Pattern 2: Stream Enrichment](#use-case-2-stream-enrichment-join)
+
+
 # AI Conversation Patterns — v1.1 (Refactored, English Edition)
 ## Ksql.Linq / Ksql.Linq.Cli — AI-Assisted Design Support Protocol
 
@@ -666,6 +668,8 @@ When you suggest creating an Issue or Discussion:
 4. **Follow-up**:
    - Offer to refine the template based on user feedback
    - Suggest additional information that might be helpful
+
+
 
 ---
 
