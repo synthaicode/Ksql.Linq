@@ -49,6 +49,15 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
   - `dotnet build src/Ksql.Linq.csproj -c Release -p:StrictPublicApi=true -warnaserror:RS0016,RS0017`
 - Unit tests (no physical tests / Integration):
   - `dotnet test tests/Ksql.Linq.Tests.csproj -c Release --filter "TestCategory!=Integration"`
+- Physical tests (Windows only; run when changes touch windowing/DSL/runtime/CLI behavior):
+  - Purpose: catch regressions that only reproduce in a real Kafka/ksqlDB/Schema Registry environment.
+  - Run policy:
+    - If the change impacts Tumbling/Hopping/Hub rows (`*_1s_rows`), TimeBucket/TableCache, or query translation: run the physical test set.
+    - If the change is docs-only, skip.
+  - How to run:
+    - Use the physical test runner for this repo (see `physicalTests/`).
+    - Run at least the smoke set agreed in the requirement intake step.
+    - Record the executed tests + results (PASS/FAIL) in the PR/issue comment.
 - CLI smoke build:
   - `dotnet build src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release`
   - `dotnet pack src/Ksql.Linq.Cli/Ksql.Linq.Cli.csproj -c Release -o .artifacts/cli` (optional local check)
@@ -118,6 +127,7 @@ It covers both the **core library** (`Ksql.Linq`) and the **CLI tool** (`Ksql.Li
 - Library:
   - Run sample apps and examples against the RC from GitHub Packages.
   - Confirm critical features (TimeBucket, DLQ, Tumbling, etc.) behave as expected.
+  - If applicable, re-run the agreed physical test smoke set (Windows only) against the RC.
 - CLI:
   - Run `dotnet ksql script` and `dotnet ksql avro` against sample contexts.
   - AI guide checks:
@@ -266,6 +276,8 @@ Before declaring a release **ready**, confirm at least the following items.
   - `dotnet build src/Ksql.Linq.csproj -c Release -p:StrictPublicApi=true -warnaserror:RS0016,RS0017`  
 - [ ] 単体テスト（Integration 以外）がグリーン：  
   - `dotnet test tests/Ksql.Linq.Tests.csproj -c Release --filter "TestCategory!=Integration"`  
+- [ ] 物理テスト（Windowsのみ、該当変更時）が実行され、結果が記録されている：  
+  - Tumbling/Hopping/Hub rows/TimeBucket/TableCache/翻訳系の変更がある場合は必須  
 - [ ] 主要な diff が `docs/diff_log/diff_*.md` に追記されている（特に Streamiz/WindowStart/TimeBucket/DDL まわり）。  
 
 ### 8.2 CLI (Ksql.Linq.Cli)
