@@ -64,6 +64,20 @@ dotnet ksql ai-assist --copy
 ```
 Then paste the copied text into your AI assistant and ask it to act as a Ksql.Linq design support AI.
 
+### AI Request Rules (Must / Should)
+
+To keep results reliable across different AI products/models (GitHub Copilot, ChatGPT, Claude, etc.), treat the AI as an **assistant** and use these rules:
+
+**Must**
+- Provide your **Ksql.Linq version** and your **ksqlDB version/config assumptions** (or say “unknown”).
+- Provide the relevant inputs (your `KsqlContext` snippet and/or generated KSQL) and ask the AI to output a **checklist of what you should verify in your own environment**.
+- Treat any “this will work on ksqlDB” statement as **non-binding** unless you verify it yourself.
+
+**Should**
+- Ask the AI to state **assumptions and open questions** explicitly before recommending a pattern.
+- Ask for the answer in a **structured format** (the Output Format template in this guide).
+- When unsure, ask the AI to propose **multiple options** and a small “next-step experiment” you can run locally.
+
 ### Recommended Workflows
 
 #### 1. **Initial Design Consultation**
