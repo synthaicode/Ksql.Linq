@@ -1,9 +1,11 @@
-Design-time KSQL & Avro Tool (with AI Support)
+Design-time KSQL & Avro Tool (with AI Assist)
 ===========================================
 
 This is a .NET global tool that generates KSQL scripts and Avro schemas
 from a Ksql.Linq-based application, without requiring Kafka/ksqlDB/Schema
-Registry to be running.<br/> <b>It also supports AI-assisted workflows for developers using Ksql.Linq.</b>
+Registry to be running.
+
+**It also supports AI-assisted workflows for developers using Ksql.Linq.**
 
 This tool targets Ksql.Linq v0.9.5 or later,
 
@@ -13,6 +15,23 @@ Install
 ```bash
 dotnet tool install --global Ksql.Linq.Cli --version 1.0.0
 ```
+
+Update
+------
+
+Global tool:
+
+```bash
+dotnet tool update --global Ksql.Linq.Cli
+```
+
+Local tool (tool manifest):
+
+```bash
+dotnet tool update Ksql.Linq.Cli
+```
+
+After updating, rerun `dotnet ksql ai-assist --copy` if you want to refresh the AI Assistant Guide text you paste into your AI assistant.
 
 Commands
 --------
