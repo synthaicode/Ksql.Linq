@@ -35,6 +35,9 @@ bld/
 [Ll]ogs/
 .artifacts/
 
+# Local verification outputs (local only)
+.verify/
+
 # Physical test outputs (local only)
 .pt_long/
 .ptresults_clean/
