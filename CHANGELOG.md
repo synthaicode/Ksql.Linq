@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.0
+- Adds Hopping window support and clarifies the Tumbling vs Hopping boundary (hub rows path, function compatibility handling).
+- Strengthens AI Assist onboarding: request rules (Must/Should), Copilot agent-mode prompt template, and full/focused loading strategy guidance.
+- Improves CLI help/README guidance so first-time users can start with `dotnet ksql ai-assist --copy` and understand version alignment expectations.
+
 ## v1.0.0
 - Packaged the AI Assistant Guide alongside the library/CLI and pointed to `docs/releases/release_v1_0_0.md` for the release story.
 - Added the CLI `dotnet ksql ai-assist` command (with `--copy`) so users can immediately send the guide text to assistants.

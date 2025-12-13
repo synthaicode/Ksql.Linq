@@ -10,7 +10,7 @@
     <!-- ✅ Keep nullable warnings as warnings (for phased migration) -->
     <WarningsNotAsErrors>CS8600;CS8601;CS8602;CS8603;CS8618;CS8619;CS8620;CS8625;CS1570;CS1573;CS1587;RS0016;RS0017</WarningsNotAsErrors>
     <PackageId>Ksql.Linq</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>SynthAICode</Authors>
     <Company>SynthAICode</Company>
     <Description>An Entity Framework-style LINQ library for Kafka and ksqlDB. 
@@ -24,7 +24,7 @@ Includes AI Assistant Guide for Kafka/ksqlDB support.
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>KsqlLinq-icon-128.png</PackageIcon>
-    <PackageReleaseNotes>See https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v1_0_0.md for 1.0.0 (AI Assistant Guide and CLI integration). Runtime fixes from 0.9.8 are described in https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v0_9_8.md.</PackageReleaseNotes>
+    <PackageReleaseNotes>See https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v1_1_0.md for 1.1.0. For 1.0.0 story (AI Assistant Guide and CLI integration), see https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v1_0_0.md.</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
