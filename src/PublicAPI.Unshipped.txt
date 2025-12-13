@@ -15,6 +15,7 @@ Ksql.Linq.Query.Dsl.HoppingWindowSpec.Size.set -> void
 Ksql.Linq.Query.Dsl.KsqlQueryModel.HasHopping() -> bool
 Ksql.Linq.Query.Dsl.KsqlQueryModel.Hopping.get -> Ksql.Linq.Query.Dsl.HoppingWindowSpec?
 Ksql.Linq.Query.Dsl.KsqlQueryModel.Hopping.set -> void
+Ksql.Linq.Query.Dsl.KsqlQueryModel.OperationSequence.get -> System.Collections.Generic.List<string>!
 Ksql.Linq.Query.Dsl.KsqlQueryable<T1>.Hopping(System.Linq.Expressions.Expression<System.Func<T1, System.DateTime>>! time, System.TimeSpan windowSize, System.TimeSpan hopInterval, System.TimeSpan? grace = null) -> Ksql.Linq.Query.Dsl.KsqlQueryable<T1>!
 Ksql.Linq.Runtime.HoppingWindow
 Ksql.Linq.Runtime.HoppingWindow.Get<T>(Ksql.Linq.KsqlContext! ctx, string? tableName = null) -> Ksql.Linq.Runtime.HoppingWindow<T>!

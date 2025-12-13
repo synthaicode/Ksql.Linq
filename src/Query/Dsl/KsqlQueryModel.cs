@@ -48,6 +48,7 @@ public class KsqlQueryModel
     public int? GraceSeconds { get; set; }
     public bool Continuation { get; set; } = false;
     public bool PrimarySourceRequiresAlias { get; set; }
+    public List<string> OperationSequence { get; } = new();
     public System.Collections.Generic.Dictionary<string, object?> Extras { get; } = new();
     public HoppingWindowSpec? Hopping { get; set; }
     internal ProjectionMetadata? SelectProjectionMetadata { get; set; }
@@ -80,6 +81,7 @@ public class KsqlQueryModel
         };
         clone.Windows.AddRange(Windows);
         clone.BasedOnJoinKeys.AddRange(BasedOnJoinKeys);
+        clone.OperationSequence.AddRange(OperationSequence);
         foreach (var kv in Extras)
             clone.Extras[kv.Key] = kv.Value;
         clone.SelectProjectionMetadata = SelectProjectionMetadata;

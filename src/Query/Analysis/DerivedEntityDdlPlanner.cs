@@ -246,8 +246,7 @@ internal static class DerivedEntityDdlPlanner
         for (var i = 0; i < existingValNames.Length; i++)
         {
             var valueName = existingValNames[i];
-            if (string.IsNullOrWhiteSpace(valueName) ||
-                valueName.Equals("BucketStart", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(valueName))
             {
                 continue;
             }
@@ -629,14 +628,6 @@ internal static class DerivedEntityDdlPlanner
         if (!string.IsNullOrWhiteSpace(model.ValueSchemaFullName))
         {
             qm.Extras["valueSchemaFullName"] = model.ValueSchemaFullName;
-        }
-        else if (!qm.Extras.ContainsKey("valueSchemaFullName"))
-        {
-            var nsValue = metadata.Namespace;
-            if (!string.IsNullOrWhiteSpace(nsValue))
-            {
-                qm.Extras["valueSchemaFullName"] = $"{nsValue}.{context.Name}_valueAvro";
-            }
         }
 
         var sinkPartitions = model.Partitions > 0 ? model.Partitions : 1;

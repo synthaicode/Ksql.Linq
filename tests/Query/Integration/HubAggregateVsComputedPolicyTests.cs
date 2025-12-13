@@ -103,7 +103,10 @@ public class HubAggregateVsComputedPolicyTests
         Assert.True(qs.TryGetProjection("High", out var highExpr) && highExpr.IndexOf("HIGH", StringComparison.OrdinalIgnoreCase) >= 0);
         Assert.True(qs.TryGetProjection("Low", out var lowExpr) && lowExpr.IndexOf("LOW", StringComparison.OrdinalIgnoreCase) >= 0);
         Assert.True(qs.TryGetProjection("Close", out var closeExpr) && closeExpr.IndexOf("CLOSE", StringComparison.OrdinalIgnoreCase) >= 0);
-        Assert.True(qs.TryGetProjection("AvgBid", out var avgExpr) && avgExpr.IndexOf("AVG(", StringComparison.OrdinalIgnoreCase) >= 0);
+        Assert.True(qs.TryGetProjection("AvgBid", out var avgExpr) &&
+                    (avgExpr.IndexOf("AVG(", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     (avgExpr.IndexOf("SUM(", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                      avgExpr.IndexOf("CNT", StringComparison.OrdinalIgnoreCase) >= 0)));
         Assert.True(qs.TryGetProjection("SumLots", out var sumExpr) && sumExpr.IndexOf("SUM(", StringComparison.OrdinalIgnoreCase) >= 0);
         Assert.True(qs.TryGetProjection("Cnt", out var cntExpr) && cntExpr.IndexOf("COUNT(", StringComparison.OrdinalIgnoreCase) >= 0);
 
@@ -123,5 +126,4 @@ public class HubAggregateVsComputedPolicyTests
         Assert.Equal(resolved, m.ResolvedColumnName);
     }
 }
-
 

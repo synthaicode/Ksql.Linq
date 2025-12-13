@@ -44,6 +44,7 @@ public class HoppingSampleDdlTests
         SqlAssert.StartsWithNormalized(ddl, "CREATE TABLE IF NOT EXISTS USER_TRANSACTION_STATS");
         SqlAssert.ContainsNormalized(ddl, "WINDOW HOPPING ( SIZE 5 MINUTES , ADVANCE BY 1 MINUTES )");
         SqlAssert.ContainsNormalized(ddl, "GROUP BY USERID");
-        SqlAssert.ContainsNormalized(ddl, "WINDOWSTART AS");
+        // WindowStart is omitted from value schema to keep payload lean; window bounds come from windowed key.
+        SqlAssert.DoesNotContainNormalized(ddl, "WINDOWSTART AS");
     }
 }

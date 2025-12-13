@@ -241,7 +241,9 @@ public class KsqlCreateWindowedStatementBuilderTests
             }
         };
 
-        Assert.Throws<InvalidOperationException>(() => KsqlCreateWindowedStatementBuilder.BuildHopping("h_no_ws", model));
+        var sql = KsqlCreateWindowedStatementBuilder.BuildHopping("h_no_ws", model);
+        SqlAssert.ContainsNormalized(sql, "WINDOW HOPPING");
+        SqlAssert.DoesNotContainNormalized(sql, "WINDOWSTART AS");
     }
 }
 

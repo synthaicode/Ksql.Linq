@@ -40,7 +40,7 @@ public class KsqlFunctionTranslatorTests
         Expression<Func<Entity, object>> expr = e => e.Name.ToUpper();
         var call = GetCall(expr);
         var result = KsqlFunctionTranslator.TranslateMethodCall(call);
-        Assert.Equal("UPPER(Name)", result);
+        Assert.Equal("UCASE(Name)", result);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class KsqlFunctionTranslatorTests
         Expression<Func<Entity, object>> expr = e => e.Comment.ToLower().Trim();
         var call = GetCall(expr);
         var result = KsqlFunctionTranslator.TranslateMethodCall(call);
-        Assert.Equal("TRIM(LOWER(Comment))", result);
+        Assert.Equal("TRIM(LCASE(Comment))", result);
     }
 
     [Fact]

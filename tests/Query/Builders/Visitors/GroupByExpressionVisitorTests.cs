@@ -108,7 +108,7 @@ public class GroupByExpressionVisitorTests
         var visitor = new GroupByExpressionVisitor();
         visitor.Visit(expr.Body);
         var result = visitor.GetResult();
-        Assert.Equal("Id, UPPER(Category)", result);
+        Assert.Equal("Id, UCASE(Category)", result);
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public class GroupByExpressionVisitorTests
         var call = GetCall(expr);
         var visitor = new GroupByExpressionVisitor();
         var result = InvokePrivate<string>(visitor, "ProcessGroupByFunction", new[] { typeof(MethodCallExpression) }, args: new object[] { call });
-        Assert.Equal("UPPER(Category)", result);
+        Assert.Equal("UCASE(Category)", result);
     }
 
     [Fact]
@@ -227,4 +227,3 @@ public class GroupByExpressionVisitorTests
         Assert.Equal("Value + 1", result);
     }
 }
-

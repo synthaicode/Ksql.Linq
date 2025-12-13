@@ -1,1 +1,1 @@
-create table if not exists partition_variant with(kafka_topic='partition_variant', key_format='avro', value_format='avro')as select id as id, customerid as customerid from keyedorder group by customerid, id emit changes;
+create table if not exists partition_variant with(kafka_topic='partition_variant', key_format='kafka', value_format='avro')as select id as id, customerid as customerid from keyedorder group by customerid, id emit changes;

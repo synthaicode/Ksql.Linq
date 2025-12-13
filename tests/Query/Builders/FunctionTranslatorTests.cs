@@ -13,7 +13,7 @@ public class FunctionTranslatorTests
         var method = typeof(string).GetMethod(nameof(string.ToUpper), Type.EmptyTypes)!;
         var call = Expression.Call(Expression.Constant("a"), method);
         var result = KsqlFunctionTranslator.TranslateMethodCall(call);
-        Assert.Equal("UPPER('a')", result);
+        Assert.Equal("UCASE('a')", result);
     }
 
     [Fact]

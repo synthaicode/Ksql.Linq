@@ -10,12 +10,15 @@ namespace Ksql.Linq.Query.Dsl;
 /// </summary>
 public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
 {
-    public KsqlQueryable() { }
     private readonly KsqlQueryModel _model = new()
     {
         SourceTypes = new[] { typeof(T1) },
         PrimarySourceRequiresAlias = false
     };
+    public KsqlQueryable()
+    {
+        _model.OperationSequence.Add("From");
+    }
     private QueryBuildStage _stage = QueryBuildStage.From;
 
     public KsqlQueryable<T1> Where(Expression<Func<T1, bool>> predicate)
@@ -24,6 +27,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
             throw new InvalidOperationException("Where() must be called before GroupBy/Having/Select().");
 
         _model.WhereCondition = predicate;
+        _model.OperationSequence.Add("Where");
         _stage = QueryBuildStage.Where;
         return this;
     }
@@ -43,6 +47,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         }
 
         _model.SelectProjection = projection;
+        _model.OperationSequence.Add("Select");
         var visitor = new AggregateDetectionVisitor();
         visitor.Visit(projection.Body);
         var wsVisitor = new WindowStartDetectionVisitor();
@@ -57,6 +62,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
             throw new InvalidOperationException("GroupBy() must be called before Select().");
 
         _model.GroupByExpression = keySelector;
+        _model.OperationSequence.Add("GroupBy");
         _stage = QueryBuildStage.GroupBy;
         return new KsqlGroupedQueryable<T1, TKey>(_model);
     }
@@ -83,6 +89,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         if (grace.HasValue)
             _model.GraceSeconds = (int)Math.Ceiling(grace.Value.TotalSeconds);
         _model.NormalizeWindowsInPlace();
+        _model.OperationSequence.Add("Tumbling");
         return this;
     }
 
@@ -111,6 +118,7 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         };
         _model.Extras["HasHoppingWindow"] = true;
         _model.BucketColumnName = null; // hopping uses windowed key rather than explicit bucket column
+        _model.OperationSequence.Add("Hopping");
         return this;
     }
 
@@ -206,6 +214,8 @@ public class KsqlQueryable<T1> : IKsqlQueryable, IScheduledScope<T1>
         }
         foreach (var kv in _model.Extras)
             newModel.Extras[kv.Key] = kv.Value;
+        newModel.OperationSequence.AddRange(_model.OperationSequence);
+        newModel.OperationSequence.Add("Join");
         return new KsqlQueryable2<T1, T2>(newModel);
     }
 

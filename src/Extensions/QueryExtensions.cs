@@ -23,6 +23,7 @@ public static class QueryExtensions
             throw new InvalidOperationException("Select projection type must match EventSet type.");
         }
 
+        ToQueryValidator.ValidateHoppingPipeline(typeof(T), model);
         ToQueryValidator.ValidateSelectMatchesPoco(typeof(T), model);
 
         var entityModel = set.GetEntityModel();

@@ -244,28 +244,26 @@ internal static class KsqlCreateStatementBuilder
         // TIMESTAMP can only reference a column present in the projected schema.
         // Window系（Hopping/Tumbling）はカスタムタイムスタンプ列を優先して維持する。
         var timestampColumn = model.TimeKey;
-        if (!model.HasHopping() && !model.HasTumbling() && model.IsAggregateQuery())
+        // Tumbling/Hopping ではタイムスタンプ列が投影に無いケースがあるため WITH TIMESTAMP を外す
+        // 非ウィンドウ集計のみ、投影に無ければ TIMESTAMP を外す
+        var projected = false;
+        var timestampMeta = model.SelectProjectionMetadata;
+        if (timestampMeta?.Members != null)
         {
-            // 非ウィンドウ集計のみ、投影に無ければ TIMESTAMP を外す
-            var projected = false;
-            var meta = model.SelectProjectionMetadata;
-            if (meta?.Members != null)
+            foreach (var m in timestampMeta.Members)
             {
-                foreach (var m in meta.Members)
+                var name = m.ResolvedColumnName ?? m.SourceMemberPath ?? m.Alias;
+                if (!string.IsNullOrWhiteSpace(name) &&
+                    timestampColumn != null &&
+                    name.Equals(timestampColumn, StringComparison.OrdinalIgnoreCase))
                 {
-                    var name = m.ResolvedColumnName ?? m.SourceMemberPath ?? m.Alias;
-                    if (!string.IsNullOrWhiteSpace(name) &&
-                        timestampColumn != null &&
-                        name.Equals(timestampColumn, StringComparison.OrdinalIgnoreCase))
-                    {
-                        projected = true;
-                        break;
-                    }
+                    projected = true;
+                    break;
                 }
             }
-            if (!projected)
-                timestampColumn = null;
         }
+        if (!projected)
+            timestampColumn = null;
 
         var withClause = WithClauseBuilder.BuildClause(
             kafkaTopic: streamName,

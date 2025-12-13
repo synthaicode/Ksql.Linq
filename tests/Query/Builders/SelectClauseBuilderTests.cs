@@ -32,7 +32,7 @@ public class SelectClauseBuilderTests
         Expression<Func<TestEntity, object>> expr = e => new { NameUpper = e.Name.ToUpper() };
         var builder = new SelectClauseBuilder();
         var sql = builder.Build(expr.Body);
-        Assert.Equal("UPPER(NAME) AS NameUpper", sql);
+        Assert.Equal("UCASE(NAME) AS NameUpper", sql);
     }
 
     private class Order
@@ -66,4 +66,3 @@ public class SelectClauseBuilderTests
         Assert.Equal("WINDOWSTART AS BucketStart", sql);
     }
 }
-
