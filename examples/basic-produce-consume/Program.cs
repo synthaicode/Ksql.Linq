@@ -35,6 +35,8 @@ class Program
             .Build();
 
         await using var context = new BasicContext(configuration, LoggerFactory.Create(b => b.AddConsole()));
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await context.StartAsync();
 
         var message = new BasicMessage
         {

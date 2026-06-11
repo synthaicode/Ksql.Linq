@@ -26,6 +26,8 @@ class Program
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         var lf = LoggerFactory.Create(b => b.AddConsole());
         var ctx = new ProducerContext(cfg, lf);
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         var rnd = new Random();
         var symbols = new[] { "S1", "S2" };

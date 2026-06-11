@@ -53,6 +53,8 @@ public static class Program
             .UseConfiguration(configuration)
             .EnableLogging(loggerFactory)
             .BuildContext<RuntimeEventsContext>();
+        // Startup lifecycle hook (no-op unless KsqlDsl.DeferStartup is enabled)
+        await ctx.StartAsync();
 
         // 3) rows_last の ready を待つ（例: bar_1s_rows_last）
         var rowsLastTopic = configuration["RowsLastTopic"] ?? "bar_1s_rows_last";

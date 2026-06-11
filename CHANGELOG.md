@@ -4,6 +4,7 @@
 - Interface change: `KsqlContext.StartAsync` now executes deferred startup I/O instead of being a no-op. Behavior is unchanged for existing code: by default the constructor still runs schema registration/materialization, table-cache wiring, and startup fill (fail-fast preserved).
 - Added `KsqlDslOptions.DeferStartup` (default `false`). When `true`, the constructor performs no startup I/O; call `await context.StartAsync(ct)` explicitly. Startup failures then surface from `StartAsync` (cancellable, retry-able, and the context remains disposable), which avoids sync-over-async blocking in the constructor for SynchronizationContext-bound hosts and DI composition.
 - `Set<T>()` / `GetEventSet()` now throw `InvalidOperationException` with guidance when called before `StartAsync` completes on a deferred-startup context.
+- Examples updated to the recommended lifecycle: runtime samples now call `await ctx.StartAsync()` after construction, with `KsqlDsl.DeferStartup=true` in their `appsettings.json` (or inline options). Note: examples pin the published package via `examples/Directory.Build.props`; deferral takes effect once that version is bumped to a release containing `DeferStartup` (until then the config key is ignored and `StartAsync` is a no-op, so samples keep working).
 
 ## v1.1.0
 - Adds Hopping window support and clarifies the Tumbling vs Hopping boundary (hub rows path, function compatibility handling).

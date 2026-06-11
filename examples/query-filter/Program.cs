@@ -24,6 +24,8 @@ class Program
     {
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         await using var ctx = new FilterContext(cfg, LoggerFactory.Create(b => b.AddConsole()));
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         await ctx.Events.AddAsync(new Event { Id = 1, Category = "A" });
         await ctx.Events.AddAsync(new Event { Id = 2, Category = "B" });

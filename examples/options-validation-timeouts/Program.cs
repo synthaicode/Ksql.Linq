@@ -23,6 +23,8 @@ public static class Program
             .Build();
 
         await using var ctx = new MinimalContext(options);
+        // Startup lifecycle hook (no-op unless KsqlDsl.DeferStartup is enabled)
+        await ctx.StartAsync();
         Console.WriteLine("Configured validation and timeouts successfully.");
     }
 

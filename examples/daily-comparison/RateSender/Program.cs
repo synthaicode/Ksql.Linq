@@ -2,6 +2,8 @@ using DailyComparisonLib;
 using DailyComparisonLib.Models;
 
 await using var context = MyKsqlContext.FromAppSettings("appsettings.json");
+// Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+await context.StartAsync();
 
 var broker = "demo";
 var symbol = "EURUSD";

@@ -29,6 +29,8 @@ class Program
     {
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         await using var ctx = new SchemaAttrContext(cfg, LoggerFactory.Create(b => b.AddConsole()));
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         await ctx.Trades.AddAsync(new Trade
         {

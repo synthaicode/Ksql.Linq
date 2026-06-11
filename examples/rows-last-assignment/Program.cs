@@ -66,6 +66,8 @@ class Program
     {
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: false).Build();
         await using var ctx = new RowsLastAssignmentContext(cfg);
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         // produce a few 1s ticks to drive bar_1s_rows and rows_last creation
         var now = DateTime.UtcNow;

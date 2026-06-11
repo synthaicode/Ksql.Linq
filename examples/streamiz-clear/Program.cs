@@ -17,6 +17,8 @@ public static class Program
             .UseConfiguration(configuration)
             .EnableLogging(loggerFactory)
             .BuildContext<MinimalContext>();
+        // Startup lifecycle hook (no-op unless KsqlDsl.DeferStartup is enabled)
+        await ctx.StartAsync();
 
         Console.WriteLine("[streamiz-clear] Clearing Streamiz caches (RocksDB delete=true)...");
         ctx.ClearStreamizState(deleteStateDirs: true);

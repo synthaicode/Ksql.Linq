@@ -17,6 +17,8 @@ class Program
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         using var lf = LoggerFactory.Create(b => b.AddConsole());
         await using var ctx = new LiveConsumerContext(cfg, lf);
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
 

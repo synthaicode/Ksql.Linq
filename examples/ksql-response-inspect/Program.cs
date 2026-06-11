@@ -17,6 +17,8 @@ public static class Program
             .UseConfiguration(configuration)
             .EnableLogging(loggerFactory)
             .BuildContext<MinimalContext>();
+        // Startup lifecycle hook (no-op unless KsqlDsl.DeferStartup is enabled)
+        await ctx.StartAsync();
 
         var res = await ctx.ExecuteStatementAsync("SHOW STREAMS;");
         Console.WriteLine($"IsSuccess={res.IsSuccess}\nBody snippet={Preview(res.Message)}");

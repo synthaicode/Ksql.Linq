@@ -39,6 +39,8 @@ class Program
             .UseSchemaRegistry(configuration["KsqlDsl:SchemaRegistry:Url"]!)
             .EnableLogging(LoggerFactory.Create(builder => builder.AddConsole()))
             .BuildContext<HelloKafkaContext>();
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await context.StartAsync();
 
         var message = new HelloMessage
         {

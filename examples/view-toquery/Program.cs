@@ -56,6 +56,8 @@ class Program
     {
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         await using var ctx = new ViewContext(cfg, LoggerFactory.Create(b => b.AddConsole()));
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         // Produce sample rows
         await ctx.Customers.AddAsync(new Customer { Id = 1, Name = "Alice", IsActive = true });

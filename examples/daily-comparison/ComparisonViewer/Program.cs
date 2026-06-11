@@ -3,6 +3,8 @@ using DailyComparisonLib.Models;
 using Ksql.Linq.Core.Extensions;
 
 await using var context = MyKsqlContext.FromAppSettings("appsettings.json");
+// Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+await context.StartAsync();
 
 var oneMinBars = await context.Set<RateCandle>().ToListAsync();
 var fiveMinBars = await context.Set<RateCandle>().ToListAsync();

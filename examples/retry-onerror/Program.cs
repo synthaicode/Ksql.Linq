@@ -28,6 +28,8 @@ class Program
     {
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         await using var ctx = new RetryContext(cfg, LoggerFactory.Create(b => b.AddConsole()));
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         var set = ctx.Items.WithRetry(maxRetries: 3, retryInterval: TimeSpan.FromMilliseconds(200))
             .OnError(ErrorAction.DLQ);

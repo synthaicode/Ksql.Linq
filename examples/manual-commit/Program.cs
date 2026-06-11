@@ -31,6 +31,8 @@ class Program
             .Build();
 
         await using var context = new ManualCommitContext(configuration, LoggerFactory.Create(b => b.AddConsole()));
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await context.StartAsync();
 
         var order = new ManualCommitOrder
         {

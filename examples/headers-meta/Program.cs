@@ -25,6 +25,8 @@ class Program
     {
         var cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         await using var ctx = new HeadersContext(cfg, LoggerFactory.Create(b => b.AddConsole()));
+        // Run the deferred startup I/O (KsqlDsl.DeferStartup=true in appsettings.json)
+        await ctx.StartAsync();
 
         var cid = Guid.NewGuid().ToString("N");
         await ctx.Messages.AddAsync(new Msg { Id = 1, Text = "hello" }, new() { ["cid"] = cid });

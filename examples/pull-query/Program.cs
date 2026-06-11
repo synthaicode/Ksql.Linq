@@ -17,6 +17,8 @@ public static class Program
             .UseConfiguration(configuration)
             .EnableLogging(loggerFactory)
             .BuildContext<KsqlContextMinimal>();
+        // Startup lifecycle hook (no-op unless KsqlDsl.DeferStartup is enabled)
+        await ctx.StartAsync();
 
         // Example 1: Count from TABLE by WHERE clause
         var c1 = await ctx.PullCountAsync("bar_1m_live", "Broker='B1' AND Symbol='S1'");

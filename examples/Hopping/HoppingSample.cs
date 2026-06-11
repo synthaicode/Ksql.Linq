@@ -37,6 +37,8 @@ public class HoppingSample
     {
         public SampleContext() : base(new KsqlDslOptions
         {
+            // Constructor performs no I/O; RunAsync awaits StartAsync() explicitly.
+            DeferStartup = true,
             Common = new CommonSection { BootstrapServers = "127.0.0.1:39092" },
             SchemaRegistry = new Ksql.Linq.Core.Configuration.SchemaRegistrySection { Url = "http://127.0.0.1:18081" },
             KsqlDbUrl = "http://127.0.0.1:18088"

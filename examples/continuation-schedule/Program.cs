@@ -43,7 +43,12 @@ public class Bar
 
 public sealed class SampleContext : KsqlContext
 {
-    public SampleContext() : base(new Ksql.Linq.Configuration.KsqlDslOptions()) { }
+    public SampleContext() : base(new Ksql.Linq.Configuration.KsqlDslOptions
+    {
+        // Constructor performs no I/O; Main awaits StartAsync() explicitly.
+        DeferStartup = true
+    })
+    { }
     public EventSet<Tick> Ticks { get; set; } = null!;
 
     protected override void OnModelCreating(IModelBuilder modelBuilder)
@@ -77,6 +82,8 @@ class Program
     static async Task Main()
     {
         using var ctx = new SampleContext();
+        // Run the deferred startup I/O (DeferStartup=true in SampleContext options)
+        await ctx.StartAsync();
 
         // Seed ticks with a gap (continuation=true will materialize missing minute as carry-forward)
         var broker = "B1"; var symbol = "S1";

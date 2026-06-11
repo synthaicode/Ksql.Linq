@@ -18,6 +18,8 @@ public static class Program
             .UseConfiguration(configuration)
             .EnableLogging(loggerFactory)
             .BuildContext<MinimalContext>();
+        // Startup lifecycle hook (no-op unless KsqlDsl.DeferStartup is enabled)
+        await ctx.StartAsync();
 
         // Enable app-side startup fill actions in options if needed by your environment
         // This example runs the warmup explicitly regardless of the flag, to keep it predictable.
