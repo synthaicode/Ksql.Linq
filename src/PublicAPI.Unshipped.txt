@@ -1,1 +1,3 @@
 #nullable enable
+Ksql.Linq.Configuration.KsqlDslOptions.DeferStartup.get -> bool
+Ksql.Linq.Configuration.KsqlDslOptions.DeferStartup.init -> void

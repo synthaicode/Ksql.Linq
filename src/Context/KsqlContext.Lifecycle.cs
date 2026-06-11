@@ -76,6 +76,9 @@ public abstract partial class KsqlContext : IKsqlContext
     private IRowMonitorCoordinator? _rowMonitorCoordinator;
     private Ksql.Linq.Runtime.Schema.ISchemaRegistrar? _schemaRegistrar;
     private Ksql.Linq.Runtime.Fill.IStartupFillService? _startupFillService;
+    private readonly SemaphoreSlim _startupGate = new(1, 1);
+    private volatile bool _startupPending;
+    private static readonly AsyncLocal<bool> _startupFlow = new();
 
     internal ILogger Logger => _logger;
 
@@ -136,9 +139,57 @@ public abstract partial class KsqlContext : IKsqlContext
     }
 
     /// <summary>
-    /// Explicit lifecycle entry for future orchestration. No-op for now.
+    /// Runs the startup I/O (schema registration and materialization, table-cache wiring,
+    /// optional startup fill) when the context was created with
+    /// <see cref="KsqlDslOptions.DeferStartup"/> enabled. Idempotent and thread-safe.
+    /// Fail-fast is preserved: the first startup failure propagates from here and the
+    /// context stays unstarted, so the caller can dispose it or retry.
+    /// For contexts created without DeferStartup (default), startup already ran in the
+    /// constructor and this call is a no-op.
     /// </summary>
-    public virtual Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public virtual async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_startupPending)
+            return;
+
+        await _startupGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!_startupPending)
+                return;
+            _startupFlow.Value = true;
+            try
+            {
+                await RunStartupAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _startupFlow.Value = false;
+            }
+            _startupPending = false;
+        }
+        finally
+        {
+            _startupGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Throws when deferred startup has not completed yet. Called from runtime entry
+    /// points that require schema registration and cache wiring to be finished.
+    /// </summary>
+    private void EnsureStarted()
+    {
+        // _startupFlow lets the startup pipeline itself (schema registration, row
+        // monitors, hub bridges spawned inside StartAsync) reach entity sets while
+        // external callers are still blocked until startup completes.
+        if (_startupPending && !_startupFlow.Value)
+        {
+            throw new InvalidOperationException(
+                "This KsqlContext was created with DeferStartup enabled, but StartAsync() has not completed. " +
+                "Await StartAsync() before accessing entity sets.");
+        }
+    }
 
     /// <summary>
     /// Gracefully stop background monitors. Mirrors disposal path (idempotent).
@@ -266,27 +317,14 @@ public abstract partial class KsqlContext : IKsqlContext
 
             _dlqClient = new Core.Dlq.DlqClient(_dslOptions, _consumerManager, _loggerFactory);
 
-            if (!SkipSchemaRegistration)
+            if (_dslOptions.DeferStartup)
             {
-                _schemaRegistrar ??= new Ksql.Linq.Runtime.Schema.SchemaRegistrar(this);
-                _schemaRegistrar.RegisterAndMaterializeAsync().GetAwaiter().GetResult();
+                // Startup I/O is deferred; fail-fast moves to the explicit StartAsync() call.
+                _startupPending = true;
             }
-            this.UseTableCache(_dslOptions, _loggerFactory);
-            _cacheRegistry = this.GetTableCacheRegistry();
-
-            // Optional: application-side startup continuity actions
-            if (_dslOptions.Fill?.EnableAppSide == true)
+            else
             {
-                try
-                {
-                    // Design policy: do not write synthetic rows. Delegate to service (no-op by default).
-                    _startupFillService ??= new Ksql.Linq.Runtime.Fill.NoopStartupFillService();
-                    _startupFillService.RunAsync(this, _hubBridgeCts?.Token ?? CancellationToken.None).GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    _logger?.LogWarning(ex, "Startup fill service reported an issue (continuing)");
-                }
+                RunStartupAsync(CancellationToken.None).GetAwaiter().GetResult();
             }
 
         }
@@ -294,6 +332,40 @@ public abstract partial class KsqlContext : IKsqlContext
         {
             _logger.LogError(ex, $"KsqlContext initialization failed: {ex.Message} ");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Startup I/O sequence shared by the blocking constructor path (default) and the
+    /// deferred <see cref="StartAsync"/> path: schema registration and materialization,
+    /// table-cache wiring, and optional application-side startup fill.
+    /// </summary>
+    private async Task RunStartupAsync(CancellationToken cancellationToken)
+    {
+        if (!SkipSchemaRegistration)
+        {
+            _schemaRegistrar ??= new Ksql.Linq.Runtime.Schema.SchemaRegistrar(this);
+            await _schemaRegistrar.RegisterAndMaterializeAsync(cancellationToken).ConfigureAwait(false);
+        }
+        this.UseTableCache(_dslOptions, _loggerFactory);
+        _cacheRegistry = this.GetTableCacheRegistry();
+
+        // Optional: application-side startup continuity actions
+        if (_dslOptions.Fill?.EnableAppSide == true)
+        {
+            try
+            {
+                // Design policy: do not write synthetic rows. Delegate to service (no-op by default).
+                _startupFillService ??= new Ksql.Linq.Runtime.Fill.NoopStartupFillService();
+                var fillToken = cancellationToken.CanBeCanceled
+                    ? cancellationToken
+                    : (_hubBridgeCts?.Token ?? CancellationToken.None);
+                await _startupFillService.RunAsync(this, fillToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Startup fill service reported an issue (continuing)");
+            }
         }
     }
 
@@ -912,6 +984,7 @@ public abstract partial class KsqlContext : IKsqlContext
                 _schemaRegistryClient.Value?.Dispose();
             }
             (_ksqlDbClient as IDisposable)?.Dispose();
+            _startupGate.Dispose();
         }
     }
 
@@ -969,6 +1042,7 @@ public abstract partial class KsqlContext : IKsqlContext
             _schemaRegistryClient.Value?.Dispose();
         }
         (_ksqlDbClient as IDisposable)?.Dispose();
+        _startupGate.Dispose();
 
         await Task.CompletedTask;
     }

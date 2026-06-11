@@ -17,6 +17,14 @@ public class KsqlDslOptions
     public ValidationMode ValidationMode { get; init; } = ValidationMode.Strict;
 
     /// <summary>
+    /// When true, the KsqlContext constructor performs no startup I/O
+    /// (schema registration, table-cache wiring, startup fill); the caller must
+    /// invoke <c>StartAsync</c> explicitly before using entity sets.
+    /// Default false preserves the fail-fast constructor behavior.
+    /// </summary>
+    public bool DeferStartup { get; init; } = false;
+
+    /// <summary>
     /// Common settings (BootstrapServers, ClientId, etc.)
     /// </summary>
     public CommonSection Common { get; init; } = new();

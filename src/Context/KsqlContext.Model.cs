@@ -17,6 +17,7 @@ public abstract partial class KsqlContext
 {
     public IEntitySet<T> Set<T>() where T : class
     {
+        EnsureStarted();
         var entityType = typeof(T);
 
         if (_entitySets.TryGetValue(entityType, out var existingSet))
@@ -33,6 +34,7 @@ public abstract partial class KsqlContext
 
     public object GetEventSet(Type entityType)
     {
+        EnsureStarted();
         if (_entitySets.TryGetValue(entityType, out var entitySet))
         {
             return entitySet;
