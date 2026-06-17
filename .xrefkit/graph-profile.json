@@ -4,6 +4,7 @@
   "profile_version": 1,
   "generated_at": "2026-06-17",
   "key_scheme": "roslyn-docid",
+  "extractor": { "name": "dotnet_structure_graph", "version": "v1" },
   "scope": "src/Ksql.Linq.csproj (core library; examples/tests excluded)",
   "graph_summary": {
     "nodes": 3729,
@@ -18,6 +19,14 @@
       "inherits": 61
     }
   },
+  "regeneration_triggers": [
+    "extractor_version_changed",
+    "large_refactoring",
+    "topic_naming_convention_changed",
+    "window_column_convention_changed",
+    "config_key_convention_changed",
+    "avro_codegen_boundary_changed"
+  ],
   "name_coupling": {
     "level": "high",
     "required_for_tm": true,

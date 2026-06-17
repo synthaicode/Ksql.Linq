@@ -2,41 +2,51 @@ schema: xrefkit.graph-rules/v1
 repository: Ksql.Linq
 profile_version: 1
 
-# Traversal / pruning rules for TM (traceability-matrix) candidate generation.
-# These rules are persisted (requirement-independent). The TM itself, the
-# impacted-boundary list, per-PR traversal results, and seeds are NOT persisted
-# here -- they are per-change artifacts.
+# Traversal / pruning rules for TM candidate generation.
+# These rules are persisted and requirement-independent.
+# Per-change TM, impacted-boundary lists, traversal results, and seeds are not persisted here.
+
 traversal_policy:
   default_edges:
     - calls
     - type_reference
     - implements
     - inherits
+
   enabled_name_edges:
     - domain_dsl
     - config
     - topic_convention
+
   weak_name_edges:
     - test_literal
     - environment_literal
+
   prune:
     - test_fixture_transit
     - generated_noise
 
-# A SQL/KSQL keyword + type + LINQ-operator stoplist is applied during name-edge
-# extraction so language tokens (BIGINT, AVG, Join, Select, ...) do not become
-# name nodes. Only change-relevant shared names survive.
 name_stoplist_applied: true
 
-# Edge availability in the current extractor (v1) vs planned. Rules may reference
-# edges not yet emitted; those are followed once the extractor adds them.
 edge_status:
-  emitted: [calls, implements, inherits, contains, declares, uses-name]
-  planned: [type_reference, reads, writes, uses-config, uses-db]
+  emitted:
+    - calls
+    - implements
+    - inherits
+    - contains
+    - declares
+    - uses-name
+
+  planned:
+    - type_reference
+    - reads
+    - writes
+    - uses-config
+    - uses-db
 
 notes: |
-  default_edges + enabled_name_edges define the traversal substrate for TM
-  candidate generation. weak_name_edges are low-signal (test/env literals) and
-  are followed only on explicit request. prune categories are treated as transit
-  (pass-through), not impacted targets -- this damps over-reach through shared
-  fixtures and generated code (see design principle 5).
+  default_edges + enabled_name_edges define the traversal substrate for TM candidate generation.
+
+  weak_name_edges are low-signal test/environment literals and are followed only on explicit request.
+
+  prune categories are treated as transit/pass-through, not impacted targets. This prevents over-reach through shared fixtures and generated code.
