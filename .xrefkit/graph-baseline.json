@@ -1,0 +1,37 @@
+{
+  "schema": "xrefkit.graph-baseline/v1",
+  "repository": "Ksql.Linq",
+  "accepted_at": "2026-06-17",
+  "based_on_profile_version": 1,
+  "scope": "src/Ksql.Linq.csproj (core library; examples/tests excluded)",
+  "graph_summary": {
+    "nodes": 3729,
+    "edges": 6879,
+    "name_nodes": 206
+  },
+  "accepted_hubs": {
+    "M:Ksql.Linq.Core.Extensions.CoreExtensions.GetTopicName(Ksql.Linq.Core.Abstractions.EntityModel)": { "fan_in": 41, "fan_out": 0 },
+    "M:Ksql.Linq.Query.Metadata.EntityModelMetadataExtensions.GetOrCreateMetadata(Ksql.Linq.Core.Abstractions.EntityModel)": { "fan_in": 25, "fan_out": 1 },
+    "M:Ksql.Linq.Runtime.Schema.SchemaRegistrar.RegisterAndMaterializeAsync(System.Threading.CancellationToken)": { "fan_in": 0, "fan_out": 35 },
+    "M:Ksql.Linq.Query.Builders.Statements.KsqlCreateStatementBuilder.Build(System.String,Ksql.Linq.Query.Dsl.KsqlQueryModel,System.String,System.String,System.Func{System.Type,System.String},System.String,Ksql.Linq.Query.Builders.Statements.RenderOptions)": { "fan_in": 4, "fan_out": 28 }
+  },
+  "accepted_name_coupling": {
+    "domain_dsl": { "BucketStart": 14, "WindowStart": 11, "WindowStartRaw": 7, "KsqlTimeFrameClose": 6 },
+    "config": { "retention.ms": 7, "retentionMs": 6 },
+    "topic_convention": { "_1s_rows": 10 }
+  },
+  "accepted_external_boundary": {
+    "M:Ksql.Linq.Mapping.SpecificRecordGenerator.GenerateSpecificRecordType(System.Type,System.String,System.String)": 186,
+    "M:Ksql.Linq.Mapping.KeyValueTypeMapping.PopulateAvroKeyValue(System.Object,System.Object,System.Object)": 142
+  },
+  "drift_check": {
+    "purpose": "Re-extract on change and diff against this baseline. Drift is a REVIEW SIGNAL, not an auto-fail.",
+    "signals": [
+      "new hub: a symbol crossing fan_in >= 15 not listed in accepted_hubs",
+      "removed hub: an accepted hub dropping below fan_in 15",
+      "hub delta: accepted hub fan_in changing by > 50%",
+      "new name coupling: a shared name with members >= 7 not in accepted_name_coupling",
+      "size drift: node or edge count changing by > 10%"
+    ]
+  }
+}

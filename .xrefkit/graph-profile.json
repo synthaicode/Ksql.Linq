@@ -1,0 +1,76 @@
+{
+  "schema": "xrefkit.graph-profile/v1",
+  "repository": "Ksql.Linq",
+  "profile_version": 1,
+  "generated_at": "2026-06-17",
+  "key_scheme": "roslyn-docid",
+  "scope": "src/Ksql.Linq.csproj (core library; examples/tests excluded)",
+  "graph_summary": {
+    "nodes": 3729,
+    "edges": 6879,
+    "name_nodes": 206,
+    "edge_types": {
+      "declares": 3177,
+      "calls": 2269,
+      "contains": 688,
+      "uses-name": 577,
+      "implements": 107,
+      "inherits": 61
+    }
+  },
+  "name_coupling": {
+    "level": "high",
+    "required_for_tm": true,
+    "categories": {
+      "domain_dsl": ["BucketStart", "WindowStart", "WindowStartRaw", "KsqlTimeFrameClose"],
+      "config": ["retention.ms", "retentionMs"],
+      "topic_convention": ["_1s_rows"]
+    }
+  },
+  "hubs": {
+    "structural": [
+      {
+        "symbol": "CoreExtensions.GetTopicName",
+        "id": "M:Ksql.Linq.Core.Extensions.CoreExtensions.GetTopicName(Ksql.Linq.Core.Abstractions.EntityModel)",
+        "fan_in": 41,
+        "fan_out": 0,
+        "reason": "topic name resolution funnel"
+      },
+      {
+        "symbol": "EntityModelMetadataExtensions.GetOrCreateMetadata",
+        "id": "M:Ksql.Linq.Query.Metadata.EntityModelMetadataExtensions.GetOrCreateMetadata(Ksql.Linq.Core.Abstractions.EntityModel)",
+        "fan_in": 25,
+        "fan_out": 1,
+        "reason": "metadata resolution hub"
+      },
+      {
+        "symbol": "SchemaRegistrar.RegisterAndMaterializeAsync",
+        "id": "M:Ksql.Linq.Runtime.Schema.SchemaRegistrar.RegisterAndMaterializeAsync(System.Threading.CancellationToken)",
+        "fan_in": 0,
+        "fan_out": 35,
+        "reason": "schema registration / materialization orchestrator"
+      },
+      {
+        "symbol": "KsqlCreateStatementBuilder.Build",
+        "id": "M:Ksql.Linq.Query.Builders.Statements.KsqlCreateStatementBuilder.Build(System.String,Ksql.Linq.Query.Dsl.KsqlQueryModel,System.String,System.String,System.Func{System.Type,System.String},System.String,Ksql.Linq.Query.Builders.Statements.RenderOptions)",
+        "fan_in": 4,
+        "fan_out": 28,
+        "reason": "DDL statement builder"
+      }
+    ],
+    "external_boundary": [
+      {
+        "symbol": "SpecificRecordGenerator.GenerateSpecificRecordType",
+        "id": "M:Ksql.Linq.Mapping.SpecificRecordGenerator.GenerateSpecificRecordType(System.Type,System.String,System.String)",
+        "external_calls": 186,
+        "reason": "Avro/reflection codegen (spec-out territory; not mechanically traceable)"
+      },
+      {
+        "symbol": "KeyValueTypeMapping.PopulateAvroKeyValue",
+        "id": "M:Ksql.Linq.Mapping.KeyValueTypeMapping.PopulateAvroKeyValue(System.Object,System.Object,System.Object)",
+        "external_calls": 142,
+        "reason": "Avro key/value population (reflection)"
+      }
+    ]
+  }
+}
