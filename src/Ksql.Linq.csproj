@@ -10,7 +10,7 @@
     <!-- ✅ Keep nullable warnings as warnings (for phased migration) -->
     <WarningsNotAsErrors>CS8600;CS8601;CS8602;CS8603;CS8618;CS8619;CS8620;CS8625;CS1570;CS1573;CS1587;RS0016;RS0017</WarningsNotAsErrors>
     <PackageId>Ksql.Linq</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <Authors>SynthAICode</Authors>
     <Company>SynthAICode</Company>
     <Description>An Entity Framework-style LINQ library for Kafka and ksqlDB. 
@@ -24,7 +24,7 @@ Includes AI Assistant Guide for Kafka/ksqlDB support.
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>KsqlLinq-icon-128.png</PackageIcon>
-    <PackageReleaseNotes>See https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v1_1_0.md for 1.1.0. For 1.0.0 story (AI Assistant Guide and CLI integration), see https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v1_0_0.md.</PackageReleaseNotes>
+    <PackageReleaseNotes>See https://github.com/synthaicode/Ksql.Linq/blob/main/docs/releases/release_v1_1_1.md for 1.1.1.</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -36,7 +36,9 @@ Includes AI Assistant Guide for Kafka/ksqlDB support.
     <!-- Base NoWarn set (does NOT include RS0016/RS0017) -->
     <NoWarn>$(NoWarn);1591;CS1570;CS1573;CS1587;CS8603;CS8618;CS8625</NoWarn>
     <UseStreamizPackages>true</UseStreamizPackages>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(Configuration)' == 'Release'">true</ContinuousIntegrationBuild>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
   <PropertyGroup>
     <StreamizCoreVersion Condition="'$(StreamizCoreVersion)' == ''">1.7.1</StreamizCoreVersion>
