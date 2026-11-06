@@ -96,8 +96,44 @@ internal sealed class WindowManager<TSource, TKey>
             .ToArray();
     }
 
-    public bool IsIdle(TimeSpan threshold, DateTime nowUtc) =>
-        nowUtc - _lastActivityUtc >= threshold;
+    public bool TryTakeClosedWindow(DateTime nowUtc, out WindowGrouping<TKey, TSource> grouping)
+    {
+        lock (_sync)
+        {
+            foreach (var kvp in _openWindows)
+            {
+                if (nowUtc >= kvp.Key + _windowSize + _gracePeriod && kvp.Value.Messages.Count > 0)
+                {
+                    _openWindows.Remove(kvp.Key);
+                    SealWindow(kvp.Key);
+                    grouping = new WindowGrouping<TKey, TSource>(_key, kvp.Key, kvp.Key + _windowSize, kvp.Value.Messages);
+                    return true;
+                }
+            }
+        }
+
+        grouping = null!;
+        return false;
+    }
+
+    public bool HasPendingWindows
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _openWindows.Values.Any(bucket => bucket.Messages.Count > 0);
+            }
+        }
+    }
+
+    public bool IsIdle(TimeSpan threshold, DateTime nowUtc)
+    {
+        lock (_sync)
+        {
+            return nowUtc - _lastActivityUtc >= threshold;
+        }
+    }
 
     private void SealWindow(DateTime windowStartUtc)
     {

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,6 +30,7 @@ internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposabl
     private readonly ConcurrentDictionary<TKey, WindowManager<TSource, TKey>> _managers = new();
     private readonly CancellationTokenSource _cts = new();
     private readonly object _startSync = new();
+    private readonly object _managerSync = new();
 
     private Task? _loopTask;
     private bool _started;
@@ -104,11 +106,14 @@ internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposabl
         var nowUtc = _utcNowProvider();
         var windowStart = WindowingMath.FloorToWindow(timestampUtc, _windowSize);
 
-        var manager = _managers.GetOrAdd(key, static (k, state) =>
-            new WindowManager<TSource, TKey>(k, state.WindowSize, state.GracePeriod, state.InitialNowUtc, state.DeduplicationKeySelector),
-            (WindowSize: _windowSize, GracePeriod: _gracePeriod, InitialNowUtc: nowUtc, DeduplicationKeySelector: _deduplicationKeySelector));
-
-        var status = manager.AddMessage(windowStart, message, nowUtc);
+        WindowAppendStatus status;
+        lock (_managerSync)
+        {
+            var manager = _managers.GetOrAdd(key, static (k, state) =>
+                new WindowManager<TSource, TKey>(k, state.WindowSize, state.GracePeriod, state.InitialNowUtc, state.DeduplicationKeySelector),
+                (WindowSize: _windowSize, GracePeriod: _gracePeriod, InitialNowUtc: nowUtc, DeduplicationKeySelector: _deduplicationKeySelector));
+            status = manager.AddMessage(windowStart, message, nowUtc);
+        }
         if (status == WindowAppendStatus.LateDrop)
         {
             _metrics?.RecordLateDrop();
@@ -131,7 +136,12 @@ internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposabl
             cancellationToken.ThrowIfCancellationRequested();
             emitted += await EmitClosedWindowsAsync(kvp.Value, nowUtc, cancellationToken).ConfigureAwait(false);
 
-            if (_managers.TryRemove(kvp.Key, out _))
+            bool removed;
+            lock (_managerSync)
+            {
+                removed = !kvp.Value.HasPendingWindows && RemoveManager(kvp);
+            }
+            if (removed)
             {
                 _logger?.LogDebug("Released window manager for key {Key} during flush", kvp.Key);
             }
@@ -202,7 +212,12 @@ internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposabl
             var manager = kvp.Value;
             await EmitClosedWindowsAsync(manager, nowUtc, token).ConfigureAwait(false);
 
-            if (manager.IsIdle(_idleThreshold, nowUtc) && _managers.TryRemove(kvp.Key, out _))
+            bool removed;
+            lock (_managerSync)
+            {
+                removed = !manager.HasPendingWindows && manager.IsIdle(_idleThreshold, nowUtc) && RemoveManager(kvp);
+            }
+            if (removed)
             {
                 _logger?.LogDebug("Evicted idle window manager for key {Key}", kvp.Key);
             }
@@ -211,16 +226,14 @@ internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposabl
 
     private async ValueTask<int> EmitClosedWindowsAsync(WindowManager<TSource, TKey> manager, DateTime nowUtc, CancellationToken token)
     {
-        var closed = manager.CollectClosedWindows(nowUtc);
-        if (closed.Count == 0)
-        {
-            return 0;
-        }
-
         var emitted = 0;
-        foreach (var grouping in closed)
+        while (true)
         {
             token.ThrowIfCancellationRequested();
+            if (!manager.TryTakeClosedWindow(nowUtc, out var grouping))
+            {
+                return emitted;
+            }
             var result = _resultSelector(grouping);
             try
             {
@@ -233,9 +246,10 @@ internal sealed class WindowAggregator<TSource, TKey, TResult> : IAsyncDisposabl
                 throw;
             }
         }
-
-        return emitted;
     }
+
+    private bool RemoveManager(KeyValuePair<TKey, WindowManager<TSource, TKey>> manager) =>
+        ((ICollection<KeyValuePair<TKey, WindowManager<TSource, TKey>>>)_managers).Remove(manager);
 
     private async ValueTask EmitWithRetryAsync(TResult result, object key, DateTime bucketStartUtc, CancellationToken token)
     {
