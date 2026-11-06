@@ -1,5 +1,6 @@
 using Ksql.Linq.Query.Builders.Functions;
 using System;
+using System.Globalization;
 using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Builders.Common;
@@ -146,7 +147,20 @@ internal static class BuilderValidation
             null => "NULL",
             string str => $"'{str}'",
             bool b => b.ToString().ToLower(),
-            _ => value.ToString() ?? "NULL"
+            _ => FormatNumericLiteral(value) ?? value.ToString() ?? "NULL"
+        };
+    }
+
+    /// <summary>
+    /// Format built-in numeric SQL literals without changing nonnumeric rendering.
+    /// </summary>
+    internal static string? FormatNumericLiteral(object? value)
+    {
+        return value switch
+        {
+            byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal
+                => ((IFormattable)value).ToString(null, CultureInfo.InvariantCulture),
+            _ => null
         };
     }
 

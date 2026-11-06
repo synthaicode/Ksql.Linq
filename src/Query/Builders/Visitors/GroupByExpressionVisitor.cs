@@ -103,7 +103,7 @@ internal class GroupByExpressionVisitor : ExpressionVisitor
             return GetMemberName(member);
 
         if (expr is ConstantExpression constant)
-            return constant.Value?.ToString() ?? "NULL";
+            return BuilderValidation.FormatNumericLiteral(constant.Value) ?? constant.Value?.ToString() ?? "NULL";
 
         if (expr is UnaryExpression unary &&
             (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.ConvertChecked))

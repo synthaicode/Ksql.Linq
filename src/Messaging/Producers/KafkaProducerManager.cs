@@ -438,9 +438,8 @@ internal class KafkaProducerManager : IDisposable
         for (int i = 0; i < schema.Fields.Count; i++)
         {
             var f = schema.Fields[i];
-            object? current = null;
             var hasValue = true;
-            try { current = record.GetValue(f.Pos); }
+            try { record.GetValue(f.Pos); }
             catch { hasValue = false; }
 
             if (!hasValue)
@@ -448,32 +447,8 @@ internal class KafkaProducerManager : IDisposable
                 record.Add(f.Name, null);
                 continue;
             }
-
-            // Optional: if union includes null and current is empty-string for string field,
-            // prefer explicit null to avoid default confusion.
-            try
-            {
-                if (current is string s && string.IsNullOrEmpty(s) && IsNullableUnion(f.Schema))
-                {
-                    record.Add(f.Name, null);
-                }
-            }
-            catch { }
         }
     }
-
-    private static bool IsNullableUnion(Schema schema)
-    {
-        if (schema == null) return false;
-        if (schema is Avro.UnionSchema us)
-        {
-            foreach (var s in us.Schemas)
-                if (s.Tag == Schema.Type.Null) return true;
-        }
-        return false;
-    }
-
-
 
     private bool IsSchemaMismatch(Exception ex)
     {
