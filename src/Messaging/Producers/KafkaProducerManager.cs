@@ -452,14 +452,23 @@ internal class KafkaProducerManager : IDisposable
 
     private bool IsSchemaMismatch(Exception ex)
     {
-        // 判定: SchemaRegistryException を内包し、名前不一致/非互換/未知スキーマを示唆するメッセージ
-        var msg = ex.ToString();
-        return msg.IndexOf("NAME_MISMATCH", StringComparison.OrdinalIgnoreCase) >= 0
-            || msg.IndexOf("incompatible", StringComparison.OrdinalIgnoreCase) >= 0
-            || msg.IndexOf("Schema being registered is incompatible", StringComparison.OrdinalIgnoreCase) >= 0
-            || msg.IndexOf("unknown magic byte", StringComparison.OrdinalIgnoreCase) >= 0
-            || msg.IndexOf("subject not found", StringComparison.OrdinalIgnoreCase) >= 0
-            || msg.IndexOf("error code: 409", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (ex is ConfluentSchemaRegistry.SchemaRegistryException schemaError)
+        {
+            var msg = schemaError.Message;
+            if (schemaError.ErrorCode == 409
+                || msg.IndexOf("NAME_MISMATCH", StringComparison.OrdinalIgnoreCase) >= 0
+                || msg.IndexOf("incompatible", StringComparison.OrdinalIgnoreCase) >= 0
+                || msg.IndexOf("Schema being registered is incompatible", StringComparison.OrdinalIgnoreCase) >= 0
+                || msg.IndexOf("unknown magic byte", StringComparison.OrdinalIgnoreCase) >= 0
+                || msg.IndexOf("subject not found", StringComparison.OrdinalIgnoreCase) >= 0
+                || msg.IndexOf("error code: 409", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+        }
+
+        if (ex is AggregateException aggregate)
+            return aggregate.InnerExceptions.Any(IsSchemaMismatch);
+
+        return ex.InnerException != null && IsSchemaMismatch(ex.InnerException);
     }
 
     private bool TryAlignSchemasWithSchemaRegistry(string topic, KeyValueTypeMapping mapping)
