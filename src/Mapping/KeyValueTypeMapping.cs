@@ -337,7 +337,7 @@ internal class KeyValueTypeMapping
             return DateTime.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal).ToUniversalTime();
         }
         if (t == typeof(Guid))
-            return Guid.TryParse(s, out var g) ? g : Guid.Empty;
+            return Guid.Parse(s);
         if (t.IsEnum)
             return Enum.Parse(t, s, true);
         return Ksql.Linq.Core.Conversion.ValueConverter.ChangeTypeOrDefault(s, t);
