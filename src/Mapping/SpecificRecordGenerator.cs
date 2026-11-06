@@ -16,7 +16,10 @@ namespace Ksql.Linq.Mapping;
 /// </summary>
 internal static class SpecificRecordGenerator
 {
-    private static readonly ConcurrentDictionary<string, Lazy<Type>> _cache = new();
+    private static readonly ConcurrentDictionary<(Type Source, string Name, string Namespace), Lazy<Type>> _cache = new();
+    private static readonly object _emissionLock = new();
+    private static readonly HashSet<string> _emittedNames = new(StringComparer.Ordinal);
+    private static long _nameSequence;
     private static readonly ModuleBuilder _moduleBuilder;
 
     static SpecificRecordGenerator()
@@ -32,11 +35,23 @@ internal static class SpecificRecordGenerator
     /// </summary>
     public static Type Generate(Type pocoType, string? schemaNameOverride = null, string? namespaceOverride = null)
     {
-        var cacheKey = (pocoType.FullName ?? pocoType.Name).Replace('+', '.');
-        var lazy = _cache.GetOrAdd(cacheKey, _ => new Lazy<Type>(() =>
+        var effectiveName = string.IsNullOrWhiteSpace(schemaNameOverride) ? pocoType.Name : schemaNameOverride!;
+        var effectiveNamespace = string.IsNullOrWhiteSpace(namespaceOverride)
+            ? pocoType.Namespace ?? string.Empty
+            : namespaceOverride!;
+        var cacheKey = (Source: pocoType, Name: effectiveName, Namespace: effectiveNamespace);
+        var lazy = _cache.GetOrAdd(cacheKey, key => new Lazy<Type>(() =>
         {
-            var schemaJson = GenerateAvroSchema(pocoType, schemaNameOverride, namespaceOverride);
-            return GenerateSpecificRecordType(pocoType, schemaJson, cacheKey);
+            var schemaJson = GenerateAvroSchema(key.Source, key.Name, key.Namespace);
+            // All entries share a module; serialize emission and reserve names across source types.
+            lock (_emissionLock)
+            {
+                var baseName = (key.Source.FullName ?? key.Source.Name).Replace('+', '.');
+                var fullName = baseName + "Avro";
+                while (!_emittedNames.Add(fullName))
+                    fullName = baseName + "__Schema" + ++_nameSequence + "Avro";
+                return GenerateSpecificRecordType(key.Source, schemaJson, fullName);
+            }
         }, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication));
         return lazy.Value;
     }
@@ -136,7 +151,7 @@ internal static class SpecificRecordGenerator
         return "\"string\"";
     }
 
-    private static Type GenerateSpecificRecordType(Type pocoType, string schemaJson, string cacheKey)
+    private static Type GenerateSpecificRecordType(Type pocoType, string schemaJson, string fullName)
     {
         var props = pocoType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         var propTypes = new Type[props.Length];
@@ -158,8 +173,6 @@ internal static class SpecificRecordGenerator
             else
                 propTypes[i] = props[i].PropertyType;
         }
-
-        var fullName = cacheKey + "Avro";
 
         var typeBuilder = _moduleBuilder.DefineType(
             fullName,
