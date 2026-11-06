@@ -2,6 +2,7 @@ using Ksql.Linq.Query.Abstractions;
 using Ksql.Linq.Query.Builders.Common;
 using Ksql.Linq.Query.Builders.Visitors;
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Ksql.Linq.Query.Builders.Clauses;
@@ -61,12 +62,26 @@ internal class WhereClauseBuilder : BuilderBase
     /// </summary>
     private static void ValidateNoSelectStatements(Expression expression)
     {
-        // Detect basic subquery patterns
-        var expressionString = expression.ToString().ToUpper();
-        if (expressionString.Contains("SELECT"))
+        var visitor = new SelectDetectionVisitor();
+        visitor.Visit(expression);
+        if (visitor.HasSelect)
         {
             throw new InvalidOperationException(
                 "Subqueries are not supported in WHERE clause in KSQL");
+        }
+    }
+
+    private sealed class SelectDetectionVisitor : ExpressionVisitor
+    {
+        public bool HasSelect { get; private set; }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.Name == nameof(Queryable.Select) &&
+                (node.Method.DeclaringType == typeof(Queryable) ||
+                 node.Method.DeclaringType == typeof(Enumerable)))
+                HasSelect = true;
+            return base.VisitMethodCall(node);
         }
     }
 

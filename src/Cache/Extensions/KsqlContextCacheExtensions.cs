@@ -924,8 +924,8 @@ internal static class KsqlContextCacheExtensions
                 ?? throw new InvalidOperationException("Failed to create inner Avro key serdes.");
             if (avroKeyType == typeof(Avro.Generic.GenericRecord))
             {
-                // Use fixed-time windowed Avro serdes to handle both topic/store key encodings deterministically
-                var fixedSerde = new Ksql.Linq.SerDes.FixedTimeWindowedAvroSerDes((ISerDes<Avro.Generic.GenericRecord>)innerSerde, windowSizeMs.Value);
+                // This source reads topic keys; string-key repartitioning below uses StringSerDes.
+                var fixedSerde = new Ksql.Linq.SerDes.FixedTimeWindowedAvroSerDes((ISerDes<Avro.Generic.GenericRecord>)innerSerde, windowSizeMs.Value, Ksql.Linq.SerDes.WindowedKeyFormat.Topic);
                 if (fixedSerde is not ISerDes<TKey> fixedTyped)
                     throw new InvalidOperationException($"FixedTimeWindowedAvroSerDes is not assignable to {typeof(ISerDes<TKey>).FullName}.");
                 keySerde = fixedTyped;

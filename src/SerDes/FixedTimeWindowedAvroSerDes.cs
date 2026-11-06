@@ -11,12 +11,20 @@ using System.Threading;
 
 namespace Ksql.Linq.SerDes;
 
+internal enum WindowedKeyFormat
+{
+    Topic,
+    Store
+}
+
 internal sealed class FixedTimeWindowedAvroSerDes : AbstractSerDes<Windowed<GenericRecord>>
 {
-    private const int StoreSuffixBytes = 12; // sequence (4) + window start (8)
+    private const int StoreSuffixBytes = 12; // window start (8) + sequence (4)
+    private const int TopicSuffixBytes = 8;
 
     private readonly ISerDes<GenericRecord> _inner;
     private readonly long _windowSizeMs;
+    private readonly WindowedKeyFormat _format;
     private static readonly bool _diagEnabled =
         string.Equals(Environment.GetEnvironmentVariable("PHYS_SERDES_DIAG"), "1", StringComparison.Ordinal);
     private static int _diagCount = 0;
@@ -28,7 +36,15 @@ internal sealed class FixedTimeWindowedAvroSerDes : AbstractSerDes<Windowed<Gene
     }
 
     public FixedTimeWindowedAvroSerDes(ISerDes<GenericRecord> inner, long windowSizeMs)
+        : this(inner, windowSizeMs, WindowedKeyFormat.Topic)
     {
+    }
+
+    public FixedTimeWindowedAvroSerDes(ISerDes<GenericRecord> inner, long windowSizeMs, WindowedKeyFormat format)
+    {
+        if (format != WindowedKeyFormat.Topic && format != WindowedKeyFormat.Store)
+            throw new ArgumentOutOfRangeException(nameof(format));
+        _format = format;
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         _windowSizeMs = windowSizeMs;
     }
@@ -46,42 +62,30 @@ internal sealed class FixedTimeWindowedAvroSerDes : AbstractSerDes<Windowed<Gene
             return null!;
         var dd = data!;
 
-        if (TrySliceTopicFormat(dd, out var topicKey, out var topicWindowStart))
+        byte[] key;
+        long windowStart;
+        var phase = _format == WindowedKeyFormat.Topic ? "topic" : "store";
+        var sliced = _format == WindowedKeyFormat.Topic
+            ? TrySliceTopicFormat(dd, out key, out windowStart)
+            : TrySliceStoreFormat(dd, out key, out windowStart);
+        if (sliced)
         {
             try
             {
-                var record = DeserializeRecord(topicKey, context);
-                var windowStart = topicWindowStart;
+                var record = DeserializeRecord(key, context);
                 var windowEnd = _windowSizeMs > 0 ? windowStart + _windowSizeMs : windowStart;
-                var w = new Windowed<GenericRecord>(record, new TimeWindow(windowStart, windowEnd));
-                TryPublishDiag("topic", topicKey?.Length ?? 0, dd.Length, windowStart, windowEnd, context.Topic);
-                return w;
+                var result = new Windowed<GenericRecord>(record, new TimeWindow(windowStart, windowEnd));
+                TryPublishDiag(phase, key.Length, dd.Length, windowStart, windowEnd, context.Topic);
+                return result;
             }
             catch (Exception ex)
             {
-                TryPublishDiag("topic_fail", topicKey?.Length ?? 0, dd.Length, 0, 0, context.Topic, error: ex);
-                // fall through to try store format
+                TryPublishDiag(phase + "_fail", key.Length, dd.Length, 0, 0, context.Topic, error: ex);
             }
         }
 
-        if (TrySliceStoreFormat(dd, out var storeKey, out var storeWindowStart))
-        {
-            try
-            {
-                var record = DeserializeRecord(storeKey, context);
-                var storeWindowEnd = _windowSizeMs > 0 ? storeWindowStart + _windowSizeMs : storeWindowStart;
-                var w = new Windowed<GenericRecord>(record, new TimeWindow(storeWindowStart, storeWindowEnd));
-                TryPublishDiag("store", storeKey?.Length ?? 0, dd.Length, storeWindowStart, storeWindowEnd, context.Topic);
-                return w;
-            }
-            catch (Exception ex)
-            {
-                TryPublishDiag("store_fail", storeKey?.Length ?? 0, dd.Length, 0, 0, context.Topic, error: ex);
-            }
-        }
-
-        TryPublishDiag("fail", 0, dd.Length, 0, 0, context.Topic, note: "no_format_match");
-        throw new Avro.AvroException($"Unable to deserialize windowed Avro key (length={dd.Length}).");
+        TryPublishDiag("fail", 0, dd.Length, 0, 0, context.Topic, note: "invalid_" + phase + "_format");
+        throw new Avro.AvroException($"Unable to deserialize {_format} windowed Avro key (length={dd.Length}).");
     }
 
     public override byte[] Serialize(Windowed<GenericRecord> data, SerializationContext context)
@@ -90,12 +94,16 @@ internal sealed class FixedTimeWindowedAvroSerDes : AbstractSerDes<Windowed<Gene
             return null!;
 
         var keyBytes = _inner.Serialize(data.Key, context) ?? Array.Empty<byte>();
-        var buffer = new byte[keyBytes.Length + StoreSuffixBytes];
+        // The default source-topic contract writes 8 suffix bytes. Store mode
+        // explicitly retains the former 12-byte writer layout.
+        var suffixBytes = _format == WindowedKeyFormat.Topic ? TopicSuffixBytes : StoreSuffixBytes;
+        var buffer = new byte[keyBytes.Length + suffixBytes];
         if (keyBytes.Length > 0)
             Array.Copy(keyBytes, buffer, keyBytes.Length);
 
         BinaryPrimitives.WriteInt64BigEndian(buffer.AsSpan(keyBytes.Length, 8), data.Window.StartMs);
-        BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(keyBytes.Length + 8, 4), 0);
+        if (_format == WindowedKeyFormat.Store)
+            BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(keyBytes.Length + 8, 4), 0);
         TryPublishDiag("serialize", keyBytes?.Length ?? 0, buffer.Length, data.Window.StartMs, data.Window.EndMs, context.Topic);
         return buffer;
     }
@@ -129,7 +137,7 @@ internal sealed class FixedTimeWindowedAvroSerDes : AbstractSerDes<Windowed<Gene
 
         var keyLength = data.Length - StoreSuffixBytes;
         keyBytes = data.AsSpan(0, keyLength).ToArray();
-        windowStart = BinaryPrimitives.ReadInt64BigEndian(data.AsSpan(data.Length - 8, 8));
+        windowStart = BinaryPrimitives.ReadInt64BigEndian(data.AsSpan(keyLength, 8));
         return true;
     }
 

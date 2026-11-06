@@ -90,7 +90,7 @@ internal abstract class BuilderBase : IKsqlBuilder
                 "This indicates an issue with the expression processing logic.");
         }
 
-        // Basic SQL-injection safety check
+        // Check generated clause integrity (not complete KSQL grammar).
         ValidateBasicSqlSafety(result);
     }
 
@@ -104,26 +104,16 @@ internal abstract class BuilderBase : IKsqlBuilder
     }
 
     /// <summary>
-    /// Basic SQL safety checks
+    /// Generated KSQL clause fragment checks
     /// </summary>
     private static void ValidateBasicSqlSafety(string result)
     {
-        // Check basic dangerous patterns
-        var dangerousPatterns = new[]
+        var pattern = KsqlFragmentGuard.FindRejectedPattern(result);
+        if (pattern != null)
         {
-            "--", "/*", "*/", ";--", "';", "DROP", "DELETE", "INSERT", "UPDATE",
-            "EXEC", "EXECUTE", "sp_", "xp_", "UNION", "SCRIPT"
-        };
-
-        var upperResult = result.ToUpper();
-        foreach (var pattern in dangerousPatterns)
-        {
-            if (upperResult.Contains(pattern))
-            {
-                throw new InvalidOperationException(
-                    $"Generated SQL contains potentially dangerous pattern: '{pattern}'. " +
-                    $"Generated SQL: {result}");
-            }
+            throw new InvalidOperationException(
+                $"Generated KSQL clause contains unsupported fragment pattern: '{pattern}'. " +
+                $"Generated SQL: {result}");
         }
     }
 

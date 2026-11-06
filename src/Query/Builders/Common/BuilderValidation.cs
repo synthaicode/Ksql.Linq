@@ -145,7 +145,7 @@ internal static class BuilderValidation
         return value switch
         {
             null => "NULL",
-            string str => $"'{str}'",
+            string str => $"'{str.Replace("'", "''")}'",
             bool b => b.ToString().ToLower(),
             _ => FormatNumericLiteral(value) ?? value.ToString() ?? "NULL"
         };
