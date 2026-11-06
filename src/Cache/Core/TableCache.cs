@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 namespace Ksql.Linq.Cache.Core;
 
@@ -40,19 +41,26 @@ internal class TableCache<T> : ITableCache<T> where T : class
         _testKeyStringifier = keyStringifier;
         _testCombiner = combiner;
     }
-    public async Task<List<T>> ToListAsync(List<string>? filter = null, TimeSpan? timeout = null)
-    {
-        var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(90);
-        await _waitUntilRunning(effectiveTimeout);
-        var mapping = _mappingRegistry is null ? null : _mappingRegistry.GetMapping(typeof(T));
+    public Task<List<T>> ToListAsync(List<string>? filter = null, TimeSpan? timeout = null)
+        => ToListAsync(filter, timeout, CancellationToken.None);
 
+    public async Task<List<T>> ToListAsync(List<string>? filter, TimeSpan? timeout, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
         string? prefix = null;
         if (filter is { Count: > 0 })
-            prefix = string.Join(KeySep, filter) + KeySep;
+            prefix = CompositeKeyEncoding.Join(filter) + KeySep;
+
+        var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(90);
+        // The existing running wait owns its lifetime; cancellation ends this caller's wait only.
+        await _waitUntilRunning(effectiveTimeout).WaitAsync(cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var mapping = _mappingRegistry is null ? null : _mappingRegistry.GetMapping(typeof(T));
 
         var deadline = DateTime.UtcNow + effectiveTimeout;
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var list = new List<T>();
             var sampleKeys = new List<string>(capacity: 3);
             var sampleValues = new List<string>(capacity: 3);
@@ -60,6 +68,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
             {
                 foreach (var kv in _enumerateLazy.Value())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     // Key is expected to be a string (stringified by the Streamiz side)
                     var key = kv.Key;
                     var val = kv.Value;
@@ -371,13 +380,14 @@ internal class TableCache<T> : ITableCache<T> where T : class
                     }
                 }
                 catch { }
+                cancellationToken.ThrowIfCancellationRequested();
                 return list;
             }
-            catch (Exception ex) when (
+            catch (Exception ex) when (ex is not OperationCanceledException && (
                 ex.GetType().FullName == "Streamiz.Kafka.Net.Errors.InvalidStateStoreException"
                 || (ex.Message?.IndexOf("may have migrated to another instance", StringComparison.OrdinalIgnoreCase) >= 0)
                 || (ex.Message?.IndexOf("PENDING_SHUTDOWN", StringComparison.OrdinalIgnoreCase) >= 0)
-            )
+            ))
             {
                 try
                 {
@@ -394,7 +404,7 @@ internal class TableCache<T> : ITableCache<T> where T : class
                 catch { }
                 if (DateTime.UtcNow >= deadline)
                     throw;
-                await Task.Delay(500);
+                await Task.Delay(500, cancellationToken).ConfigureAwait(false);
                 continue;
             }
         }

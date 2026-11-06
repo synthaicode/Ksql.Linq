@@ -39,7 +39,7 @@ internal sealed class MarketScheduleProvider : IMarketScheduleProvider
 
     public bool IsInSession(IReadOnlyList<string> keyParts, DateTime utcTs)
     {
-        var key = string.Join("\0", keyParts);
+        var key = CompositeKeyEncoding.Join(keyParts);
         if (!_index.TryGetValue(key, out var list))
             return false;
         var lo = 0;
@@ -112,7 +112,7 @@ internal sealed class MarketScheduleProvider : IMarketScheduleProvider
             var parts = new string[_keyMeta.Length];
             for (int i = 0; i < _keyMeta.Length; i++)
                 parts[i] = Convert.ToString(_keyMeta[i].PropertyInfo!.GetValue(r)) ?? string.Empty;
-            var key = string.Join("\0", parts);
+            var key = CompositeKeyEncoding.Join(parts);
             if (!_index.TryGetValue(key, out var list))
             {
                 list = new List<(DateTime, DateTime)>();

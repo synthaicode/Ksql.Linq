@@ -244,7 +244,9 @@ internal class KafkaProducerManager : IDisposable
     public async Task SendAsync<TPOCO>(string topicName, TPOCO entity, Dictionary<string, string>? headers = null, CancellationToken cancellationToken = default) where TPOCO : class
     {
         if (entity == null) throw new ArgumentNullException(nameof(entity));
+        cancellationToken.ThrowIfCancellationRequested();
         var producer = await GetProducerAsync<TPOCO>(topicName);
+        cancellationToken.ThrowIfCancellationRequested();
         var mapping = _mappingRegistry.GetMapping(typeof(TPOCO));
 
         // Debug: mapping configuration before alignment
@@ -275,7 +277,7 @@ internal class KafkaProducerManager : IDisposable
         var aligned = false;
         if (!_schemaRegistryDisabled)
         {
-            aligned = TryAlignSchemasWithSchemaRegistry(producer.TopicName, mapping);
+            aligned = await TryAlignSchemasWithSchemaRegistryAsync(producer.TopicName, mapping, cancellationToken).ConfigureAwait(false);
         }
         try
         {
@@ -293,6 +295,7 @@ internal class KafkaProducerManager : IDisposable
         catch { }
 
         // Safety: mappingにキーがあるのに値専用Producerなら、即時にキーありProducerへ切替
+        cancellationToken.ThrowIfCancellationRequested();
         if (producer.IsValueOnly && (mapping.KeyProperties?.Length ?? 0) > 0 && mapping.AvroKeyType != null)
         {
             producer = await GetProducerAsync<TPOCO>(topicName);
@@ -398,6 +401,7 @@ internal class KafkaProducerManager : IDisposable
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 await producer.SendAsync(keyObj, valueObj, context, cancellationToken).ConfigureAwait(false);
                 break;
             }
@@ -406,8 +410,9 @@ internal class KafkaProducerManager : IDisposable
                 // One-shot: align mapping with SR and retry
                 if (!retried && IsSchemaMismatch(ex))
                 {
-                    if (TryAlignSchemasWithSchemaRegistry(producer.TopicName, mapping))
+                    if (await TryAlignSchemasWithSchemaRegistryAsync(producer.TopicName, mapping, cancellationToken).ConfigureAwait(false))
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         _logger?.LogWarning("Schema mismatch detected; aligned mapping with SR latest and retrying once. topic={Topic}", producer.TopicName);
                         if (mapping.AvroKeyType == typeof(GenericRecord))
                             keyObj = new GenericRecord(mapping.AvroKeyRecordSchema!);
@@ -469,14 +474,18 @@ internal class KafkaProducerManager : IDisposable
         return ex.InnerException != null && IsSchemaMismatch(ex.InnerException);
     }
 
-    private bool TryAlignSchemasWithSchemaRegistry(string topic, KeyValueTypeMapping mapping)
+    private async Task<bool> TryAlignSchemasWithSchemaRegistryAsync(string topic, KeyValueTypeMapping mapping, CancellationToken cancellationToken)
     {
         bool aligned = false;
 
         // Key subject: 常に SR を参照（GenericRecord なら mapping に反映、Specific はウォームアップのみ）
         try
         {
-            var latestKey = _schemaRegistryClient.GetLatestSchemaAsync(global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic)).GetAwaiter().GetResult();
+            cancellationToken.ThrowIfCancellationRequested();
+            // Registry APIs have no token. Cancel the caller's wait; the request may continue.
+            var latestKey = await _schemaRegistryClient.GetLatestSchemaAsync(global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.KeyFor(topic))
+                .WaitAsync(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             var keySchemaString = latestKey?.SchemaString;
             if (!string.IsNullOrWhiteSpace(keySchemaString))
             {
@@ -484,6 +493,7 @@ internal class KafkaProducerManager : IDisposable
                 {
                     if (Avro.Schema.Parse(keySchemaString) is Avro.RecordSchema krs)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         mapping.AvroKeyRecordSchema = krs;
                         mapping.AvroKeySchema = keySchemaString;
                         aligned = true;
@@ -503,7 +513,10 @@ internal class KafkaProducerManager : IDisposable
         // Value subject: 常に SR を参照（GenericRecord なら mapping に反映、Specific はウォームアップのみ）
         try
         {
-            var latestVal = _schemaRegistryClient.GetLatestSchemaAsync(global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(topic)).GetAwaiter().GetResult();
+            cancellationToken.ThrowIfCancellationRequested();
+            var latestVal = await _schemaRegistryClient.GetLatestSchemaAsync(global::Ksql.Linq.SchemaRegistryTools.SchemaSubjects.ValueFor(topic))
+                .WaitAsync(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             var valSchemaString = latestVal?.SchemaString;
             if (!string.IsNullOrWhiteSpace(valSchemaString))
             {
@@ -511,6 +524,7 @@ internal class KafkaProducerManager : IDisposable
                 {
                     if (Avro.Schema.Parse(valSchemaString) is Avro.RecordSchema vrs)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         mapping.AvroValueRecordSchema = vrs;
                         mapping.AvroValueSchema = valSchemaString;
                         aligned = true;
@@ -533,15 +547,18 @@ internal class KafkaProducerManager : IDisposable
     public async Task DeleteAsync<TPOCO>(TPOCO entity, CancellationToken cancellationToken = default) where TPOCO : class
     {
         if (entity == null) throw new ArgumentNullException(nameof(entity));
+        cancellationToken.ThrowIfCancellationRequested();
         var producer = await GetProducerAsync<TPOCO>();
+        cancellationToken.ThrowIfCancellationRequested();
         var mapping = _mappingRegistry.GetMapping(typeof(TPOCO));
 
         // 削除メッセージでもSR最新に追随（GenericRecordキー向け）。SR URL 未設定時はスキップ
         if (!_schemaRegistryDisabled)
         {
-            TryAlignSchemasWithSchemaRegistry(producer.TopicName, mapping);
+            await TryAlignSchemasWithSchemaRegistryAsync(producer.TopicName, mapping, cancellationToken).ConfigureAwait(false);
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         object? keyObj = mapping.AvroKeyType switch
         {
             null => null,
@@ -565,6 +582,7 @@ internal class KafkaProducerManager : IDisposable
                 ["method"] = "DeleteAsync"
             }
         };
+        cancellationToken.ThrowIfCancellationRequested();
         await producer.SendAsync(keyObj, null, context, cancellationToken).ConfigureAwait(false);
     }
 

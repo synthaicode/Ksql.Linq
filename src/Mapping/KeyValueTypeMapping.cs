@@ -226,7 +226,7 @@ internal class KeyValueTypeMapping
                     parts[i] = ToSortableString(raw, tgtType);
                 }
             }
-            return string.Join(KeySep, parts);
+            return CompositeKeyEncoding.Join(parts);
         }
 
         var fallback = new string[KeyProperties.Length];
@@ -240,7 +240,7 @@ internal class KeyValueTypeMapping
             var tgtType = meta.PropertyInfo != null ? meta.PropertyInfo.PropertyType : (meta.PropertyType ?? typeof(string));
             fallback[i] = ToSortableString(raw, tgtType);
         }
-        return string.Join(KeySep, fallback);
+        return CompositeKeyEncoding.Join(fallback);
     }
 
     public object CombineFromStringKeyAndAvroValue(string key, object avroValue, Type pocoType)

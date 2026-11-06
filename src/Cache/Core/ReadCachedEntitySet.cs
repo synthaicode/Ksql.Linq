@@ -23,6 +23,7 @@ internal class ReadCachedEntitySet<T> : EventSet<T> where T : class
 
     public override async Task<List<T>> ToListAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var cache = _context.GetTableCache<T>();
         if (cache == null)
         {
@@ -30,13 +31,16 @@ internal class ReadCachedEntitySet<T> : EventSet<T> where T : class
             return new List<T>();
         }
 
-        return await cache.ToListAsync();
+        return await cache.ToListAsync(null, null, cancellationToken).ConfigureAwait(false);
     }
 
     public override async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         foreach (var item in await ToListAsync(cancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             yield return item;
+        }
     }
 
     protected override Task SendEntityAsync(T entity, Dictionary<string, string>? headers, CancellationToken cancellationToken)
