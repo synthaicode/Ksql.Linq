@@ -29,6 +29,7 @@ internal class KafkaProducerManager : IDisposable
     private readonly bool _schemaRegistryDisabled;
     private readonly ConcurrentDictionary<Type, ProducerHolder> _producers = new();
     private readonly ConcurrentDictionary<(Type, string), ProducerHolder> _topicProducers = new();
+    private readonly object _producerOwnershipLock = new();
     private bool _disposed;
     private readonly MappingRegistry _mappingRegistry;
 
@@ -186,51 +187,56 @@ internal class KafkaProducerManager : IDisposable
 
     private Task<ProducerHolder> GetProducerAsync<TPOCO>(string? topicName = null) where TPOCO : class
     {
-        var model = GetEntityModel<TPOCO>();
-        var name = (topicName ?? model.TopicName ?? typeof(TPOCO).Name).ToLowerInvariant();
-        var mapping = _mappingRegistry.GetMapping(typeof(TPOCO));
-
-        if (topicName == null)
+        lock (_producerOwnershipLock)
         {
-            if (_producers.TryGetValue(typeof(TPOCO), out var existing))
+            if (_disposed) throw new ObjectDisposedException(nameof(KafkaProducerManager));
+
+            var model = GetEntityModel<TPOCO>();
+            var name = (topicName ?? model.TopicName ?? typeof(TPOCO).Name).ToLowerInvariant();
+            var mapping = _mappingRegistry.GetMapping(typeof(TPOCO));
+
+            if (topicName == null)
             {
-                // Upgrade to keyed producer if mapping now has keys but cached holder is value-only
-                if (existing.IsValueOnly && mapping.AvroKeyType != null && mapping.KeyProperties.Length > 0)
+                if (_producers.TryGetValue(typeof(TPOCO), out var existing))
                 {
-                    try { existing.Dispose(); } catch { }
-                    var keyTypeNew = mapping.AvroKeyType;
-                    existing = CreateProducer(keyTypeNew, mapping.AvroValueType!, name);
-                    _producers[typeof(TPOCO)] = existing;
+                    // Upgrade to keyed producer if mapping now has keys but cached holder is value-only
+                    if (existing.IsValueOnly && mapping.AvroKeyType != null && mapping.KeyProperties.Length > 0)
+                    {
+                        try { existing.Dispose(); } catch { }
+                        var keyTypeNew = mapping.AvroKeyType;
+                        existing = CreateProducer(keyTypeNew, mapping.AvroValueType!, name);
+                        _producers[typeof(TPOCO)] = existing;
+                    }
+                    return Task.FromResult(existing);
                 }
-                return Task.FromResult(existing);
+
+                var keyType = mapping.AvroKeyType ?? typeof(Confluent.Kafka.Null);
+                ProducerHolder producer = CreateProducer(keyType, mapping.AvroValueType!, name);
+
+                _producers[typeof(TPOCO)] = producer;
+                return Task.FromResult(producer);
             }
-
-            var keyType = mapping.AvroKeyType ?? typeof(Confluent.Kafka.Null);
-            ProducerHolder producer = CreateProducer(keyType, mapping.AvroValueType!, name);
-
-            _producers[typeof(TPOCO)] = producer;
-            return Task.FromResult(producer);
-        }
-        else
-        {
-            var key = (typeof(TPOCO), name);
-            if (_topicProducers.TryGetValue(key, out var existing))
+            else
             {
-                if (existing.IsValueOnly && mapping.AvroKeyType != null && mapping.KeyProperties.Length > 0)
+                var key = (typeof(TPOCO), name);
+                if (_topicProducers.TryGetValue(key, out var existing))
                 {
-                    try { existing.Dispose(); } catch { }
-                    var keyTypeNew = mapping.AvroKeyType;
-                    existing = CreateProducer(keyTypeNew, mapping.AvroValueType!, name);
-                    _topicProducers[key] = existing;
+                    if (existing.IsValueOnly && mapping.AvroKeyType != null && mapping.KeyProperties.Length > 0)
+                    {
+                        try { existing.Dispose(); } catch { }
+                        var keyTypeNew = mapping.AvroKeyType;
+                        existing = CreateProducer(keyTypeNew, mapping.AvroValueType!, name);
+                        _topicProducers[key] = existing;
+                    }
+                    return Task.FromResult(existing);
                 }
-                return Task.FromResult(existing);
+
+                var keyType2 = mapping.AvroKeyType ?? typeof(Confluent.Kafka.Null);
+                ProducerHolder producer = CreateProducer(keyType2, mapping.AvroValueType!, name);
+
+                _topicProducers[key] = producer;
+                return Task.FromResult(producer);
             }
-
-            var keyType2 = mapping.AvroKeyType ?? typeof(Confluent.Kafka.Null);
-            ProducerHolder producer = CreateProducer(keyType2, mapping.AvroValueType!, name);
-
-            _topicProducers[key] = producer;
-            return Task.FromResult(producer);
         }
     }
 
@@ -289,15 +295,7 @@ internal class KafkaProducerManager : IDisposable
         // Safety: mappingにキーがあるのに値専用Producerなら、即時にキーありProducerへ切替
         if (producer.IsValueOnly && (mapping.KeyProperties?.Length ?? 0) > 0 && mapping.AvroKeyType != null)
         {
-            try { producer.Dispose(); } catch { }
-            var keyTypeNew = mapping.AvroKeyType;
-            var valueTypeNew = mapping.AvroValueType ?? typeof(GenericRecord);
-            var replacement = CreateProducer(keyTypeNew, valueTypeNew, producer.TopicName);
-            if (_topicProducers.TryGetValue((typeof(TPOCO), producer.TopicName), out var current) && ReferenceEquals(current, producer))
-                _topicProducers[(typeof(TPOCO), producer.TopicName)] = replacement;
-            else
-                _producers[typeof(TPOCO)] = replacement;
-            producer = replacement;
+            producer = await GetProducerAsync<TPOCO>(topicName);
             _logger?.LogDebug("Upgraded producer to keyed for topic={Topic} entity={Entity}", producer.TopicName, typeof(TPOCO).Name);
         }
 
@@ -572,13 +570,16 @@ internal class KafkaProducerManager : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        foreach (var p in _producers.Values) p.Dispose();
-        foreach (var p in _topicProducers.Values) p.Dispose();
-        _schemaRegistryClient.Dispose();
-        _producers.Clear();
-        _topicProducers.Clear();
-        _disposed = true;
+        lock (_producerOwnershipLock)
+        {
+            if (_disposed) return;
+            foreach (var p in _producers.Values) p.Dispose();
+            foreach (var p in _topicProducers.Values) p.Dispose();
+            _schemaRegistryClient.Dispose();
+            _producers.Clear();
+            _topicProducers.Clear();
+            _disposed = true;
+        }
     }
 
     private static Headers? BuildHeaders(KafkaMessageContext context)
